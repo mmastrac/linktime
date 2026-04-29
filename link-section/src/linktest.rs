@@ -5,6 +5,10 @@ pub static mut DATA2: u8 = 1;
 #[link_section = ".text.data.1"]
 pub static mut DATA3: u8 = 1;
 
+#[link_section = ".text.data.1.end"]
+#[used]
+pub static mut DATA1_END: u8 = 1;
+
 pub fn main() {
     unsafe {
         println!("DATA1: {:?}", DATA1);
