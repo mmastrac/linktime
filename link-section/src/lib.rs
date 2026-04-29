@@ -605,7 +605,7 @@ pub mod __support {
         };
         (@inner $ident:ident $($aux:ident)?, $item:item) => {
             $crate::__add_section_link_attribute!(
-                data section $ident ($($aux)?, env!("CARGO_PKG_NAME"), file!(), line!(), column!())
+                data section $ident ($($aux)?, concat!(env!("CARGO_PKG_NAME"), file!(), line!(), column!()))
                 #[export_name = __]
                 #[no_mangle]
                 // $crate::__add_section_link_attribute!(
