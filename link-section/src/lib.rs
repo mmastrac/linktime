@@ -180,13 +180,13 @@ pub mod __support {
     def_section_name! {
         {
             data bare =>    (".data", ".link_section.") __ ();
-            data section => (".data", ".link_section.") __ (".b");
-            data start =>   (".data", ".link_section.") __ (".a");
-            data end =>     (".data", ".link_section.") __ (".c");
+            data section => (".data", ".link_section.") __ (".2");
+            data start =>   (".data", ".link_section.") __ (".1");
+            data end =>     (".data", ".link_section.") __ (".3");
             code bare =>    (".text", ".link_section.") __ ();
-            code section => (".text", ".link_section.") __ (".b");
-            code start =>   (".text", ".link_section.") __ (".a");
-            code end =>     (".text", ".link_section.") __ (".c");
+            code section => (".text", ".link_section.") __ (".2");
+            code start =>   (".text", ".link_section.") __ (".1");
+            code end =>     (".text", ".link_section.") __ (".3");
         }
         AUXILIARY = ".d.";
         MAX_LENGTH = 64;
@@ -622,16 +622,16 @@ pub mod __support {
         };
 
         (@innerlast $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
-            $crate::__add_section_link_attribute!(
-                data section $ident (concat! $id)
-                #[export_name = __]
-                #[no_mangle]
-                // $crate::__add_section_link_attribute!(
-                //     data section $ident $($aux)?
-                //     #[link_section = __]
+            // $crate::__add_section_link_attribute!(
+            //     data section $ident (concat! $id)
+            //     #[export_name = __]
+            //     #[no_mangle]
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
                     $item
-                // );
-            );
+                );
+            // );
         }
     }
 
