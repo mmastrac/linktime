@@ -21,3 +21,7 @@ link-section-proc-macro = { workspace = true, optional = true }
 [[example]]
 name = "link-section-example"
 path = "src/example.rs"
+
+[[example]]
+name = "linktest"
+path = "src/linktest.rs"
