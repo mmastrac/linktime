@@ -412,7 +412,7 @@ pub mod __support {
                         $crate::__support::add_section_link_attribute!(
                             data start $ident $($aux)?
                             #[link_section = __]
-                            #[export_name = concat!("__", stringify!($ident), "_end")]
+                            #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_start")]
                             #[no_mangle]
                             static __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
@@ -423,7 +423,7 @@ pub mod __support {
                         $crate::__support::add_section_link_attribute!(
                             data end $ident $($aux)?
                             #[link_section = __]
-                            #[export_name = concat!("__", stringify!($ident), "_end")]
+                            #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_end")]
                             #[no_mangle]
                             static __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
