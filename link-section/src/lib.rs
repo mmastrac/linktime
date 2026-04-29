@@ -615,7 +615,7 @@ pub mod __support {
         (@inner next=$next:path, $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
             $next!(
                 @innerlast $ident $($aux)?, id=(
-                    "_", env!("CARGO_PKG_NAME"), file!(), line!(), column!()
+                    "_XXXX_", env!("CARGO_PKG_NAME"), "_", file!(), "_", line!(), "_", column!()
                 ),
                 $item
             );
