@@ -403,7 +403,7 @@ pub mod __support {
                             data start $ident $($aux)?
                             #[link_section = __]
                             static __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
-                        )
+                        );
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
@@ -412,7 +412,7 @@ pub mod __support {
                             data end $ident $($aux)?
                             #[link_section = __]
                             static __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
-                        )
+                        );
                     );
 
                     (
