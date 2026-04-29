@@ -180,18 +180,18 @@ pub mod __support {
     def_section_name! {
         {
             data bare =>    (".data", ".link_section") __ ();
-            data section => (".data", ".link_section") __ (".2");
-            data start =>   (".data", ".link_section") __ (".1");
-            data end =>     (".data", ".link_section") __ (".3");
+            data section => (".data", ".link_section.") __ (".2");
+            data start =>   (".data", ".link_section.") __ (".1");
+            data end =>     (".data", ".link_section.") __ (".3");
             code bare =>    (".text", ".link_section") __ ();
-            code section => (".text", ".link_section") __ (".2");
-            code start =>   (".text", ".link_section") __ (".1");
-            code end =>     (".text", ".link_section") __ (".3");
+            code section => (".text", ".link_section.") __ (".2");
+            code start =>   (".text", ".link_section.") __ (".1");
+            code end =>     (".text", ".link_section.") __ (".3");
         }
         AUXILIARY = ".d.";
         MAX_LENGTH = 64;
         HASH_LENGTH = 10;
-        VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        VALID_SECTION_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     }
 
     #[cfg(not(feature = "proc_macro"))]
