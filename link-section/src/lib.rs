@@ -604,8 +604,20 @@ pub mod __support {
             );
         };
         (@inner $ident:ident $($aux:ident)?, $item:item) => {
+            $crate::__in_section_crate!(@inner next=$crate::__in_section_crate,
+                $ident $($aux)?, 
+                id=(concat!(env!("CARGO_PKG_NAME"), file!(), line!(), column!())),
+                $item
+            );
+        };
+
+        (@inner next=$next:path, $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
+            $next!(@innerlast $ident $($aux)?, id=$id, $item);
+        };
+
+        (@innerlast $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
             $crate::__add_section_link_attribute!(
-                data section $ident ($($aux)?, concat!(env!("CARGO_PKG_NAME"), file!(), line!(), column!()))
+                data section $ident ($($aux)?, $id)
                 #[export_name = __]
                 #[no_mangle]
                 // $crate::__add_section_link_attribute!(
