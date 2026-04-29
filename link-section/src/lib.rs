@@ -558,9 +558,8 @@ pub mod __support {
             $stored_ty
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? $body:block)) => {
-            $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
-                #[link_section = __]
+            $crate::__in_section_crate!(
+                @inner $ident $($aux)?,
                 $(#[$meta])*
                 #[used]
                 #[allow(non_upper_case_globals)]
@@ -577,27 +576,35 @@ pub mod __support {
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static _ : $ty:ty = $value:expr;)) => {
             const _: () = {
-                $crate::__add_section_link_attribute!(
-                    data section $ident $($aux)?
-                    #[link_section = __]
+                $crate::__in_section_crate!(
+                    @inner $ident $($aux)?,
                     $(#[$meta])* #[used] $vis static ANONYMOUS: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
                 );
             };
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static $ident_static:ident : $ty:ty = $value:expr;)) => {
-            $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
-                #[link_section = __]
+            $crate::__in_section_crate!(
+                @inner $ident $($aux)?,
                 $(#[$meta])* #[used] $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
         };
         (data, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $item:item)) => {
-            $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
-                #[link_section = __]
+            $crate::__in_section_crate!(
+                @inner $ident $($aux)?, 
                 $(#[$meta])* #[used] $item
             );
         };
+        (@inner $ident:ident $($aux:ident)?, $item:item) => {
+            $crate::__add_section_link_attribute!(
+                data section $ident $($aux)?
+                #[export_name = __]
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
+                    $item
+                );
+            );
+        }
     }
 
     pub trait SectionItemType {
