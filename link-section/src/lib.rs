@@ -598,6 +598,7 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[export_name = __]
+                #[no_mangle]
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
