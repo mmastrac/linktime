@@ -61,10 +61,13 @@ pub mod __support {
                     ($pattern:tt $__section $__type $name:ident $aux:ident) => {
                         $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                     };
+                    ($pattern:tt $__section $__type $name:ident $aux:tt) => {
+                        $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                    };
                 )*
                 ($pattern:tt $unknown_section:ident $unknown_type:ident $name:ident) => {
                     const _: () = {
-                        compile_error!("Unknown section type: `{}`/`{}`", stringify!($unknown_section), stringify!($unknown_type));
+                        compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                     };
                 };
             }
@@ -80,7 +83,13 @@ pub mod __support {
                 (#[$attr = __] #[allow(unsafe_code)] $item)
                 $section $type $name $($aux)?
             );
-        }
+        };
+        ($section:ident $type:ident $name:ident ($($aux:tt)*) #[$attr:ident = __] $item:item) => {
+            $crate::__section_name!(
+                (#[$attr = __] #[allow(unsafe_code)] $item)
+                $section $type $name ($($aux)*)
+            );
+        };
     );
 
     #[cfg(not(feature = "proc_macro"))]
@@ -596,7 +605,7 @@ pub mod __support {
         };
         (@inner $ident:ident $($aux:ident)?, $item:item) => {
             $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
+                data section $ident ($($aux)?, file!())
                 #[export_name = __]
                 #[no_mangle]
                 $crate::__add_section_link_attribute!(
