@@ -84,11 +84,12 @@ pub mod __support {
                 $section $type $name $($aux)?
             );
         };
-        ($section:ident $type:ident $name:ident ($($aux:tt)*) #[$attr:ident = __] $item:item) => {
-            $crate::__section_name!(
-                (#[$attr = __] #[allow(unsafe_code)] $item)
-                $section $type $name ($($aux)*)
-            );
+        ($section:ident $type:ident $name:ident ($aux:expr) #[$attr:ident = __] $item:item) => {
+            #[$attr = $aux] $item
+            // $crate::__section_name!(
+            //     (#[$attr = __] #[allow(unsafe_code)] $item)
+            //     $section $type $name ($($aux)*)
+            // );
         };
     );
 
@@ -115,7 +116,7 @@ pub mod __support {
             data end =>     ("\x01section$end$__DATA$") __ ();
         }
         AUXILIARY = "_";
-        MAX_LENGTH = 16;
+        MAX_LENGTH = 64;
         HASH_LENGTH = 6;
         VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     }
@@ -606,18 +607,23 @@ pub mod __support {
         (@inner $ident:ident $($aux:ident)?, $item:item) => {
             $crate::__in_section_crate!(@inner next=$crate::__in_section_crate,
                 $ident $($aux)?, 
-                id=(concat!(env!("CARGO_PKG_NAME"), file!(), line!(), column!())),
+                id=(),
                 $item
             );
         };
 
         (@inner next=$next:path, $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
-            $next!(@innerlast $ident $($aux)?, id=$id, $item);
+            $next!(
+                @innerlast $ident $($aux)?, id=(
+                    "_", env!("CARGO_PKG_NAME"), file!(), line!(), column!()
+                ),
+                $item
+            );
         };
 
         (@innerlast $ident:ident $($aux:ident)?, id=$id:tt, $item:item) => {
             $crate::__add_section_link_attribute!(
-                data section $ident ($($aux)?, $id)
+                data section $ident (concat! $id)
                 #[export_name = __]
                 #[no_mangle]
                 // $crate::__add_section_link_attribute!(
