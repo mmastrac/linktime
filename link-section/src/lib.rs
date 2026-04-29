@@ -414,7 +414,7 @@ pub mod __support {
                             #[link_section = __]
                             #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_start")]
                             #[no_mangle]
-                            static __START: ::core::cell::UnsafeCell<::core::mem::MaybeUninit<[$generic_ty; 1]>> = ::core::cell::UnsafeCell::new(::core::mem::MaybeUninit::uninit());
+                            static mut __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
                     // $crate::__support::add_section_link_attribute!(
@@ -425,7 +425,7 @@ pub mod __support {
                             #[link_section = __]
                             #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_end")]
                             #[no_mangle]
-                            static __END:  ::core::cell::UnsafeCell<::core::mem::MaybeUninit<[$generic_ty; 1]>> = ::core::cell::UnsafeCell::new(::core::mem::MaybeUninit::uninit());
+                            static mut __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
 
