@@ -398,7 +398,7 @@ pub mod __support {
                 {
                     $crate::__support::add_section_link_attribute!(
                         data start $ident $($aux)?
-                        #[export_name = $ident_fn]
+                        #[export_name = __]
                         $crate::__support::add_section_link_attribute!(
                             data start $ident $($aux)?
                             #[link_section = __]
@@ -407,7 +407,7 @@ pub mod __support {
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
-                        #[export_name = $ident_fn]
+                        #[export_name = __]
                         $crate::__support::add_section_link_attribute!(
                             data end $ident $($aux)?
                             #[link_section = __]
