@@ -179,10 +179,10 @@ pub mod __support {
     #[cfg(any(target_os = "aix"))]
     def_section_name! {
         {
-            data bare =>    (".data", ".link_section") __ ();
-            data section => (".data", ".link_section.") __ (".2");
-            data start =>   (".data", ".link_section.") __ (".1");
-            data end =>     (".data", ".link_section.") __ (".3");
+            data bare =>    (".text", ".link_section") __ ();
+            data section => (".text", ".link_section.") __ (".2");
+            data start =>   (".text", ".link_section.") __ (".1");
+            data end =>     (".text", ".link_section.") __ (".3");
             code bare =>    (".text", ".link_section") __ ();
             code section => (".text", ".link_section.") __ (".2");
             code start =>   (".text", ".link_section.") __ (".1");
@@ -191,7 +191,7 @@ pub mod __support {
         AUXILIARY = ".d.";
         MAX_LENGTH = 64;
         HASH_LENGTH = 10;
-        VALID_SECTION_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     }
 
     #[cfg(not(feature = "proc_macro"))]
