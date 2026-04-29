@@ -15,5 +15,6 @@ pub fn main() {
         println!("DATA1: {:?}", DATA1);
         println!("DATA2: {:?}", DATA2);
         println!("DATA3: {:?}", DATA3);
+        println!("DATA3: {:?}", DATA1_END);
     }
 }
