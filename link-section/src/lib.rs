@@ -608,11 +608,11 @@ pub mod __support {
                 data section $ident ($($aux)?, file!())
                 #[export_name = __]
                 #[no_mangle]
-                $crate::__add_section_link_attribute!(
-                    data section $ident $($aux)?
-                    #[link_section = __]
+                // $crate::__add_section_link_attribute!(
+                //     data section $ident $($aux)?
+                //     #[link_section = __]
                     $item
-                );
+                // );
             );
         }
     }
