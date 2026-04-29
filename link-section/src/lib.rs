@@ -191,7 +191,7 @@ pub mod __support {
         AUXILIARY = ".d.";
         MAX_LENGTH = 64;
         HASH_LENGTH = 10;
-        VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.";
     }
 
     #[cfg(not(feature = "proc_macro"))]
@@ -412,6 +412,7 @@ pub mod __support {
                         $crate::__support::add_section_link_attribute!(
                             data start $ident $($aux)?
                             #[link_section = __]
+                            #[no_mangle]
                             static __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
@@ -421,6 +422,7 @@ pub mod __support {
                         $crate::__support::add_section_link_attribute!(
                             data end $ident $($aux)?
                             #[link_section = __]
+                            #[no_mangle]
                             static __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
