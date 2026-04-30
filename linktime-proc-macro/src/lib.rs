@@ -24,7 +24,7 @@ macro_rules! generators {
             #[doc(hidden)]
             #[proc_macro_attribute]
             pub fn $macro_name_linktime(attribute: TokenStream, item: TokenStream) -> TokenStream {
-                crate::generate::generate("linktime", stringify!($macro_name_linktime),attribute, item)
+                crate::generate::generate("linktime", stringify!($macro_name), attribute, item)
             }
         )*)*
     };

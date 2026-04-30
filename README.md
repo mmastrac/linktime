@@ -32,7 +32,7 @@ ctor = "..."
 ```
 
 ```rust
-use ctor::ctor;
+use linktime::ctor; // or ctor::ctor
 
 #[ctor(unsafe)]
 fn foo() {
@@ -54,7 +54,7 @@ dtor = "..."
 ```
 
 ```rust
-use dtor::dtor;
+use linktime::dtor; // or dtor::dtor
 
 #[dtor(unsafe)]
 fn foo() {
@@ -76,11 +76,11 @@ link-section = "..."
 ```
 
 ```rust
-use link_section::{section, in_section, TypedSection};
-use ctor::ctor;
+use linktime::link_section::{section, in_section, TypedSection};
+use linktime::ctor;
 
 #[section]
-static FOO: TypedSection<u32>;
+static FOO: TypedSection<fn()>;
 
 #[in_section(FOO)]
 fn foo() {
@@ -89,8 +89,8 @@ fn foo() {
 
 #[ctor(unsafe)]
 fn print_numbers() {
-    for i in *FOO {
-        println!("{}", i);        
+    for f in FOO {
+        f();
     }
 }
 ```
