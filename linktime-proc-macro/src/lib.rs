@@ -1,36 +1,47 @@
 #![doc = include_str!("../README.md")]
 
 mod generate;
+mod hash;
 mod tokens;
 
 use proc_macro::TokenStream;
 
 /// Generates macros in the low-level crate and the linktime crate.
 macro_rules! generators {
-    ($(
-        ($crate_name:ident: $( $macro_name:ident ),*) => {
-            $(
-                #[allow(missing_docs)]
-                #[proc_macro_attribute]
-                pub fn $macro_name(attribute: TokenStream, item: TokenStream) -> TokenStream {
-                    generate($macro_name, $crate_name, attribute, item)
-                }
-            )*
-            mod linktime {
-                $(
-                    #[allow(missing_docs)]
-                    #[proc_macro_attribute]
-                    pub fn $macro_name(attribute: TokenStream, item: TokenStream) -> TokenStream {
-                        generate($macro_name, "linktime", attribute, item)
-                    }
-                )*
+    ( $( ($crate_name:ident: $( $macro_name:ident/$macro_name_linktime:ident ),*) )* ) => {
+        $($(
+            #[allow(missing_docs)]
+            #[doc(hidden)]
+            #[proc_macro_attribute]
+            pub fn $macro_name(attribute: TokenStream, item: TokenStream) -> TokenStream {
+                crate::generate::generate(stringify!($crate_name), stringify!($macro_name), attribute, item)
             }
-        };
-    )*)
+        )*)*
+        $($(
+            #[allow(missing_docs)]
+            #[doc(hidden)]
+            #[proc_macro_attribute]
+            pub fn $macro_name_linktime(attribute: TokenStream, item: TokenStream) -> TokenStream {
+                crate::generate::generate( "linktime", stringify!($macro_name_linktime),attribute, item)
+            }
+        )*)*
+    };
 }
 
 generators! {
-    (ctor: ctor)
-    (dtor: dtor)
-    (link_section: in_section, section: section)
+    (ctor: ctor/ctor_linktime)
+    (dtor: dtor/dtor_linktime)
+    (link_section: in_section/in_section_linktime, section/section_linktime)
+}
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn ident_concat(item: TokenStream) -> TokenStream {
+    hash::ident_concat(item)
+}
+
+#[doc(hidden)]
+#[proc_macro]
+pub fn hash(item: TokenStream) -> TokenStream {
+    hash::hash(item)
 }

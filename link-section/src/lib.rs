@@ -27,9 +27,9 @@ pub mod __support {
     pub use crate::__section_parse as section_parse;
 
     #[cfg(feature = "proc_macro")]
-    pub use link_section_proc_macro::hash;
+    pub use linktime_proc_macro::hash;
     #[cfg(feature = "proc_macro")]
-    pub use link_section_proc_macro::ident_concat;
+    pub use linktime_proc_macro::ident_concat;
 
     /// Declares the section_name macro.
     #[macro_export]
@@ -579,7 +579,7 @@ pub mod __support {
 /// }
 /// ```
 #[cfg(feature = "proc_macro")]
-pub use ::link_section_proc_macro::section;
+pub use ::linktime_proc_macro::section;
 
 /// Place an item into a link section.
 ///
@@ -588,7 +588,7 @@ pub use ::link_section_proc_macro::section;
 /// As a special case, since function declarations by themselves are not sized,
 /// functions in typed sections are split and stored as function pointers.
 #[cfg(feature = "proc_macro")]
-pub use ::link_section_proc_macro::in_section;
+pub use ::linktime_proc_macro::in_section;
 
 /// An untyped link section that can be used to store any type. The underlying
 /// data is not enumerable.

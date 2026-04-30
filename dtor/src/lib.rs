@@ -35,7 +35,7 @@ pub use native::*;
 /// ```
 #[doc(inline)]
 #[cfg(feature = "proc_macro")]
-pub use dtor_proc_macro::dtor;
+pub use linktime_proc_macro::dtor;
 
 /// Declarative forms of the `#[dtor]` macro.
 ///

@@ -28,4 +28,4 @@ ctor = { path = "ctor", default-features = false }
 dtor = { path = "dtor", version = "0.11.0", default-features = false }
 link-section = { path = "link-section", version = "0.11.0", default-features = false }
 
-linktime-proc-macro = { path = "linktime-proc-macro", version = "=0.0.1" }
+linktime-proc-macro = { path = "linktime-proc-macro", version = "0.1.0" }

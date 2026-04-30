@@ -1,5 +1,10 @@
+use proc_macro::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
+
+use crate::tokens::{decode_literal_string, decode_literal_strings, expect_literal, expect_numeric_literal};
+
+mod xx3;
+
 /// Concatenate two identifiers.
-#[proc_macro]
 pub fn ident_concat(item: TokenStream) -> TokenStream {
     let mut item = item.into_iter();
     let Some(TokenTree::Group(pre_group)) = item.next() else {
@@ -28,7 +33,6 @@ pub fn ident_concat(item: TokenStream) -> TokenStream {
 /// the string with the hash of the string.
 ///
 /// hash!(output (prefix) (name) (suffix) hash_length max_length valid_section_chars)
-#[proc_macro]
 pub fn hash(item: TokenStream) -> TokenStream {
     let mut item = item.into_iter();
 
