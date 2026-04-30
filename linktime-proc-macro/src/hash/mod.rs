@@ -7,7 +7,7 @@ use crate::tokens::{
 mod xx3;
 
 /// Concatenate two identifiers.
-pub fn ident_concat(item: TokenStream) -> TokenStream {
+pub(crate) fn ident_concat(item: TokenStream) -> TokenStream {
     let mut item = item.into_iter();
     let Some(TokenTree::Group(pre_group)) = item.next() else {
         panic!("pre_group: Expected a group");
@@ -35,7 +35,7 @@ pub fn ident_concat(item: TokenStream) -> TokenStream {
 /// the string with the hash of the string.
 ///
 /// hash!(output (prefix) (name) (suffix) hash_length max_length valid_section_chars)
-pub fn hash(item: TokenStream) -> TokenStream {
+pub(crate) fn hash(item: TokenStream) -> TokenStream {
     let mut item = item.into_iter();
 
     let Some(TokenTree::Group(group)) = item.next() else {
