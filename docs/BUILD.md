@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mmastrac/rust-ctor/actions/workflows/rust.yml/badge.svg)
+![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)
 
 The crate is part of the [`linktime`](https://crates.io/crates/linktime) project.
 

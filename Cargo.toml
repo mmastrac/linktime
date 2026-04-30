@@ -22,7 +22,7 @@ exclude = []
 [workspace.package]
 authors = ["Matt Mastracci <matthew@mastracci.com>"]
 license = "Apache-2.0 OR MIT"
-repository = "https://github.com/mmastrac/rust-ctor"
+repository = "https://github.com/mmastrac/linktime"
 
 [workspace.dependencies]
 ctor = { path = "ctor", version = "0.12.0", default-features = false }

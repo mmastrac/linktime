@@ -68,7 +68,7 @@ _References_
 Some linker configurations can **strip** the underlying registration data for
 `#[ctor]`, `#[dtor]` and `#[in_section]` registrations from the final binary,
 resulting in them not being called
-([rust-ctor #280](https://github.com/mmastrac/rust-ctor/issues/280),
+([rust-ctor #280](https://github.com/mmastrac/linktime/issues/280),
 [🦀 #99721](https://github.com/rust-lang/rust/issues/99721)).
 
 The `used_linker` feature for the `ctor` and `dtor` crates _may_ help - it
@@ -80,7 +80,7 @@ for the linker to retain the code.
 
 _References_
 
-[rust-ctor #280](https://github.com/mmastrac/rust-ctor/issues/280) — `mmastrac/rust-ctor`; linker / LTO stripping ctor registrations.
+[rust-ctor #280](https://github.com/mmastrac/linktime/issues/280) — `mmastrac/linktime`; linker / LTO stripping ctor registrations.
 
 [🦀 #99721](https://github.com/rust-lang/rust/issues/99721) — `rust-lang/rust`; rustc / linkage behavior relevant to similar stripping (`used`, linker GC).
 
