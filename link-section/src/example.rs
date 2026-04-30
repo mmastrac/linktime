@@ -34,23 +34,23 @@ pub static AUX_LINKED_U32: u32 = 3;
 
 /// A function pointerarray in the `data` section.
 #[section]
-pub static FN_ARRAY: link_section::TypedSection<fn()>;
+pub static FN_ARRAY: link_section::TypedSection<(fn(),)>;
 
 /// A function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub fn linked_function() {
+pub static linked_function: (fn(),) = ({fn linked_function() {
     eprintln!("linked_function");
-}
+} linked_function},);
 
 /// Another function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub fn linked_function_2() {
+pub static linked_function_2: (fn(),) = ({fn linked_function_2() {
     eprintln!("linked_function_2");
-}
+} linked_function_2},);
 
 /// Yet another function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub static OTHER_FN: fn() = link_section_function;
+pub static OTHER_FN: (fn(),) = (link_section_function,);
 
 /// A debuggable section in the `data` section.
 #[section]
