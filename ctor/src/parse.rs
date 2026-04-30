@@ -731,6 +731,9 @@ macro_rules! __ctor_parse_impl {
     };
 }
 
+/// Map the priority input to a priority value. This is somewhat complex because
+/// the default for priority changes based on whether priority is enabled and
+/// whether link options are specified.
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __map_priority {

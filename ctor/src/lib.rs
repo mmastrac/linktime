@@ -439,7 +439,9 @@ __declare_features!(
         }
     };
     /// Use the least-possibly mangled version of the linker invocation for this
-    /// constructor.
+    /// constructor. This is not recommended for general use as it may prevent
+    /// authors of binary crates from having low-level control over the order of
+    /// initialization.
     ///
     /// There are no guarantees about the order of execution of constructors
     /// with this attribute, just that it will be called at some point before
@@ -465,11 +467,9 @@ __declare_features!(
     /// guarantees (`N` >= 1000 ordering is platform-defined).
     ///
     /// Priority is specified as an isize, string literal, or the identifiers
-    /// `early`, `late`, or `naked`. The integer value will be clamped to a
+    /// `early` or `late`. The integer value will be clamped to a
     /// platform-defined range (typically 0-65535), while the string value will
-    /// unprocessed. `naked` indicates that the constructor should not use a
-    /// priority value, and should use the low-level platform-specific
-    /// unprioritized mechanism.
+    /// unprocessed.
     ///
     /// Priority is applied as follows:
     ///
@@ -486,7 +486,8 @@ __declare_features!(
     /// length range in ascending order (ie: 10000 will run before 20000).
     priority {
         attr: [(priority = $priority_value:tt) => ($priority_value)];
-        validate: [(priority = $priority:literal), (priority = early), (priority = late)];
+        example: "priority = N | early | late";
+        validate: [($priority:literal), (early), (late)];
         default {
             (feature = "priority") => early,
             _ => ()

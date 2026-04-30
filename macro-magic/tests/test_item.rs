@@ -1,3 +1,4 @@
+#![recursion_limit = "150"]
 use ::macro_magic::*;
 
 __declare_features!(

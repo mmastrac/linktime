@@ -19,6 +19,7 @@ macro_rules! __declare_features {
                         $crate::__pick[1],
                         $crate::__unbrace,
                         $crate::__for_each[$crate::__fix_docs],
+                        $crate::__for_each[$crate::__fix_example_validate],
                         $crate::__for_each[$crate::__process_defaults],
                         $crate::__for_each[$crate::__evaluate_defaults],
                         $crate::__brace[()],
@@ -193,7 +194,7 @@ macro_rules! __parse_feature_input {
                 )?
                 $(
                     $( #[doc = r" attr"] $( #[doc = $doc_attr:literal] )* )?
-                    attr: $attr:tt;
+                    attr: [($($attr:tt)*) => ($($attr_value:tt)*)];
                     $(
                         example: $example:literal;
                     )?
@@ -223,8 +224,10 @@ macro_rules! __parse_feature_input {
                             crate_docs = [$( $( $doc_crate )* )?];
                         )?
                         $(
-                            attr = $attr;
+                            attr = [($($attr)*) => ($($attr_value)*)];
                             attr_docs = [$( $( $doc_attr )* )?];
+                            example = ($( ($example) )? (stringify!($($attr)*)));
+                            validate = ($( $validate )? [$value:tt]);
                         )?
                         default = [
                             $(
@@ -243,7 +246,8 @@ macro_rules! __parse_feature_input {
     };
 }
 
-/// Concatenate the global docs with the crate/attr docs.
+/// Concatenate the global docs with the crate/attr docs, ensures the example
+/// and validation are correct.
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __fix_docs {
@@ -255,6 +259,8 @@ macro_rules! __fix_docs {
             crate_docs = [$($crate_docs:tt)*];
             attr = $attr:tt;
             attr_docs = [$($attr_docs:tt)*];
+            example = $example:tt;
+            validate = $validate:tt;
             default = $default:tt
         )
     ) ) => {
@@ -264,6 +270,8 @@ macro_rules! __fix_docs {
             crate_docs = [$($docs)* $($crate_docs)*];
             attr = $attr;
             attr_docs = [$($docs)* $($attr_docs)*];
+            example = $example;
+            validate = $validate;
             default = $default
         )) );
     };
@@ -274,6 +282,8 @@ macro_rules! __fix_docs {
             docs = [$($docs:tt)*];
             attr = $attr:tt;
             attr_docs = [$($attr_docs:tt)*];
+            example = $example:tt;
+            validate = $validate:tt;
             default = $default:tt
         )
     ) ) => {
@@ -281,6 +291,8 @@ macro_rules! __fix_docs {
             feature = $feature;
             attr = $attr;
             attr_docs = [$($docs)* $($attr_docs)*];
+            example = $example;
+            validate = $validate;
             default = $default
         )) );
     };
@@ -316,6 +328,43 @@ macro_rules! __fix_docs {
     }
 }
 
+/// Ensures the example and validation are correct.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __fix_example_validate {
+    ( @entry next=$next:path[$next_args:tt], input=(
+        (
+            feature = $feature:ident;
+            $(
+                name = $crate_name:literal;
+                crate_docs = $crate_docs:tt;
+            )?
+            $(
+                attr = $attr:tt;
+                attr_docs = $attr_docs:tt;
+                example = ($example:tt $( ($($example_extra:tt)*) )?);
+                validate = ($validate:tt $( [$($validate_extra:tt)*] )?);
+            )?
+            default = $default:tt
+        )
+    ) ) => {
+        $next ! ( $next_args, ((
+            feature = $feature;
+            $(
+                name = $crate_name;
+                crate_docs = $crate_docs;
+            )?
+            $(
+                attr = $attr;
+                attr_docs = $attr_docs;
+                example = $example;
+                validate = $validate;
+            )?
+            default = $default
+        )) );
+    };
+}
+
 /// Process the defaults into full cfg chains.
 #[macro_export]
 #[doc(hidden)]
@@ -330,6 +379,8 @@ macro_rules! __process_defaults {
             $(
                 attr = $attr:tt;
                 attr_docs = $attr_docs:tt;
+                example = $example:tt;
+                validate = $validate:tt;
             )?
             default = [$($default:tt)*]
         )
@@ -350,6 +401,8 @@ macro_rules! __process_defaults {
                     feature_attr = $feature;
                     attr = $attr;
                     attr_docs = $attr_docs;
+                    example = $example;
+                    validate = $validate;
                 )?
                 original_defaults = {$($default)*};
             )
@@ -387,6 +440,8 @@ macro_rules! __evaluate_defaults {
             feature_attr = $feature_attr:ident;
             attr = $attr:tt;
             attr_docs = $attr_docs:tt;
+            example = $example:tt;
+            validate = $validate:tt;
         )?
         original_defaults = $original_defaults:tt;
         default = [
@@ -404,6 +459,8 @@ macro_rules! __evaluate_defaults {
                 feature_attr = $feature_attr;
                 attr = $attr;
                 attr_docs = $attr_docs;
+                example = $example;
+                validate = $validate;
             )?
             original_defaults = $original_defaults;
         ));
@@ -572,6 +629,8 @@ macro_rules! __make_macros {
                         feature_attr = $feature_attr:ident;
                         attr = [($($attr:tt)*) => ($($attr_output:tt)*)];
                         attr_docs = $attr_docs:tt;
+                        example = $example:tt;
+                        validate = $validate:tt;
                     )?
                     original_defaults = $original_defaults:tt;
                     default = $default_value:tt;
@@ -731,6 +790,8 @@ macro_rules! __make_docs {
                     feature_attr = $feature_attr:ident;
                     attr = [($($attr:tt)*) => ($($attr_output:tt)*)];
                     attr_docs = [ $( $attr_doc_lit:literal )* ];
+                    example = ($($example:tt)*);
+                    validate = $validate:tt;
                 )?
                 original_defaults = $original_defaults:tt;
                 default = $default_value:tt;
@@ -747,7 +808,7 @@ macro_rules! __make_docs {
             #![doc = "\n\n# Macro Attributes\n\n<table><tr><th>Attribute</th><th>Description</th></tr>\n"]
             $(
                 $(
-                    #![doc = concat!("\n<tr><td><code>", stringify!($($attr)*), "</code></td><td>\n\n", $( $attr_doc_lit, "\n", )*  "\n\n</td></tr>")]
+                    #![doc = concat!("\n<tr><td><code>", $( $example )*, "</code></td><td>\n\n", $( $attr_doc_lit, "\n", )*  "\n\n</td></tr>")]
                 )?
             )*
             #![doc = "</table>"]

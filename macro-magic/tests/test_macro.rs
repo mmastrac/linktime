@@ -23,6 +23,8 @@ __test!(__parse_feature_input:
             docs = [];
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ((stringify! (link_section($section:literal))));
+            validate = ([$value : tt]);
             default = [
                 ((target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs")
                 ((target_vendor = "pc") => (compile_error!("Link section dtor is not supported on PC")))
@@ -40,6 +42,8 @@ __test!(__process_defaults:
             feature = link_section;
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ();
+            validate = [];
             default = [
                 ((a = "apple") => 1)
                 ((b = "pc") => (compile_error!("2")))
@@ -53,6 +57,8 @@ __test!(__process_defaults:
             feature_attr = link_section;
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ();
+            validate = [];
             original_defaults =
             {((a = "apple") => 1) ((b = "pc") => (compile_error!("2")))
                 ((c = "linux") => 3) (_ => (compile_error!("4")))};

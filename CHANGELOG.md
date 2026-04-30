@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## ctor [0.13.0] - Unreleased
+
+### Changed
+
+- `#[ctor(priority = naked)]` is now `#[ctor(naked)]`.
+
 ## ctor [0.12.0] - 2026-04-30
 
 ### Added
