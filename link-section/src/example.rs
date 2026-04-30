@@ -101,7 +101,7 @@ pub fn main() {
     eprintln!("CODE_SECTION: {:?}", FN_ARRAY);
     // eprintln!("{:?}", FN_ARRAY.as_slice());
     for f in FN_ARRAY {
-        eprintln!("f: {:?}", f);
+        // eprintln!("f: {:?}", f);
         (f.f)();
         assert!(FN_ARRAY.offset_of(&f).is_some());
     }
