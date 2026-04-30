@@ -431,14 +431,14 @@ pub mod __support {
                         );
                     // );
 
-                    $crate::__support::add_section_link_attribute!(
-                        data section $ident $($aux)?
-                        #[link_section = __]
-                        #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
-                        #[no_mangle]
-                        #[used]
-                        static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
-                    );
+                    // $crate::__support::add_section_link_attribute!(
+                    //     data section $ident $($aux)?
+                    //     #[link_section = __]
+                    //     #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
+                    //     #[no_mangle]
+                    //     #[used]
+                    //     static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
+                    // );
 
                     (
                         unsafe { &raw mut __START as $crate::__support::SectionPtr<$generic_ty> },
@@ -644,6 +644,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
+                    #[used]
                     $item
                 );
             // );
