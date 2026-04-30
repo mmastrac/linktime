@@ -577,7 +577,7 @@ pub mod __support {
                 $(#[$meta])*
                 #[used]
                 #[allow(non_upper_case_globals)]
-                $vis static $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
+                $vis static mut $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
                     {
                         $crate::__add_section_link_attribute!(
                             code section $ident $($aux)?
