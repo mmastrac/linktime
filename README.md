@@ -24,6 +24,13 @@ Module initialization functions for Rust (like `__attribute__((constructor))` in
 
 Run code before `main` to initialize data, external resources, or other state.
 
+```toml
+[dependencies]
+linktime = { version = "...", features = ["ctor"] }  # note: already enabled by default
+# or
+ctor = "..."
+```
+
 ```rust
 use ctor::ctor;
 
@@ -39,6 +46,13 @@ Module shutdown functions for Rust (like `__attribute__((destructor))`).
 
 Run code after `main` to clean up resources, or perform other final operations.
 
+```toml
+[dependencies]
+linktime = { version = "...", features = ["dtor"] }  # note: already enabled by default
+# or
+dtor = "..."
+```
+
 ```rust
 use dtor::dtor;
 
@@ -53,6 +67,13 @@ fn foo() {
 Typed and untyped link section support for Rust.
 
 Collect related items from an entire linked binary into a single link section.
+
+```toml
+[dependencies]
+linktime = { version = "...", features = ["link-section"] }  # note: already enabled by default
+# or
+link-section = "..."
+```
 
 ```rust
 use link_section::{section, in_section, TypedSection};

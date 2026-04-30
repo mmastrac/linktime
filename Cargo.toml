@@ -12,6 +12,7 @@ members = [
 default-members = [
     "ctor",
     "dtor",
+    "linktime",
     "macro-magic",
     "link-section",
     "tests"
