@@ -3,7 +3,7 @@
 
 use ::macro_magic::*;
 
-__test!(__parse_feature_input:
+__test!(__parse_feature_input[$]:
     (
         my_macro: my_macro_parse;
 

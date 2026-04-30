@@ -8,7 +8,7 @@ macro_rules! __declare_features {
         $crate::__perform!(
             ($($input)*),
             $crate::__chain[
-                $crate::__parse_feature_input,
+                $crate::__parse_feature_input[$],
                 $crate::__parallel[
                     // (params)
                     $crate::__chain[
@@ -31,7 +31,10 @@ macro_rules! __declare_features {
                     ],
                 ],
                 // (params) (features) (feature_square)
-                $crate::__pick[0 1 2 1],
+                $crate::__parallel[
+                    $crate::__identity,
+                    $crate::__pick_doc_vars,
+                ],
                 $crate::__make_macros[$],
             ]
         );
@@ -199,7 +202,7 @@ macro_rules! __parse_feature_input {
                         example: $example:literal;
                     )?
                     $(
-                        validate: $validate:tt;
+                        validate: [$( ($($validate:tt)*) ),*];
                     )?
                 )?
                 $( default {
@@ -208,7 +211,7 @@ macro_rules! __parse_feature_input {
                 } )?
             };
         )*
-    )) => {
+    ), args=[$dollar:tt]) => {
         $next ! ( $next_args, (
             (
                 $macro_name
@@ -227,7 +230,7 @@ macro_rules! __parse_feature_input {
                             attr = [($($attr)*) => ($($attr_value)*)];
                             attr_docs = [$( $( $doc_attr )* )?];
                             example = ($( ($example) )? (stringify!($($attr)*)));
-                            validate = ($( $validate )? [$value:tt]);
+                            validate = ($( [$( $dollar ($($validate)*)? )*] )? [$value:tt]);
                         )?
                         default = [
                             $(
@@ -526,9 +529,17 @@ macro_rules! __extract_features {
     };
 }
 
+/// Extracts the meta items from the proc-macro attribute.
+///
+/// This one is complex, follow along with the comments below...
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __extract_meta {
+    // Start with a rule that matches all the various types of meta attributes.
+    // Note that we don't fully validate here, it just needs to be able to
+    // handle every type of meta attribute (ie: paths, idents, literals, token-trees).
+    //
+    // If we can't get a match here, the error in the next rule triggers.
     ( @entry next=$next:path[$next_args:tt], input=(
         (
             $(
@@ -536,21 +547,35 @@ macro_rules! __extract_meta {
             ),*
         )
     ), args=[$macro_path:path]) => {
+        // This will return to us after the generated macro has finished processing.
         $macro_path!(@meta macro=$macro_path, next=$crate::__extract_meta[[@finish next=$next[$next_args]]] $(
+            // Pass each of the attributes down, but we separate with a `, , ;`
+            // sequence to help the downstream macro split things up.
             $name $( ($( $args )*) )? $( = $value $( $value_ident )? $( :: $value_path )* )? , , ;
         )*);
     };
+    // If we couldn't parse one of those forms above, this path gets hit.
     ( @entry next=$next:path[$next_args:tt], input=(
         (
             $($input:tt)*
         )
     ), args=[$macro_path:path]) => {
         const _: () = {
-            compile_error!(concat!("Unexpected type of meta argument: ",
+            compile_error!(concat!("Unexpected form for meta attribute: ",
             stringify!($($input)*),
             "\n\n... expected 'attr', 'attr = value', 'attr(arg)', 'attr(arg) = value'"));
         };
     };
+    // The generated macro passes this back to us with the value it parsed and
+    // the default for the feature. If there was no value, we only get the
+    // default. We'll emit the specified or default feature value and a flag
+    // (value or default).
+    //
+    // If more than one value was specified for a given attribute, the rule
+    // below will trigger and error out.
+    //
+    // If the generated macro doesn't recognize an attribute, it'll call back to
+    // us with @error.
     ( [@finish next=$next:path[$next_args:tt]],
         ($(
             ( $name:ident = $value:tt $value_what:ident $( , $def_value:tt $def_value_what:ident )? )
@@ -562,6 +587,7 @@ macro_rules! __extract_meta {
             )*
         ) );
     };
+    // Duplicate items.
     ( [@finish next=$next:path[$next_args:tt]],
         (
             $(( $name:ident = $value:tt $value_what:ident $( , $def_value:tt $def_value_what:ident $( $comma:tt $($rest:tt)* )? )? ))*
@@ -572,6 +598,7 @@ macro_rules! __extract_meta {
             $( $($($name = ...$comma)?)?  )*
         ))) };
     };
+    // Unknown items.
     ( @error rest=(
         $name:ident $( ($( $args:tt)*) )? $( = $value:tt )? , , ; $($rest:tt)*
     ) attrs=($($attr:tt)*)) => {
@@ -765,6 +792,56 @@ macro_rules! __make_macros {
     };
 }
 
+/// Extract a subset of the feature configuration for later documentation generation.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __pick_doc_vars {
+    ( @entry next=$next:path[$next_args:tt], input=(
+        $params:tt
+        (
+            $(
+                (
+                    feature = $feature:ident;
+                    $(
+                        feature_crate = $feature_crate:ident;
+                        name = $name:literal;
+                        crate_docs = $crate_docs:tt;
+                    )?
+                    $(
+                        feature_attr = $feature_attr:ident;
+                        attr = $attr:tt;
+                        attr_docs = $attr_docs:tt;
+                        example = $example:tt;
+                        validate = $validate:tt;
+                    )?
+                    original_defaults = $original_defaults:tt;
+                    default = $default_value:tt;
+                )
+            )*
+        )
+        $feature_square:tt
+    )) => {
+        $next ! ( $next_args, (
+            ($(
+                (
+                    feature = $feature;
+                    $(
+                        feature_crate = $feature_crate;
+                        name = $name;
+                        crate_docs = $crate_docs;
+                    )?
+                    $(
+                        feature_attr = $feature_attr;
+                        attr_docs = $attr_docs;
+                        example = $example;
+                    )?
+                    original_defaults = $original_defaults;
+                )
+            )*)
+        ));
+    };
+}
+
 /// Generates a module named $macro_impl and inside, two crate-scoped macros:
 ///
 /// make_crate_docs and make_attr_docs.
@@ -788,13 +865,10 @@ macro_rules! __make_docs {
                 )?
                 $(
                     feature_attr = $feature_attr:ident;
-                    attr = [($($attr:tt)*) => ($($attr_output:tt)*)];
                     attr_docs = [ $( $attr_doc_lit:literal )* ];
                     example = ($($example:tt)*);
-                    validate = $validate:tt;
                 )?
                 original_defaults = $original_defaults:tt;
-                default = $default_value:tt;
             )
         )*
     )) => {
@@ -871,7 +945,6 @@ macro_rules! __make_docs {
             //! ```
         ), ($($rest)*));
     };
-
 
     ( $($input:tt)* ) => {
         const _: () = { compile_error!(concat!("Unexpected input: ", stringify!($($input)*))); };

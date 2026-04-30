@@ -1,4 +1,4 @@
-error: Unexpected type of meta argument: unknown-attribute
+error: Unexpected form for meta attribute: unknown-attribute
 
        ... expected 'attr', 'attr = value', 'attr(arg)', 'attr(arg) = value'
  --> tests/errors/dtor_bad.rs:4:1
