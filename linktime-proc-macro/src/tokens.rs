@@ -1,6 +1,6 @@
 use proc_macro::{Delimiter, Literal, TokenTree};
 
-pub fn decode_literal_string(name: &str, literal: Literal) -> String {
+pub(crate) fn decode_literal_string(name: &str, literal: Literal) -> String {
     let literal = literal.to_string();
     let Some(literal) = literal.strip_prefix('"') else {
         panic!("{}: Expected a literal string", name);
@@ -46,7 +46,7 @@ pub fn decode_literal_string(name: &str, literal: Literal) -> String {
     }
 }
 
-pub fn decode_literal_strings(name: &str, item: TokenTree) -> String {
+pub(crate) fn decode_literal_strings(name: &str, item: TokenTree) -> String {
     let mut output = String::new();
     match item {
         TokenTree::Literal(literal) => {
@@ -67,7 +67,7 @@ pub fn decode_literal_strings(name: &str, item: TokenTree) -> String {
     output
 }
 
-pub fn expect_literal(name: &str, item: TokenTree) -> Literal {
+pub(crate) fn expect_literal(name: &str, item: TokenTree) -> Literal {
     match item {
         TokenTree::Literal(literal) => literal,
         TokenTree::Group(group) => {
@@ -94,7 +94,7 @@ pub fn expect_literal(name: &str, item: TokenTree) -> Literal {
     }
 }
 
-pub fn expect_numeric_literal(name: &str, item: TokenTree) -> usize {
+pub(crate) fn expect_numeric_literal(name: &str, item: TokenTree) -> usize {
     let literal = expect_literal(name, item).to_string();
     let Ok(literal) = literal.parse::<usize>() else {
         panic!("{}: Expected a literal integer, got `{literal}`", name);

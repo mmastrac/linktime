@@ -8,8 +8,9 @@ use proc_macro::TokenStream;
 
 /// Generates macros in the low-level crate and the linktime crate.
 macro_rules! generators {
-    ( $( ($crate_name:ident: $( $macro_name:ident/$macro_name_linktime:ident ),*) )* ) => {
+    ( $( ($crate_name:ident/$crate_name_str:literal: $( $macro_name:ident/$macro_name_linktime:ident ),*) )* ) => {
         $($(
+            #[cfg(feature = $crate_name_str)]
             #[allow(missing_docs)]
             #[doc(hidden)]
             #[proc_macro_attribute]
@@ -18,20 +19,21 @@ macro_rules! generators {
             }
         )*)*
         $($(
+            #[cfg(feature = $crate_name_str)]
             #[allow(missing_docs)]
             #[doc(hidden)]
             #[proc_macro_attribute]
             pub fn $macro_name_linktime(attribute: TokenStream, item: TokenStream) -> TokenStream {
-                crate::generate::generate( "linktime", stringify!($macro_name_linktime),attribute, item)
+                crate::generate::generate("linktime", stringify!($macro_name_linktime),attribute, item)
             }
         )*)*
     };
 }
 
 generators! {
-    (ctor: ctor/ctor_linktime)
-    (dtor: dtor/dtor_linktime)
-    (link_section: in_section/in_section_linktime, section/section_linktime)
+    (ctor/"ctor": ctor/ctor_linktime)
+    (dtor/"dtor": dtor/dtor_linktime)
+    (link_section/"link_section": in_section/in_section_linktime, section/section_linktime)
 }
 
 #[doc(hidden)]

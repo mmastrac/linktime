@@ -7,7 +7,7 @@ use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, Span, TokenStream, Tok
 /// ::dtor::__support::dtor_parse!(#[dtor] fn foo() { ... });
 /// ```
 #[allow(unknown_lints, tail_expr_drop_order)]
-pub fn generate(
+pub(crate) fn generate(
     macro_crate: &str,
     macro_type: &str,
     attribute: TokenStream,
