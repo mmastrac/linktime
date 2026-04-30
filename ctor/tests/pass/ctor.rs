@@ -10,7 +10,7 @@ unsafe fn foo() {
 unsafe fn bar() {
 }
 
-#[ctor(unsafe, priority = naked)]
+#[ctor(unsafe, naked)]
 unsafe fn naked() {
 }
 
@@ -20,6 +20,15 @@ unsafe fn early() {
 
 #[ctor(unsafe, priority = late)]
 unsafe fn late() {
+}
+
+#[cfg(not(target_vendor = "apple"))]
+#[ctor(unsafe, link_section = ".ctors")]
+unsafe fn link_section() {
+}
+
+#[ctor(unsafe, export_name_prefix = "foo")]
+unsafe fn export_name_prefix() {
 }
 
 #[ctor]

@@ -38,7 +38,7 @@ crate::__ctor_parse_internal!(
     /// targets. This is awkwardly placed in the root module because it needs to
     /// use a generated macro and we cannot use an absolute path to it. (see
     /// <https://github.com/rust-lang/rust/issues/52234>)
-    #[ctor(unsafe, priority = naked)]
+    #[ctor(unsafe, naked)]
     #[allow(unsafe_code)]
     fn priority_ctor() {
         unsafe {
@@ -438,6 +438,20 @@ __declare_features!(
             _ => (compile_error!("Unsupported target for #[ctor]"))
         }
     };
+    /// Use the least-possibly mangled version of the linker invocation for this
+    /// constructor.
+    ///
+    /// There are no guarantees about the order of execution of constructors
+    /// with this attribute, just that it will be called at some point before
+    /// `main`.
+    ///
+    /// `naked` constructors are always executed directly by the underlying C
+    /// library and/or dynamic loader.
+    ///
+    /// `naked` cannot be used with the `priority` attribute.
+    naked {
+        attr: [(naked) => (naked)];
+    };
     no_warn_on_missing_unsafe {
         /// crate
         /// Do not warn when a ctor is missing the `unsafe` keyword.
@@ -475,7 +489,7 @@ __declare_features!(
         validate: [(priority = $priority:literal), (priority = early), (priority = late)];
         default {
             (feature = "priority") => early,
-            _ => naked
+            _ => ()
         }
     };
     /// Enable support for the priority parameter.
