@@ -1,6 +1,8 @@
 use proc_macro::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
 
-use crate::tokens::{decode_literal_string, decode_literal_strings, expect_literal, expect_numeric_literal};
+use crate::tokens::{
+    decode_literal_string, decode_literal_strings, expect_literal, expect_numeric_literal,
+};
 
 mod xx3;
 
