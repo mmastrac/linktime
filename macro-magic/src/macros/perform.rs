@@ -184,12 +184,8 @@ macro_rules! __parallel {
 #[doc(hidden)]
 macro_rules! __chain {
     // Entry point
-    ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=[$($args:tt)*] ) => {
-        $crate::__chain!( @process $input, [$($args)*], [$next[$next_args]] );
-    };
-    // Exit point, all chain is done
-    ( @process $input:tt, [], [$next:path[$next_args:tt]] ) => {
-        $next ! ( $next_args, $input );
+    ( @entry next=$next:path[$next_args:tt], input=$input:tt, args= [$nextc:path $([$($argsc:tt)*])?, $($stack:tt)*] ) => {
+        $nextc!( @entry next=$crate::__chain[[@continue [$($stack)*] [$next[$next_args]]]], input=$input $(, args=[$($argsc)*])?);
     };
 
     // Continue point, call the next macro in the chain
@@ -197,9 +193,12 @@ macro_rules! __chain {
         $next!( @entry next=$crate::__chain[[@continue [$($stack)*] $final]], input=$input $(, args=[$($args)*])?);
     };
 
-    // Return from macro call
-    ( [@continue [$($stack:tt)*] $final:tt], $input:tt ) => {
-        $crate::__chain!( @process $input, [$($stack)*], $final);
+    // Return from macro call, complete
+    ( [@continue [] [$next:path[$next_args:tt]]], $input:tt ) => {
+        $next ! ( $next_args, $input );
+    };
+    ( [@continue [$next:path $([$($args:tt)*])?, $($stack:tt)*] $final:tt], $input:tt ) => {
+        $next!( @entry next=$crate::__chain[[@continue [$($stack)*] $final]], input=$input $(, args=[$($args)*])?);
     };
 
     ( $($input:tt)* ) => {

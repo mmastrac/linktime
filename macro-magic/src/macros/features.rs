@@ -18,10 +18,12 @@ macro_rules! __declare_features {
                     $crate::__chain[
                         $crate::__pick[1],
                         $crate::__unbrace,
-                        $crate::__for_each[$crate::__fix_docs],
-                        $crate::__for_each[$crate::__fix_example_validate],
-                        $crate::__for_each[$crate::__process_defaults],
-                        $crate::__for_each[$crate::__evaluate_defaults],
+                        $crate::__for_each[$crate::__chain[
+                            $crate::__fix_docs,
+                            $crate::__fix_example_validate,
+                            $crate::__process_defaults,
+                            $crate::__evaluate_defaults,
+                        ]],
                         $crate::__brace[()],
                     ],
                     // (features)
