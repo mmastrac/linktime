@@ -86,7 +86,7 @@ pub fn main() {
     assert!(TYPED_LINK_SECTION.offset_of(&random_u32).is_none());
     eprintln!("CODE_SECTION: {:?}", FN_ARRAY);
     eprintln!("{:?}", FN_ARRAY.as_slice());
-    for f in FN_ARRAY {
+    for (f,) in FN_ARRAY {
         eprintln!("f: {:?}", f);
         f();
         assert!(FN_ARRAY.offset_of(f).is_some());
