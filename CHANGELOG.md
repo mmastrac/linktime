@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## ctor [0.12.0] - Unreleased
+## ctor [0.12.0] - 2026-04-30
 
 ### Added
 
@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file.
   must not be specified (now a compiler error).
 - Migrated to using the `linktime-proc-macro` crate for proc-macro support.
 
-## dtor [0.12.0] - Unreleased
+## dtor [0.12.0] - 2026-04-30
 
 ### Added
 
