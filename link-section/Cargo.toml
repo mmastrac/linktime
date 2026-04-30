@@ -1,6 +1,6 @@
 [package]
 name = "link-section"
-version = "0.11.0"
+version = "0.12.0"
 authors.workspace = true
 edition = "2021"
 description = "Low-level link-section macro support for Rust"
@@ -12,6 +12,8 @@ categories = []
 [features]
 default = ["proc_macro"]
 proc_macro = ["dep:linktime-proc-macro"]
+std = []
+used_linker = []
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["link_section"] }

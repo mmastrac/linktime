@@ -1,3 +1,1 @@
-# linktime
-
-Placeholder crate.
+../README.md
