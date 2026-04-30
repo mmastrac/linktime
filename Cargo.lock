@@ -188,18 +188,14 @@ dependencies = [
 name = "ctor"
 version = "0.11.1"
 dependencies = [
- "ctor-proc-macro",
  "libc-print",
  "link-section",
+ "linktime-proc-macro",
  "macrotest",
  "tempfile",
  "trybuild",
  "walkdir",
 ]
-
-[[package]]
-name = "ctor-proc-macro"
-version = "0.0.13"
 
 [[package]]
 name = "derive-io"
@@ -273,17 +269,13 @@ dependencies = [
 name = "dtor"
 version = "0.11.0"
 dependencies = [
- "dtor-proc-macro",
  "libc-print",
+ "linktime-proc-macro",
  "macrotest",
  "tempfile",
  "trybuild",
  "walkdir",
 ]
-
-[[package]]
-name = "dtor-proc-macro"
-version = "0.0.13"
 
 [[package]]
 name = "dunce"
@@ -485,12 +477,24 @@ dependencies = [
 name = "link-section"
 version = "0.11.0"
 dependencies = [
- "link-section-proc-macro",
+ "linktime-proc-macro",
 ]
 
 [[package]]
-name = "link-section-proc-macro"
-version = "0.0.13"
+name = "linktime"
+version = "0.0.1"
+dependencies = [
+ "libc-print",
+ "linktime-proc-macro",
+ "macrotest",
+ "tempfile",
+ "trybuild",
+ "walkdir",
+]
+
+[[package]]
+name = "linktime-proc-macro"
+version = "0.0.1"
 
 [[package]]
 name = "linux-raw-sys"

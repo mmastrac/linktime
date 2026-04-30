@@ -1,9 +1,9 @@
 [package]
-name = "dtor"
-version = "0.11.0"
+name = "linktime"
+version = "0.0.1"
 authors.workspace = true
 edition = "2021"
-description = "__attribute__((destructor)) for Rust"
+description = "Link-time tricks for Rust"
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
@@ -12,13 +12,17 @@ rust-version = "1.60"
 
 [features]
 default = ["std", "proc_macro"]
+
 std = []
+
+# Enable the proc_macro
 proc_macro = ["dep:linktime-proc-macro"]
+
+# For nightly users, used(linker) may be a better choice
 used_linker = []
-no_warn_on_missing_unsafe = []
 
 [dependencies]
-linktime-proc-macro = { workspace = true, optional = true, features = ["dtor"] }
+linktime-proc-macro = { workspace = true, optional = true }
 
 [dev-dependencies]
 libc-print = "0.1"
@@ -26,10 +30,3 @@ macrotest = "1"
 trybuild = "1"
 walkdir = "2"
 tempfile = "3"
-
-[[example]]
-name = "dtor-example"
-path = "src/example.rs"
-
-[lib]
-name = "dtor"

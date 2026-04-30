@@ -11,10 +11,10 @@ categories = []
 
 [features]
 default = ["proc_macro"]
-proc_macro = ["dep:link-section-proc-macro"]
+proc_macro = ["dep:linktime-proc-macro"]
 
 [dependencies]
-link-section-proc-macro = { workspace = true, optional = true }
+linktime-proc-macro = { workspace = true, optional = true, features = ["link_section"] }
 
 [dev-dependencies]
 

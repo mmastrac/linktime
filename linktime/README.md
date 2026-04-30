@@ -1,0 +1,3 @@
+# linktime
+
+Placeholder crate.

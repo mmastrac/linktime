@@ -19,7 +19,7 @@ std = []
 priority = ["dep:link-section"]
 
 # Enable the proc_macro
-proc_macro = ["dep:ctor-proc-macro"]
+proc_macro = ["dep:linktime-proc-macro"]
 
 # For nightly users, used(linker) may be a better choice
 used_linker = []
@@ -28,7 +28,7 @@ used_linker = []
 no_warn_on_missing_unsafe = []
 
 [dependencies]
-ctor-proc-macro = { workspace = true, optional = true }
+linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }
 link-section = { workspace = true, optional = true, default-features = false }
 
 [dev-dependencies]

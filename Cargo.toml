@@ -3,11 +3,10 @@ resolver = "2"
 members = [ 
     "ctor", 
     "dtor", 
-    "ctor-proc-macro",
-    "dtor-proc-macro",
     "macro-magic",
+    "linktime",
+    "linktime-proc-macro",
     "link-section",
-    "link-section-proc-macro",
     "tests"
 ]
 default-members = [
@@ -29,7 +28,4 @@ ctor = { path = "ctor", default-features = false }
 dtor = { path = "dtor", version = "0.11.0", default-features = false }
 link-section = { path = "link-section", version = "0.11.0", default-features = false }
 
-# Bump all these together
-dtor-proc-macro = { path = "dtor-proc-macro", version = "=0.0.13" }
-ctor-proc-macro = { path = "ctor-proc-macro", version = "=0.0.13" }
-link-section-proc-macro = { path = "link-section-proc-macro", version = "=0.0.13" }
+linktime-proc-macro = { path = "linktime-proc-macro", version = "=0.0.1" }
