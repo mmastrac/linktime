@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
   1000`, then `late`.
 - If a `link_section` or `export_name_prefix` is specified, a `priority` value
   must not be specified (now a compiler error).
+- Migrated to using the `linktime-proc-macro` crate for proc-macro support.
 
 ## dtor [0.12.0] - Unreleased
 
@@ -42,11 +43,13 @@ All notable changes to this project will be documented in this file.
 
 - Removed support code for `ctor`'s deprecated `dtor` macros.
 
+
 ## ctor [0.11.1] - 2026-04-28
 
 ### Changed
 
 - Deprecated ``dtor` macros in favor of `dtor` crate.
+- Migrated to using the `linktime-proc-macro` crate for proc-macro support.
 
 ### Fixed
 

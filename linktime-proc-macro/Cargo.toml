@@ -1,15 +1,18 @@
 [package]
-name = "ctor-proc-macro"
-version = "0.0.13"
+name = "linktime-proc-macro"
+version = "0.1.0"
 authors.workspace = true
 edition = "2021"
-description = "proc-macro support for the ctor crate"
+description = "proc-macro support for the linktime crates"
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
 
 [features]
 default = []
+ctor = []
+dtor = []
+link_section = []
 
 [lib]
 proc-macro = true

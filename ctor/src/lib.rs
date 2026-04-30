@@ -367,7 +367,7 @@ pub mod declarative {
 /// ```
 #[doc(inline)]
 #[cfg(feature = "proc_macro")]
-pub use ctor_proc_macro::ctor;
+pub use ::linktime_proc_macro::ctor;
 
 __declare_features!(
     ctor: __ctor_features;

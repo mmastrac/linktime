@@ -1,0 +1,34 @@
+[package]
+name = "linktime"
+version = "0.1.0"
+authors.workspace = true
+edition = "2021"
+description = "Link-time tricks for Rust"
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+categories = ["no-std"]
+rust-version = "1.60"
+
+[features]
+default = ["std", "proc_macro", "ctor", "dtor", "link-section"]
+
+ctor = ["dep:ctor"]
+dtor = ["dep:dtor"]
+link-section = ["dep:link-section"]
+
+std = ["ctor?/std", "dtor?/std", "link-section?/std"]
+
+# Enable the proc_macro
+proc_macro = ["dep:linktime-proc-macro", "ctor?/proc_macro", "dtor?/proc_macro", "link-section?/proc_macro"]
+
+# For nightly users, prefer #[used(linker)] over #[used]
+used_linker = ["ctor?/used_linker", "dtor?/used_linker", "link-section?/used_linker"]
+
+[dependencies]
+linktime-proc-macro = { workspace = true, optional = true }
+ctor = { workspace = true, optional = true }
+dtor = { workspace = true, optional = true }
+link-section = { workspace = true, optional = true }
+
+[dev-dependencies]

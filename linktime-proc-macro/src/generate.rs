@@ -1,14 +1,4 @@
-#![doc = include_str!("../README.md")]
-
-use std::iter::FromIterator;
-
 use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
-
-#[allow(missing_docs)]
-#[proc_macro_attribute]
-pub fn ctor(attribute: TokenStream, item: TokenStream) -> TokenStream {
-    generate("ctor", "ctor", attribute, item)
-}
 
 /// Generates the equivalent of this Rust code as a TokenStream:
 ///
@@ -17,9 +7,9 @@ pub fn ctor(attribute: TokenStream, item: TokenStream) -> TokenStream {
 /// ::dtor::__support::dtor_parse!(#[dtor] fn foo() { ... });
 /// ```
 #[allow(unknown_lints, tail_expr_drop_order)]
-fn generate(
-    macro_type: &str,
+pub(crate) fn generate(
     macro_crate: &str,
+    macro_type: &str,
     attribute: TokenStream,
     item: TokenStream,
 ) -> TokenStream {
@@ -33,7 +23,6 @@ fn generate(
         if let TokenTree::Ident(ident) = &token {
             if ident.to_string() == "crate_path" {
                 // Look for =
-                #[allow(unknown_lints, tail_expr_drop_order)]
                 if let Some(TokenTree::Punct(punct)) = tokens.next() {
                     if punct.as_char() == '=' {
                         // Collect tokens until comma or end
