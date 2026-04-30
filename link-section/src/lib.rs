@@ -414,7 +414,7 @@ pub mod __support {
                             #[link_section = __]
                             #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_start")]
                             #[no_mangle]
-                            static mut __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
+                            static __START: ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
                     // $crate::__support::add_section_link_attribute!(
@@ -425,7 +425,7 @@ pub mod __support {
                             #[link_section = __]
                             #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_end")]
                             #[no_mangle]
-                            static mut __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
+                            static __END:  ::core::mem::MaybeUninit<[$generic_ty; 1]> = ::core::mem::MaybeUninit::uninit();
                         );
                     // );
 
@@ -577,7 +577,7 @@ pub mod __support {
                 $(#[$meta])*
                 #[used]
                 #[allow(non_upper_case_globals)]
-                $vis static mut $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
+                $vis static $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
                     {
                         $crate::__add_section_link_attribute!(
                             code section $ident $($aux)?
