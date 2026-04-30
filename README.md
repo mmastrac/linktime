@@ -6,13 +6,17 @@ Cross-platform libraries for link-time initialization, finalization and collecti
 
 | crate          | docs                                                                               | version                                                                                                 |
 | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `linktime`     | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)           | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)       |
 | `ctor`         | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                 | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                 |
 | `dtor`         | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                 | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                 |
 | `link-section` | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) |
 
 ## Crates
 
-This project is made up of three crates.
+The `linktime` project comprises three crates, and the top-level `linktime`
+crate aggregates them all.
+
+Pick-and-choose, or import the top-level crate to get all three.
 
 ## [`ctor`](ctor/)
 

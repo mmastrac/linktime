@@ -7,10 +7,10 @@ description = "Low-level link-section macro support for Rust"
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-categories = []
+categories = ["no-std"]
 
 [features]
-default = ["proc_macro"]
+default = ["proc_macro", "std"]
 proc_macro = ["dep:linktime-proc-macro"]
 std = []
 used_linker = []
