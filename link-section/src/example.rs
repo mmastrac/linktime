@@ -32,25 +32,39 @@ pub static AUX_LINK_SECTION: link_section::TypedSection<u32>;
 #[in_section(AUX_LINK_SECTION)]
 pub static AUX_LINKED_U32: u32 = 3;
 
+pub struct LinkedFunction {
+    pub f: fn(),
+    pub other: u8,
+}
+
 /// A function pointerarray in the `data` section.
 #[section]
-pub static FN_ARRAY: link_section::TypedSection<(fn(),)>;
+pub static FN_ARRAY: link_section::TypedSection<LinkedFunction>;
 
 /// A function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub static linked_function: (fn(),) = ({fn linked_function() {
-    eprintln!("linked_function");
-} linked_function},);
+pub static linked_function: LinkedFunction = LinkedFunction {
+    f: {fn linked_function() {
+        eprintln!("linked_function");
+    } linked_function},
+    other: 1,
+};
 
 /// Another function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub static linked_function_2: (fn(),) = ({fn linked_function_2() {
+pub static linked_function_2: LinkedFunction = LinkedFunction {
+    f: {fn linked_function_2() {
     eprintln!("linked_function_2");
-} linked_function_2},);
+    } linked_function_2},
+    other: 2,
+};
 
 /// Yet another function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
-pub static OTHER_FN: (fn(),) = (link_section_function,);
+pub static OTHER_FN: LinkedFunction = LinkedFunction {
+    f: link_section_function,
+    other: 4,
+};
 
 /// A debuggable section in the `data` section.
 #[section]
@@ -85,10 +99,10 @@ pub fn main() {
     let random_u32 = 1234567890;
     assert!(TYPED_LINK_SECTION.offset_of(&random_u32).is_none());
     eprintln!("CODE_SECTION: {:?}", FN_ARRAY);
-    eprintln!("{:?}", FN_ARRAY.as_slice());
+    // eprintln!("{:?}", FN_ARRAY.as_slice());
     for f in FN_ARRAY {
         eprintln!("f: {:?}", f);
-        f.0();
+        (f.f)();
         assert!(FN_ARRAY.offset_of(&f).is_some());
     }
     eprintln!("DEBUGGABLES: {:?}", DEBUGGABLES.as_slice());
