@@ -2,7 +2,7 @@
 
 Cross-platform libraries for link-time initialization, finalization and collection in Rust.
 
-![Build Status](https://github.com/mmastrac/rust-ctor/actions/workflows/rust.yml/badge.svg)
+![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)
 
 | crate          | docs                                                                               | version                                                                                                 |
 | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
