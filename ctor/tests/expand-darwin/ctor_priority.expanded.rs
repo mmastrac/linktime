@@ -1,6 +1,7 @@
 use ctor::ctor;
 #[allow(dead_code)]
 fn foo() {
+    #[link_section = "__TEXT_EXEC,initcode"]
     fn __ctor_private_inner() {
         {
             ::std::io::_print(format_args!("foo\n"));
@@ -8,6 +9,7 @@ fn foo() {
     }
     const _: () = {
         #[allow(unsafe_code, unused_unsafe)]
+        #[link_section = "__TEXT_EXEC,initcode"]
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
