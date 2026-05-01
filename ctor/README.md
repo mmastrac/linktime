@@ -338,6 +338,12 @@ body_link_section = ".text.startup"
 #[cfg(target_os = "freebsd")]
 body_link_section = ".text.startup"
 
+#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+body_link_section = ".text$A"
+
+#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+body_link_section = ".text.startup"
+
 #[cfg(target_vendor = "apple")]
 body_link_section = "__TEXT,__text_startup,regular,pure_instructions"
 

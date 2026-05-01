@@ -390,6 +390,10 @@ __declare_features!(
             (target_os = "linux") => ".text.startup",
             (target_os = "android") => ".text.startup",
             (target_os = "freebsd") => ".text.startup",
+            // Windows MSVC: sort startup functions near the start of the binary
+            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".text$A",
+            // Windows non-MSVC: .text.startup
+            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".text.startup",
             (target_vendor = "apple") => "__TEXT,__text_startup,regular,pure_instructions",
             _ => ()
         }

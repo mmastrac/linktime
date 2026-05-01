@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Re-added link section option for body of `#[ctor]` items.
+- Re-added link section option for body of `#[ctor]` items (supported for Linux/Android/FreeBSD/Apple).
 
 ## ctor [0.12.0] - 2026-04-30
 
