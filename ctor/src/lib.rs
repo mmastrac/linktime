@@ -378,6 +378,26 @@ __declare_features!(
     anonymous {
         attr: [(anonymous) => (anonymous)];
     };
+    /// Place the constructor body in a custom link section. By default, this
+    /// uses the appropriate platform-specific link section.
+    ///
+    /// Co-locating startup functions may improve performance by allowing the binary
+    /// to page them in and out of memory together.
+    body_link_section {
+        attr: [(body(link_section = $body_section:literal)) => ($body_section)];
+        example: "body(link_section = \".text.startup\")";
+        default {
+            (target_os = "linux") => ".text.startup",
+            (target_os = "android") => ".text.startup",
+            (target_os = "freebsd") => ".text.startup",
+            // Windows MSVC: sort startup functions near the start of the binary
+            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".text$A",
+            // Windows non-MSVC: .text.startup
+            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".text.startup",
+            (target_vendor = "apple") => "__TEXT,__text_startup,regular,pure_instructions",
+            _ => ()
+        }
+    };
     /// The path to the `ctor` crate containing the support macros. If you
     /// re-export `ctor` items as part of your crate, you can use this to
     /// redirect the macro’s output to the correct crate.
@@ -410,7 +430,6 @@ __declare_features!(
         attr: [(link_section = $section:literal) => ($section)];
         example: "link_section = \".ctors\"";
         default {
-            // This is no longer supported by Apple
             (target_vendor = "apple") => "__DATA,__mod_init_func,mod_init_funcs",
             // Most LLVM/GCC targets can use .init_array
             (any(

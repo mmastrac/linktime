@@ -1,6 +1,8 @@
 use ctor::ctor;
 use std::collections::HashMap;
 static STATIC_CTOR: ::ctor::statics::Static<HashMap<u32, &'static str>> = {
+    #[allow(unsafe_code)]
+    #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
     fn init() -> HashMap<u32, &'static str> {
         unsafe {
             let m = HashMap::new();
@@ -11,6 +13,7 @@ static STATIC_CTOR: ::ctor::statics::Static<HashMap<u32, &'static str>> = {
 };
 const _: () = {
     #[allow(unsafe_code, unused_unsafe)]
+    #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
     extern "C" fn __ctor_private() {
         { _ = &*STATIC_CTOR }
     }
