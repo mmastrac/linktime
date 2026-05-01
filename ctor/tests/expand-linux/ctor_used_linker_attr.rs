@@ -1,6 +1,6 @@
 use ctor::ctor;
 
-#[ctor(used(linker))]
+#[ctor(unsafe, used(linker))]
 fn foo() {
     println!("foo");
 }
