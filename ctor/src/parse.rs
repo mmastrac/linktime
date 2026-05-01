@@ -703,6 +703,7 @@ macro_rules! __ctor_parse_impl {
     ) ) => {
         $($meta)*
         $vis static $ident: $crate::statics::Static<$ty> = {
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
             $(#[allow(unsafe_code)] #$body_link_meta)?
             fn init() -> $ty {
                 $($unsafe)* {$($body)*}
