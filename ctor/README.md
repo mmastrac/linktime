@@ -225,6 +225,16 @@ The idea for `ctor` was originally inspired by the Neon project.
 
 
 </td></tr>
+<tr><td><code>body(link_section = ".text.startup")</code></td><td>
+
+ Place the constructor body in a custom link section. By default, this
+ uses the appropriate platform-specific link section.
+ 
+ Co-locating startup functions may improve performance by allowing the binary
+ to page them in and out of memory together.
+
+
+</td></tr>
 <tr><td><code>crate_path = ::path::to::ctor::crate</code></td><td>
 
  The path to the `ctor` crate containing the support macros. If you
@@ -315,6 +325,25 @@ The idea for `ctor` was originally inspired by the Neon project.
 </table>
 
 # Defaults
+
+## `body_link_section`
+
+ ```rust
+#[cfg(target_os = "linux")]
+body_link_section = ".text.startup"
+
+#[cfg(target_os = "android")]
+body_link_section = ".text.startup"
+
+#[cfg(target_os = "freebsd")]
+body_link_section = ".text.startup"
+
+#[cfg(target_vendor = "apple")]
+body_link_section = "__TEXT,__text_startup,regular,pure_instructions"
+
+ // default
+body_link_section = ()
+ ```
 
 ## `export_name_prefix`
 
