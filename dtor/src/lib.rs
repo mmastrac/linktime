@@ -1,4 +1,4 @@
-#![recursion_limit = "512"]
+#![recursion_limit = "256"]
 #![no_std]
 #![doc = include_str!("../docs/BUILD.md")]
 //! # dtor

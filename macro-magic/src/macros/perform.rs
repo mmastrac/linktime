@@ -264,6 +264,17 @@ macro_rules! __zip {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __pick {
+    // Lower-recursion path for single items
+    ( @entry next=$next:path[$next_args:tt], input=($i0:tt $($rest:tt)*), args=[0]) => {
+        $next ! ( $next_args, ($i0) );
+    };
+    ( @entry next=$next:path[$next_args:tt], input=($i0:tt $i1:tt $($rest:tt)*), args=[1]) => {
+        $next ! ( $next_args, ($i1) );
+    };
+    ( @entry next=$next:path[$next_args:tt], input=($i0:tt $i1:tt $i2:tt $($rest:tt)*), args=[2]) => {
+        $next ! ( $next_args, ($i2) );
+    };
+
     ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=$args:tt ) => {
         $crate::__pick!( @process $input, $input, (), $args, [$next[$next_args]] );
     };
@@ -296,19 +307,25 @@ macro_rules! __pick {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __for_each {
-    ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=[$macro_name:path $([$($args:tt)*])?] ) => {
-        $crate::__for_each!( @process accum=(), input=$input, args=[$macro_name $([$($args)*])?], next=[$next[$next_args]] );
+    // Entry, empty
+    ( @entry next=$next:path[$next_args:tt], input=(), args=[$macro_name:path $([$($args:tt)*])?] ) => {
+        $next ! ( $next_args, () );
     };
-    ( @process accum=$accum:tt, input=(), args=$args:tt, next=[$next:path [$next_args:tt]] ) => {
-        $next ! ( $next_args, $accum );
-    };
-    ( @process accum=$accum:tt, input=($input:tt $($rest:tt)*), args=[$macro_name:path $( [$($macro_args:tt)*] )?], next=$next:tt) => {
+    // Entry, dispatch first item
+    ( @entry next=$next:path[$next_args:tt], input=($input:tt $($rest:tt)*), args=[$macro_name:path $([$($macro_args:tt)*])?] ) => {
         $macro_name ! ( @entry next=$crate::__for_each[
-            [@continue $accum, ($($rest)*), [$macro_name $( [$($macro_args)*] )?], $next]
+            [@continue (), ($($rest)*), [$macro_name $( [$($macro_args)*] )?], [$next[$next_args]]]
         ], input=($input) $(, args=[$($macro_args)*])? );
     };
-    ( [@continue ($($accum:tt)*), $input:tt, $args:tt, $next:tt], ($($output:tt)*) ) => {
-        $crate::__for_each!( @process accum=($($accum)* $($output)*), input=$input, args=$args, next=$next );
+    // Continue, still more
+    ( [@continue ($($accum:tt)*), ($input:tt $($rest:tt)*), [$macro_name:path $( [$($macro_args:tt)*] )?], $next:tt], ($($output:tt)*) ) => {
+        $macro_name ! ( @entry next=$crate::__for_each[
+            [@continue ($($accum)* $($output)*), ($($rest)*), [$macro_name $( [$($macro_args)*] )?], $next]
+        ], input=($input) $(, args=[$($macro_args)*])? );
+    };
+    // Continue, done
+    ( [@continue ($($accum:tt)*), (), $macro:tt, [$next:path[$next_args:tt]]], ($($output:tt)*) ) => {
+        $next ! ( $next_args, ($($accum)* $($output)*) );
     };
     ( $($input:tt)* ) => {
         const _: () = { compile_error!(concat!("Unexpected input for __for_each: ", stringify!($($input)*))); };
