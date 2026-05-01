@@ -37,6 +37,7 @@ macro_rules! __dtor_parse_impl {
             std = $std:tt : $std_spec:ident,
             used_linker = $used_linker:tt : $used_linker_spec:ident,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = ($($unsafe:tt)*),
         item = ($vis:vis $(unsafe)? $( extern $abi:literal )? fn $name:ident () $( -> () )? {
@@ -82,6 +83,7 @@ macro_rules! __dtor_parse_impl {
             anonymous = $anonymous:tt : $anonymous_spec:ident,
             $($rest:tt)*
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($item:item)
@@ -97,6 +99,7 @@ macro_rules! __dtor_parse_impl {
             anonymous = $anonymous:tt : $anonymous_spec:ident,
             $($rest:tt)*
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($($item:tt)*)

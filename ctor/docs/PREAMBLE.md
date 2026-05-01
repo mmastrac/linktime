@@ -141,7 +141,7 @@ fn register_driver(name: &'static str, driver: impl Driver) {
     DRIVERS.lock().unwrap().push(Box::new(driver));
 }
 
-#[ctor(priority = late)]
+#[ctor(unsafe, priority = late)]
 fn walk_drivers() {
     for driver in DRIVERS.lock().unwrap().iter() {
         // ...

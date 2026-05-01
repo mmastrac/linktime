@@ -7,9 +7,9 @@ use ctor::ctor;
 use libc_print::*;
 use std::collections::HashMap;
 
-#[ctor]
+#[ctor(unsafe)]
 /// This is an immutable static, evaluated at init time
-static STATIC_CTOR: HashMap<u32, &'static str> = unsafe {
+static STATIC_CTOR: HashMap<u32, &'static str> = {
     let mut m = HashMap::new();
     _ = m.insert(0, "foo");
     _ = m.insert(1, "bar");
@@ -18,45 +18,42 @@ static STATIC_CTOR: HashMap<u32, &'static str> = unsafe {
     m
 };
 
-#[ctor(anonymous)]
-unsafe fn anonymous_ctor() {
+#[ctor(unsafe, anonymous)]
+fn anonymous_ctor() {
     libc_println!("ctor_anonymous (#1)");
     // We can still reference the function itself
     let _f = anonymous_ctor;
 }
 
-#[ctor(anonymous)]
-unsafe fn anonymous_ctor() {
+#[ctor(unsafe, anonymous)]
+fn anonymous_ctor() {
     libc_println!("ctor_anonymous (#2)");
 }
 
 const _: () = {
-    #[ctor]
-    unsafe fn anonymous_ctor() {
+    #[ctor(unsafe)]
+    fn anonymous_ctor() {
         libc_println!("ctor_anonymous (#3)");
         let _f = anonymous_ctor;
     }
 };
 
-#[ctor]
-#[allow(unsafe_code)]
-unsafe fn ctor() {
+#[ctor(unsafe)]
+fn ctor() {
     libc_println!("ctor");
     // We can still reference the function itself
     let _f = ctor;
 }
 
-#[ctor(priority = 1)]
-#[allow(unsafe_code)]
-unsafe fn ctor_priority_one() {
+#[ctor(unsafe, priority = 1)]
+fn ctor_priority_one() {
     libc_println!("ctor_priority_one");
     // We can still reference the function itself
     let _f = ctor_priority_one;
 }
 
-#[ctor]
-#[allow(unsafe_code)]
-unsafe fn ctor_unsafe() {
+#[ctor(unsafe)]
+fn ctor_unsafe() {
     libc_println!("ctor_unsafe");
 }
 

@@ -77,11 +77,16 @@ macro_rules! __parse_item {
                                 // (meta)
                                 $crate::__call[$macro_name[$macro_name => @self]],
                                 // (self)(other)
-                                $crate::__separate[
-                                    // (self)
-                                    $crate::__extract_meta[$macro_name],
-                                    // (other)
-                                    $crate::__brace[()],
+                                $crate::__parallel[
+                                    // (self)(other)
+                                    $crate::__pick[0],
+                                    // (self)(other)
+                                    $crate::__separate[
+                                        // (self)
+                                        $crate::__extract_meta[$macro_name],
+                                        // (other)
+                                        $crate::__brace[()],
+                                    ],
                                 ],
                             ],
                         ],
@@ -102,15 +107,21 @@ macro_rules! __parse_item {
 #[doc(hidden)]
 macro_rules! __finish_item {
     ( @entry next=$next:path[$next_args:tt], input=(
+        ($self:tt)
         $($feature:ident = $feature_value:tt $feature_value_what:ident,)*
         ($(#[$other_meta:meta])*)
         $($item:tt)*
     ) ) => {
         $next ! ( $next_args, (
             features = ($($feature = $feature_value: $feature_value_what,)*),
+            self = $self,
             meta = ($(#[$other_meta])*),
             item = ($($item)*)
         ) );
+    };
+
+    ( $($input:tt)* ) => {
+        const _: () = { compile_error!(concat!("Unexpected input: ", stringify!($($input)*))); };
     };
 }
 
@@ -145,11 +156,13 @@ macro_rules! __split_meta {
 macro_rules! __extract_unsafe {
     ( @entry next=$next:path[$next_args:tt], input=(
         features = $features:tt,
+        self = $self:tt,
         meta = $meta:tt,
         item = ($vis:vis unsafe $($rest:tt)*)
     ) ) => {
         $next ! ( $next_args, (
             features = $features,
+            self = $self,
             meta = $meta,
             unsafe = (unsafe),
             item = ($vis unsafe $($rest)*)
@@ -158,11 +171,13 @@ macro_rules! __extract_unsafe {
 
     ( @entry next=$next:path[$next_args:tt], input=(
         features = $features:tt,
+        self = $self:tt,
         meta = $meta:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = unsafe $($rest:tt)*)
     ) ) => {
         $next ! ( $next_args, (
             features = $features,
+            self = $self,
             meta = $meta,
             unsafe = (unsafe),
             item = ($vis static $ident : $ty = unsafe $($rest)*)
@@ -171,11 +186,13 @@ macro_rules! __extract_unsafe {
 
     ( @entry next=$next:path[$next_args:tt], input=(
         features = $features:tt,
+        self = $self:tt,
         meta = $meta:tt,
         item = $item:tt
     ) ) => {
         $next ! ( $next_args, (
             features = $features,
+            self = $self,
             meta = $meta,
             unsafe = (),
             item = $item

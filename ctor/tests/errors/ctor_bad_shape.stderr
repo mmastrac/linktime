@@ -4,8 +4,8 @@ error: Invalid ctor item. Expected a function with no args, return value, or typ
        - static $name : $ty = [unsafe] { ... };
  --> tests/errors/ctor_bad_shape.rs:3:1
   |
-3 | #[ctor]
-  | ^^^^^^^
+3 | #[ctor(unsafe)]
+  | ^^^^^^^^^^^^^^^
   |
   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -15,8 +15,8 @@ error: Invalid ctor item. Expected a function with no args, return value, or typ
        - static $name : $ty = [unsafe] { ... };
  --> tests/errors/ctor_bad_shape.rs:8:1
   |
-8 | #[ctor]
-  | ^^^^^^^
+8 | #[ctor(unsafe)]
+  | ^^^^^^^^^^^^^^^
   |
   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -26,8 +26,8 @@ error: Invalid ctor item. Expected a function with no args, return value, or typ
        - static $name : $ty = [unsafe] { ... };
   --> tests/errors/ctor_bad_shape.rs:15:5
    |
-15 |     #[ctor]
-   |     ^^^^^^^
+15 |     #[ctor(unsafe)]
+   |     ^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -36,8 +36,8 @@ error[E0401]: can't use generic parameters from outer item
    |
 24 | impl<T: Default> FooGeneric<T> {
    |      - type parameter from outer item
-25 |     #[ctor]
-   |     ------- generic parameter used in this inner function
+25 |     #[ctor(unsafe)]
+   |     --------------- generic parameter used in this inner function
 ...
 28 |         _ = T::default();
    |             ^ use of generic parameter from outer item

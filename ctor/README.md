@@ -152,7 +152,7 @@ fn register_driver(name: &'static str, driver: impl Driver) {
     DRIVERS.lock().unwrap().push(Box::new(driver));
 }
 
-#[ctor(priority = late)]
+#[ctor(unsafe, priority = late)]
 fn walk_drivers() {
     for driver in DRIVERS.lock().unwrap().iter() {
         // ...
@@ -208,7 +208,6 @@ The idea for `ctor` was originally inspired by the Neon project.
 
 | Cargo feature | Description |
 | --- | --- |
-| `no_warn_on_missing_unsafe` |  Do not warn when a ctor is missing the `unsafe` keyword. |
 | `priority_enabled` |  Enable support for the priority parameter. |
 | `proc_macro` |  Enable support for the proc-macro `#[ctor]` attribute. The declarative form (`ctor!(...)`) is always available. It is recommended that crates re-exporting the `ctor` macro disable this feature and only use the declarative form. |
 | `std` |  Enable support for the standard library. |
@@ -285,7 +284,11 @@ The idea for `ctor` was originally inspired by the Neon project.
 </td></tr>
 <tr><td><code>unsafe</code></td><td>
 
- Marks a ctor as unsafe. Recommended.
+ Marks a ctor as unsafe. Required.
+
+ The `ctor` crate will warn if there is no unsafe flag in the `ctor`
+ annotation. This warning for a missing unsafe keyword can be hidden
+ by passing `RUSTFLAGS="--cfg no_fail_on_missing_unsafe"` to Cargo.
 
 
 </td></tr>
@@ -390,6 +393,16 @@ link_section = ()
 
  // default
 link_section = (compile_error! ("Unsupported target for #[ctor]"))
+ ```
+
+## `no_fail_on_missing_unsafe`
+
+ ```rust
+#[cfg(no_fail_on_missing_unsafe)]
+no_fail_on_missing_unsafe = (no_fail_on_missing_unsafe)
+
+ // default
+no_fail_on_missing_unsafe = ()
  ```
 
 ## `priority`

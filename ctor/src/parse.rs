@@ -45,13 +45,14 @@ macro_rules! __ctor_parse_impl {
             export_name_prefix = $export_name_prefix:tt: $export_name_prefix_spec:ident,
             link_section = $link_section:tt: $link_section_spec:ident,
             naked = $naked:tt: $naked_spec:ident,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt: $no_warn_on_missing_unsafe_spec:ident,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt: $no_fail_on_missing_unsafe_spec:ident,
             priority = $priority:tt: $priority_spec:ident,
             priority_enabled = $priority_enabled:tt: $priority_enabled_spec:ident,
             proc_macro = $proc_macro:tt: $proc_macro_spec:ident,
             std = $std:tt: $std_spec:ident,
             used_linker = $used_linker:tt: $used_linker_spec:ident,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = $item:tt
@@ -67,8 +68,9 @@ macro_rules! __ctor_parse_impl {
                         link_section = $link_section,
                         used_linker = $used_linker,
                     ),
-                    no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe,
+                    no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
                 ),
+                self = $self,
                 meta = $meta,
                 unsafe = $unsafe,
                 item = $item
@@ -86,8 +88,9 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = $item:tt
@@ -96,9 +99,10 @@ macro_rules! __ctor_parse_impl {
             features = (
                 anonymous = $anonymous,
                 linker_options = $linker_options,
-                no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe,
+                no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
                 priority = $priority,
             ),
+            self = $self,
             meta = $meta,
             unsafe = $unsafe,
             item = $item
@@ -110,9 +114,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = ($($unsafe:tt)?),
         item = ($vis:vis $(unsafe)? $( extern $abi:literal )? fn $name:ident () $( -> () )? {
@@ -124,9 +129,10 @@ macro_rules! __ctor_parse_impl {
                 anonymous = $anonymous,
                 linker_options = $linker_options,
                 link_name = $name,
-                no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe,
+                no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
                 priority = $priority,
             ),
+            self = $self,
             meta = $meta,
             unsafe = ($($unsafe)?),
             item = ($vis $($unsafe)? $( extern $abi )? fn $name () {
@@ -139,9 +145,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? { $literal:literal };)
@@ -153,9 +160,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? const $body:block;)
@@ -167,9 +175,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? $literal:literal;)
@@ -181,9 +190,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = ($($unsafe:tt)?),
         item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? { $($body:tt)* };)
@@ -193,9 +203,10 @@ macro_rules! __ctor_parse_impl {
                 anonymous = $anonymous,
                 linker_options = $linker_options,
                 link_name = $ident,
-                no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe,
+                no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
                 priority = $priority,
             ),
+            self = $self,
             meta = $meta,
             unsafe = ($($unsafe)?),
             item = ($vis static $ident : $ty = $($unsafe)? { $($body)* };)
@@ -206,9 +217,10 @@ macro_rules! __ctor_parse_impl {
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
             priority = $priority:tt,
         ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = ($item:item)
@@ -221,44 +233,29 @@ macro_rules! __ctor_parse_impl {
              - static $name : $ty = [unsafe] { ... };");
     };
 
-    // Step 3: Compute no_warn_on_missing_unsafe
+    // Step 3: Compute no_fail_on_missing_unsafe
 
-    // warn iff no_warn_on_missing_unsafe is not present AND unsafe is not present
+    // warn iff no_fail_on_missing_unsafe is not present AND unsafe is not present
     ( @entry next=$next:path[$next_args:tt], input=(
         features = (
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
             link_name = $link_name:tt,
-            no_warn_on_missing_unsafe = (),
+            no_fail_on_missing_unsafe = (),
             priority = $priority:tt,
         ),
+        self = (),
         meta = $meta:tt,
         unsafe = (),
         item = $item:tt
     ) ) => {
-        const _: () = {
-            #[deprecated="ctor deprecation note:\n\n\
-            Use of #[ctor] without `#[ctor(unsafe)]` or `unsafe fn` is deprecated. As code execution\n\
-            before main is unsupported by most Rust runtime functions, these functions must be marked\n\
-            `unsafe`."]
-            const fn ctor_without_unsafe_is_deprecated() {}
-            #[allow(unused)]
-            static UNSAFE_WARNING: () = {
-                ctor_without_unsafe_is_deprecated()
-            };
-        };
-
-        $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
-            features = (
-                anonymous = $anonymous,
-                linker_options = $linker_options,
-                link_name = $link_name,
-                priority = $priority,
-            ),
-            meta = $meta,
-            unsafe = (),
-            item = $item
-        ));
+        compile_error!(concat!("Missing unsafe keyword in #[ctor] annotation. \
+        Use #[ctor(unsafe)]. This error can be suppressed by passing \
+        `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
+        `config.toml` file.\n\n\
+        \n\
+        #[ctor]\n\
+        ^^^^^^^------- replace this with #[ctor(unsafe)]\n"));
     };
 
     ( @entry next=$next:path[$next_args:tt], input=(
@@ -266,9 +263,32 @@ macro_rules! __ctor_parse_impl {
             anonymous = $anonymous:tt,
             linker_options = $linker_options:tt,
             link_name = $link_name:tt,
-            no_warn_on_missing_unsafe = $no_warn_on_missing_unsafe:tt,
+            no_fail_on_missing_unsafe = (),
             priority = $priority:tt,
         ),
+        self = ($($self:tt)*),
+        meta = $meta:tt,
+        unsafe = (),
+        item = $item:tt
+    ) ) => {
+        compile_error!(concat!("Missing unsafe keyword in #[ctor] annotation. \
+        Use #[ctor(unsafe, ", stringify!($($self)*), ")]. This error can be suppressed by passing \
+        `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
+        `config.toml` file.\n\n\
+        \n\
+        #[ctor(", stringify!($($self)*), ")]\n\
+        ^------- replace this with #[ctor(unsafe, ", stringify!($($self)*), ")]\n"));
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = (
+            anonymous = $anonymous:tt,
+            linker_options = $linker_options:tt,
+            link_name = $link_name:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
+            priority = $priority:tt,
+        ),
+        self = $self:tt,
         meta = $meta:tt,
         unsafe = $unsafe:tt,
         item = $item:tt

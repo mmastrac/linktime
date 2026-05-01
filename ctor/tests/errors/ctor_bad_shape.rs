@@ -1,18 +1,18 @@
 use ctor::ctor;
 
-#[ctor]
+#[ctor(unsafe)]
 fn foo() -> u32 {
     1
 }
 
-#[ctor]
+#[ctor(unsafe)]
 fn foo(_x: u32) {
 }
 
 struct Foo;
 
 impl Foo {
-    #[ctor]
+    #[ctor(unsafe)]
     fn foo(self) {
     }
 }
@@ -22,7 +22,7 @@ struct FooGeneric<T> {
 }
 
 impl<T: Default> FooGeneric<T> {
-    #[ctor]
+    #[ctor(unsafe)]
     fn foo() {
         // can't use generic parameters from outer item
         _ = T::default();

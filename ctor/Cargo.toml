@@ -11,7 +11,7 @@ categories = ["no-std"]
 rust-version = "1.60"
 
 [features]
-default = ["std", "proc_macro", "no_warn_on_missing_unsafe", "priority"]
+default = ["std", "proc_macro", "priority"]
 
 std = []
 
@@ -24,8 +24,8 @@ proc_macro = ["dep:linktime-proc-macro"]
 # For nightly users, used(linker) may be a better choice
 used_linker = []
 
-# As we are warning on missing unsafe, allow users to temporarily opt out
-no_warn_on_missing_unsafe = []
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(no_fail_on_missing_unsafe)'] }
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }
