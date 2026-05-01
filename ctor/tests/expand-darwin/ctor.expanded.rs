@@ -1,6 +1,7 @@
 use ctor::ctor;
 #[allow(dead_code)]
 unsafe fn foo() {
+    #[allow(unsafe_code)]
     #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
     unsafe fn __ctor_private_inner() {
         {

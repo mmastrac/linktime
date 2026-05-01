@@ -683,7 +683,7 @@ macro_rules! __ctor_parse_impl {
         $vis $($unsafe)* $( extern $abi )? fn $name () {
             // The outer function may be attached to a struct, so we generate an
             // inner function that is freestanding and call it from both places.
-            $(#$body_link_meta)?
+            $(#[allow(unsafe_code)] #$body_link_meta)?
             $($unsafe)* $( extern $abi )? fn __ctor_private_inner() {
                 $($body)*
             }
@@ -702,7 +702,7 @@ macro_rules! __ctor_parse_impl {
     ) ) => {
         $($meta)*
         $vis static $ident: $crate::statics::Static<$ty> = {
-            $(#$body_link_meta)?
+            $(#[allow(unsafe_code)] #$body_link_meta)?
             fn init() -> $ty {
                 $($unsafe)* {$($body)*}
             }
@@ -725,7 +725,7 @@ macro_rules! __ctor_parse_impl {
             #$used_linker_meta
             static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
                 #[allow(unused_unsafe)]
-                $(#$body_link_meta)?
+                $(#[allow(unsafe_code)] #$body_link_meta)?
                 extern "C" fn __ctor_private() {
                     $body
                 }
