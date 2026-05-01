@@ -2,12 +2,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static STATE: AtomicUsize = AtomicUsize::new(0);
 
-#[ctor::ctor]
+#[ctor::ctor(unsafe)]
 pub fn init() {
     STATE.fetch_add(1, Ordering::Relaxed);
 }
 
-#[ctor::ctor(priority = 1)]
+#[ctor::ctor(unsafe, priority = 1)]
 pub fn init_2() {
     STATE.fetch_add(1, Ordering::Relaxed);
 }
