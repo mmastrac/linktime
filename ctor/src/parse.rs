@@ -683,6 +683,7 @@ macro_rules! __ctor_parse_impl {
         $vis $($unsafe)* $( extern $abi )? fn $name () {
             // The outer function may be attached to a struct, so we generate an
             // inner function that is freestanding and call it from both places.
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
             $(#[allow(unsafe_code)] #$body_link_meta)?
             $($unsafe)* $( extern $abi )? fn __ctor_private_inner() {
                 $($body)*
@@ -741,6 +742,7 @@ macro_rules! __ctor_parse_impl {
         used=(#$used_linker_meta:tt),
      ) body=$body:tt ) => {
         const _: () = {
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
             #[allow(unsafe_code, unused_unsafe)]
             $(#$body_link_meta)?
             extern "C" fn __ctor_private() {
