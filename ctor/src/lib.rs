@@ -380,7 +380,7 @@ __declare_features!(
     };
     /// Place the constructor body in a custom link section. By default, this
     /// uses the appropriate platform-specific link section.
-    /// 
+    ///
     /// Co-locating startup functions may improve performance by allowing the binary
     /// to page them in and out of memory together.
     body_link_section {
