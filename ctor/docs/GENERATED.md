@@ -20,7 +20,7 @@
 
 
 </td></tr>
-<tr><td><code>crate_path = $path : pat</code></td><td>
+<tr><td><code>crate_path = ::path::to::ctor::crate</code></td><td>
 
  The path to the `ctor` crate containing the support macros. If you
  re-export `ctor` items as part of your crate, you can use this to
@@ -33,7 +33,7 @@
 
 
 </td></tr>
-<tr><td><code>export_name_prefix = $export_name_prefix_str : literal</code></td><td>
+<tr><td><code>export_name_prefix = "ctor_"</code></td><td>
 
  Specify a custom export name prefix for the constructor function.
 
@@ -43,10 +43,28 @@
 
 
 </td></tr>
-<tr><td><code>link_section = $section : literal</code></td><td>
+<tr><td><code>link_section = ".ctors"</code></td><td>
 
  Place the constructor function pointer in a custom link section. By
  default, this uses the appropriate platform-specific link section.
+
+
+</td></tr>
+<tr><td><code>naked</code></td><td>
+
+ Use the least-possibly mangled version of the linker invocation for this
+ constructor. This is not recommended for general use as it may prevent
+ authors of binary crates from having low-level control over the order of
+ initialization.
+
+ There are no guarantees about the order of execution of constructors
+ with this attribute, just that it will be called at some point before
+ `main`.
+
+ `naked` constructors are always executed directly by the underlying C
+ library and/or dynamic loader.
+
+ `naked` cannot be used with the `priority` attribute.
 
 
 </td></tr>
@@ -56,18 +74,16 @@
 
 
 </td></tr>
-<tr><td><code>priority = $priority_value : tt</code></td><td>
+<tr><td><code>priority = N | early | late</code></td><td>
 
  The priority of the constructor. Higher-`N`-priority constructors are
  run last. `N` must be between 0 and 999 inclusive for ordering
  guarantees (`N` >= 1000 ordering is platform-defined).
 
  Priority is specified as an isize, string literal, or the identifiers
- `early`, `late`, or `naked`. The integer value will be clamped to a
+ `early` or `late`. The integer value will be clamped to a
  platform-defined range (typically 0-65535), while the string value will
- unprocessed. `naked` indicates that the constructor should not use a
- priority value, and should use the low-level platform-specific
- unprioritized mechanism.
+ unprocessed.
 
  Priority is applied as follows:
 
@@ -166,6 +182,6 @@ priority = early
  # ; };
 
  // default
-priority = naked
+priority = ()
  # }
  ```

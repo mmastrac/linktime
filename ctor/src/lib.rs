@@ -38,7 +38,7 @@ crate::__ctor_parse_internal!(
     /// targets. This is awkwardly placed in the root module because it needs to
     /// use a generated macro and we cannot use an absolute path to it. (see
     /// <https://github.com/rust-lang/rust/issues/52234>)
-    #[ctor(unsafe, priority = naked)]
+    #[ctor(unsafe, naked)]
     #[allow(unsafe_code)]
     fn priority_ctor() {
         unsafe {
@@ -438,6 +438,22 @@ __declare_features!(
             _ => (compile_error!("Unsupported target for #[ctor]"))
         }
     };
+    /// Use the least-possibly mangled version of the linker invocation for this
+    /// constructor. This is not recommended for general use as it may prevent
+    /// authors of binary crates from having low-level control over the order of
+    /// initialization.
+    ///
+    /// There are no guarantees about the order of execution of constructors
+    /// with this attribute, just that it will be called at some point before
+    /// `main`.
+    ///
+    /// `naked` constructors are always executed directly by the underlying C
+    /// library and/or dynamic loader.
+    ///
+    /// `naked` cannot be used with the `priority` attribute.
+    naked {
+        attr: [(naked) => (naked)];
+    };
     no_warn_on_missing_unsafe {
         /// crate
         /// Do not warn when a ctor is missing the `unsafe` keyword.
@@ -451,11 +467,9 @@ __declare_features!(
     /// guarantees (`N` >= 1000 ordering is platform-defined).
     ///
     /// Priority is specified as an isize, string literal, or the identifiers
-    /// `early`, `late`, or `naked`. The integer value will be clamped to a
+    /// `early` or `late`. The integer value will be clamped to a
     /// platform-defined range (typically 0-65535), while the string value will
-    /// unprocessed. `naked` indicates that the constructor should not use a
-    /// priority value, and should use the low-level platform-specific
-    /// unprioritized mechanism.
+    /// unprocessed.
     ///
     /// Priority is applied as follows:
     ///
@@ -472,10 +486,11 @@ __declare_features!(
     /// length range in ascending order (ie: 10000 will run before 20000).
     priority {
         attr: [(priority = $priority_value:tt) => ($priority_value)];
-        validate: [(priority = $priority:literal), (priority = early), (priority = late)];
+        example: "priority = N | early | late";
+        validate: [($priority:literal), (early), (late)];
         default {
             (feature = "priority") => early,
-            _ => naked
+            _ => ()
         }
     };
     /// Enable support for the priority parameter.

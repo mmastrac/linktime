@@ -1,3 +1,4 @@
+#![recursion_limit = "150"]
 use ::macro_magic::*;
 
 __declare_features!(
@@ -14,6 +15,8 @@ __declare_features!(
     };
     priority {
         attr: [(priority = $priority_value:literal) => ($priority_value)];
+        example: "priority = N";
+        validate: [($numeric:literal), (early), (late)];
     };
     /// Make the ctor function anonymous.
     anonymous {

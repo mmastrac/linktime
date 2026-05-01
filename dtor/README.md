@@ -135,13 +135,13 @@ fn dtor_atexit() {
 
 
 </td></tr>
-<tr><td><code>crate_path = $path : pat</code></td><td>
+<tr><td><code>crate_path = ::path::to::dtor::crate</code></td><td>
 
  Specify a custom crate path for the `dtor` crate. Used when re-exporting the dtor macro.
 
 
 </td></tr>
-<tr><td><code>ctor(export_name_prefix = $ctor_export_name_prefix_str : literal)</code></td><td>
+<tr><td><code>ctor(export_name_prefix = "ctor_")</code></td><td>
 
  Specify a custom export name prefix for the constructor function.
 
@@ -151,13 +151,13 @@ fn dtor_atexit() {
 
 
 </td></tr>
-<tr><td><code>ctor(link_section = $ctor_link_section_name : literal)</code></td><td>
+<tr><td><code>ctor(link_section = ".ctors")</code></td><td>
 
  Place the initialization function pointer in a custom link section.
 
 
 </td></tr>
-<tr><td><code>export_name_prefix = $export_name_prefix_str : literal</code></td><td>
+<tr><td><code>export_name_prefix = "ctor_"</code></td><td>
 
  Specify a custom export name prefix for the destructor function.
 
@@ -167,13 +167,13 @@ fn dtor_atexit() {
 
 
 </td></tr>
-<tr><td><code>link_section = $section : literal</code></td><td>
+<tr><td><code>link_section = ".dtors"</code></td><td>
 
  Place the destructor function pointer in a custom link section.
 
 
 </td></tr>
-<tr><td><code>method = $method_id : ident</code></td><td>
+<tr><td><code>method = term|unload|at_module_exit|at_binary_exit|linker</code></td><td>
 
  Specify the dtor method.
 

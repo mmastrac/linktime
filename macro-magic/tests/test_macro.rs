@@ -3,7 +3,7 @@
 
 use ::macro_magic::*;
 
-__test!(__parse_feature_input:
+__test!(__parse_feature_input[$]:
     (
         my_macro: my_macro_parse;
 
@@ -23,6 +23,8 @@ __test!(__parse_feature_input:
             docs = [];
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ((stringify! (link_section($section:literal))));
+            validate = ([$link_section : tt]);
             default = [
                 ((target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs")
                 ((target_vendor = "pc") => (compile_error!("Link section dtor is not supported on PC")))
@@ -40,6 +42,8 @@ __test!(__process_defaults:
             feature = link_section;
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ();
+            validate = [];
             default = [
                 ((a = "apple") => 1)
                 ((b = "pc") => (compile_error!("2")))
@@ -53,6 +57,8 @@ __test!(__process_defaults:
             feature_attr = link_section;
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
+            example = ();
+            validate = [];
             original_defaults =
             {((a = "apple") => 1) ((b = "pc") => (compile_error!("2")))
                 ((c = "linux") => 3) (_ => (compile_error!("4")))};
@@ -111,7 +117,7 @@ __declare_features!(
     /// Set the ctor priority to a given value.
     priority {
         attr: [(priority = $priority_value:tt) => ($priority_value)];
-        validate: [(priority = $priority:literal), (priority = early), (priority = late)];
+        validate: [($priority:literal), (early), (late)];
     };
     /// Place the initialization function pointer in a custom link section. This
     /// may cause the initialization function to fail to run or run earlier or

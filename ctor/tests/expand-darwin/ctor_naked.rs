@@ -1,4 +1,4 @@
 use ctor::ctor;
 
-#[ctor(unsafe, priority = naked)]
+#[ctor(unsafe, naked)]
 fn naked() {}

@@ -229,7 +229,7 @@ __declare_features!(
     method {
         attr: [(method = $method_id:ident) => ($method_id)];
         example: "method = term|unload|at_module_exit|at_binary_exit|linker";
-        validate: [(method = term), (method = unload), (method = at_module_exit), (method = at_binary_exit), (method = linker)];
+        validate: [(term), (unload), (at_module_exit), (at_binary_exit), (linker)];
         default {
             (target_vendor = "apple") => at_module_exit,
             (target_vendor = "pc") => at_module_exit,
