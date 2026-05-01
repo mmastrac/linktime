@@ -236,7 +236,7 @@ macro_rules! __parse_feature_input {
                         validate = (
                             $( $( [
                                 $( $dollar $validate? )* $dollar (()) ?
-                            ] )? )? 
+                            ] )? )?
                             [$dollar $feature:tt]
                         );
                         default = [
