@@ -24,7 +24,7 @@ __test!(__parse_feature_input[$]:
             attr = [(link_section($section:literal)) => ($section)];
             attr_docs = [];
             example = ((stringify! (link_section($section:literal))));
-            validate = ([$value : tt]);
+            validate = ([$link_section : tt]);
             default = [
                 ((target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs")
                 ((target_vendor = "pc") => (compile_error!("Link section dtor is not supported on PC")))
@@ -117,7 +117,7 @@ __declare_features!(
     /// Set the ctor priority to a given value.
     priority {
         attr: [(priority = $priority_value:tt) => ($priority_value)];
-        validate: [(priority = $priority:literal), (priority = early), (priority = late)];
+        validate: [($priority:literal), (early), (late)];
     };
     /// Place the initialization function pointer in a custom link section. This
     /// may cause the initialization function to fail to run or run earlier or

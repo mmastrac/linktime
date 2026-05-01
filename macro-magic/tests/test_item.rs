@@ -16,7 +16,7 @@ __declare_features!(
     priority {
         attr: [(priority = $priority_value:literal) => ($priority_value)];
         example: "priority = N";
-        validate: [($priority:literal), (early), (late)];
+        validate: [($numeric:literal), (early), (late)];
     };
     /// Make the ctor function anonymous.
     anonymous {
