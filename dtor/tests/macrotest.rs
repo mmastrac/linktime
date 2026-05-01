@@ -34,6 +34,9 @@ fn ensure_no_empty_files_recurse(path: impl AsRef<Path>) -> bool {
                 eprintln!("Empty file found: {}", file.path().display());
                 empty_files = true;
             }
+            if content.contains("/*ERROR*/") {
+                panic!("Error found in file: {}", file.path().display());
+            }
         }
     }
     empty_files

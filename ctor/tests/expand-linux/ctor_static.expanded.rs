@@ -1,6 +1,7 @@
 use ctor::ctor;
 use std::collections::HashMap;
 static STATIC_CTOR: ::ctor::statics::Static<HashMap<u32, &'static str>> = {
+    #[link_section = ".text.startup"]
     fn init() -> HashMap<u32, &'static str> {
         unsafe {
             let m = HashMap::new();
@@ -15,6 +16,7 @@ const _: () = {
     #[used]
     static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
         #[allow(unused_unsafe)]
+        #[link_section = ".text.startup"]
         extern "C" fn __ctor_private() {
             { _ = &*STATIC_CTOR }
         }

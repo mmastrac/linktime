@@ -2,6 +2,7 @@ use ctor::ctor;
 const _: () = {
     #[allow(dead_code)]
     unsafe fn foo() {
+        #[link_section = ".text.startup"]
         unsafe fn __ctor_private_inner() {
             {
                 ::std::io::_print(format_args!("foo\n"));
@@ -13,6 +14,7 @@ const _: () = {
             #[used]
             static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
                 #[allow(unused_unsafe)]
+                #[link_section = ".text.startup"]
                 extern "C" fn __ctor_private() {
                     { unsafe { __ctor_private_inner() } }
                 }
@@ -25,6 +27,7 @@ const _: () = {
 const _: () = {
     #[allow(dead_code)]
     unsafe fn foo() {
+        #[link_section = ".text.startup"]
         unsafe fn __ctor_private_inner() {
             {
                 ::std::io::_print(format_args!("foo\n"));
@@ -36,6 +39,7 @@ const _: () = {
             #[used]
             static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
                 #[allow(unused_unsafe)]
+                #[link_section = ".text.startup"]
                 extern "C" fn __ctor_private() {
                     { unsafe { __ctor_private_inner() } }
                 }
