@@ -133,6 +133,10 @@ jobs:
   success:
     runs-on: ubuntu-slim
     needs: build
+    steps:
+      - name: Report success
+        run: |
+          echo "Success"
 
   vmactions:
     runs-on: ubuntu-latest
