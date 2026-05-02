@@ -1,6 +1,6 @@
 [package]
 name = "link-section"
-version = "0.13.0"
+version = "0.13.1"
 authors.workspace = true
 edition = "2021"
 description = "Low-level link-section macro support for Rust"

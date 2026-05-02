@@ -1,6 +1,6 @@
 [package]
 name = "linktime"
-version = "0.13.0"
+version = "0.13.1"
 authors.workspace = true
 edition = "2021"
 description = "Link-time tricks for Rust"
