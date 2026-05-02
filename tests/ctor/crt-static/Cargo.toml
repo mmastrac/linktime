@@ -10,3 +10,6 @@ publish = false
 ctor = { path = "../../../ctor" }
 
 [workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(linktime_used_linker)'] }
