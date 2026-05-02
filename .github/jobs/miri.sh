@@ -6,19 +6,15 @@ export RUSTFLAGS="-Z extra-const-ub-checks"
 # https://doc.rust-lang.org/nightly/std/ptr/index.html#strict-provenance
 export MIRIFLAGS="-Zmiri-permissive-provenance"
 
-# May need to rebuild when beta/nightly changes
 cargo clean
 
 cargo miri test
 
-cd tests/ctor/edition-2018
-cargo miri run --target $TARGET
-cd ../../..
-
-cd tests/ctor/priority
-cargo miri run --target $TARGET
-cd ../../..
-
-cd tests/link_section/basic
-cargo miri run --target $TARGET
-cd ../../..
+miri_crates=(
+  tests/ctor/edition-2018
+  tests/ctor/priority
+  tests/link_section/basic
+)
+for dir in "${miri_crates[@]}"; do
+  (cd "$dir" && cargo miri run --target "$TARGET")
+done
