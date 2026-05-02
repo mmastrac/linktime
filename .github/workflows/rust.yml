@@ -11,7 +11,7 @@ env:
 
 jobs:
   generate-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
@@ -41,6 +41,7 @@ jobs:
               $match:
                 "this.job == 'miri'": "miri,rust-src"
                 "this.job == 'lint'": "clippy,rustfmt"
+                "this.job == 'test-used-linker'": rust-src
             label:
               linux:
                 os: ubuntu-latest
@@ -128,6 +129,10 @@ jobs:
           -D unreachable-pub
           -D missing-docs
       run: ".github/jobs/${{ matrix.job }}.sh"
+
+  success:
+    runs-on: ubuntu-slim
+    needs: build
 
   vmactions:
     runs-on: ubuntu-latest
