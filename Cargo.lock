@@ -482,7 +482,7 @@ dependencies = [
 
 [[package]]
 name = "linktime"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "ctor",
  "dtor",
