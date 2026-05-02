@@ -6,6 +6,8 @@ rm Cargo.lock
 # May need to rebuild when beta/nightly changes
 cargo clean
 cargo build
-cargo run -p ctor --example ctor-example --target $TARGET
-cargo run -p ctor --example ctor-advanced --target $TARGET
 
+ctor_examples=(ctor-example ctor-advanced)
+for example in "${ctor_examples[@]}"; do
+  cargo run -p ctor --example "$example" --target "$TARGET"
+done

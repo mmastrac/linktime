@@ -3,4 +3,4 @@ set -xeuo pipefail
 
 RUSTDOCFLAGS='--cfg linktime_used_linker' \
     RUSTFLAGS='-D warnings --cfg linktime_used_linker' \
-    cargo test --target $TARGET
+    cargo test --target "$TARGET"
