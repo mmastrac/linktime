@@ -10,7 +10,7 @@ The crate is part of the [`linktime`](https://crates.io/crates/linktime) project
 | `link-section` | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) |
 # dtor
 Shutdown functions for Rust (like `__attribute__((destructor))` in C/C++) for
-Linux, OSX, Windows, mobile (iOS/Android), WASM, BSD/BSD-likes and many other
+Linux, macOS, Windows, mobile (iOS/Android), WASM, BSD/BSD-likes and many other
 platforms.
 
 ```rust

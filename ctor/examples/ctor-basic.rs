@@ -1,13 +1,14 @@
-//! Basic example of using the `ctor` crate.
+//! Same code as the `ctor` crate README introduction (`cargo run --example ctor-basic`).
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use ctor::ctor;
+use libc_print::*;
 
 #[ctor(unsafe)]
-fn ctor() {
-    println!("ctor");
+fn foo() {
+    libc_println!("Life before main!");
 }
 
 fn main() {
-    println!("main");
+    libc_println!("main");
 }

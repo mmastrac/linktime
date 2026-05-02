@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.13.1] - 2026-05-02
 
+### Changed
+
+- Crate examples reorganized.
+
 ### Fixed
 
 - Documentation fixes (`--cfg` flags were incorrect).

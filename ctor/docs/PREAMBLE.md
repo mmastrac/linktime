@@ -1,5 +1,5 @@
 Module initialization functions for Rust (like `__attribute__((constructor))` in
-C/C++) for Linux, OSX, Windows, WASM, BSD-likes, and many others.
+C/C++) for Linux, macOS, Windows, WASM, BSD-likes, and many others.
 
 ```rust
 use ctor::ctor;
@@ -25,7 +25,7 @@ should have minimal effect on compilation time.
 
 ## Support
 
-This library works and is regularly tested on Linux, OSX, Windows, and FreeBSD,
+This library works and is regularly tested on Linux, macOS, Windows, and FreeBSD,
 with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
 
 Contributions to support other platforms or improve testing are welcome.
@@ -33,7 +33,7 @@ Contributions to support other platforms or improve testing are welcome.
 | OS           | Supported | CI Tested |
 | ------------ | --------- | --------- |
 | Linux        | ✅        | ✅        |
-| OSX          | ✅        | ✅        |
+| macOS        | ✅        | ✅        |
 | Windows      | ✅        | ✅        |
 | FreeBSD      | ✅        | ✅        |
 | WASM         | ✅        | ✅        |
