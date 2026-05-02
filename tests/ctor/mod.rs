@@ -221,49 +221,56 @@ defer {
     $ cargo clean --quiet
 }
 $ cargo build
+%EXIT 101
 ignore {
     !    Compiling %{DATA}
     !     Blocking waiting for file lock on package cache
     !     Blocking waiting for file lock on shared package cache
     !      Locking %{DATA} to latest compatible version%{DATA}
 }
-! warning: use of deprecated function `_::ctor_without_unsafe_is_deprecated`: ctor deprecation note:
-!          
-!          Use of #[ctor] without `#[ctor(unsafe)]` or `unsafe fn` is deprecated. As code execution
-!          before main is unsupported by most Rust runtime functions, these functions must be marked
-!          `unsafe`.
+"""
+error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
+
+
+       #[ctor]
+       ^^^^^^^------- replace this with #[ctor(unsafe)]
+
+"""
 if TARGET_OS == "windows" {
 !  --> src\main.rs:4:1
 }
 if TARGET_OS != "windows" {
 !  --> src/main.rs:4:1
 }
-!   |
-! 4 | #[ctor]
-!   | ^^^^^^^
-!   |
-!   = note: `#[warn(deprecated)]` on by default
-!   = note: this warning originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
-!
-! warning: use of deprecated function `_::ctor_without_unsafe_is_deprecated`: ctor deprecation note:
-!          
-!          Use of #[ctor] without `#[ctor(unsafe)]` or `unsafe fn` is deprecated. As code execution
-!          before main is unsupported by most Rust runtime functions, these functions must be marked
-!          `unsafe`.
+"""
+  |
+4 | #[ctor]
+  | ^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
+
+
+       #[ctor]
+       ^^^^^^^------- replace this with #[ctor(unsafe)]
+
+"""
 if TARGET_OS == "windows" {
 !   --> src\main.rs:21:1
 }
 if TARGET_OS != "windows" {
 !   --> src/main.rs:21:1
 }
-!    |
-! 21 | #[ctor]
-!    | ^^^^^^^
-!    |
-!    = note: this warning originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
-! 
-! warning: `warn-unsafe` (bin "warn-unsafe") generated 2 warnings
-!     Finished `dev` profile %{DATA}
+"""
+   |
+21 | #[ctor]
+   | ^^^^^^^
+   |
+   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: could not compile `warn-unsafe` (bin "warn-unsafe") due to 2 previous errors
+"""
 "#
 );
 
@@ -276,7 +283,7 @@ cd "ctor/warn-unsafe";
 defer {
     $ cargo clean --quiet
 }
-$ cargo build --features no_warn_on_missing_unsafe
+$ RUSTFLAGS="--cfg no_fail_on_missing_unsafe" cargo build
 reject {
     ! warning: %{DATA}
 }

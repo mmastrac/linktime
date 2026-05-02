@@ -1,6 +1,6 @@
 use ctor::ctor;
 
-#[ctor(priority = late)]
+#[ctor(unsafe, priority = late)]
 fn foo() {
     println!("foo");
 }

@@ -186,7 +186,7 @@ pub mod declarative {
     /// ```rust
     /// # #[cfg(not(miri))] mod test { use ctor::*; use libc_print::*;
     /// ctor::declarative::ctor! {
-    ///   #[ctor]
+    ///   #[ctor(unsafe)]
     ///   fn foo() {
     ///     libc_println!("Hello, world!");
     ///   }
@@ -196,7 +196,7 @@ pub mod declarative {
     /// // ... the above is identical to:
     ///
     /// # #[cfg(not(miri))] mod test_2 { use ctor::*; use libc_print::*;
-    /// #[ctor]
+    /// #[ctor(unsafe)]
     /// fn foo() {
     ///   libc_println!("Hello, world!");
     /// }
@@ -473,13 +473,18 @@ __declare_features!(
     naked {
         attr: [(naked) => (naked)];
     };
-    no_warn_on_missing_unsafe {
-        /// crate
-        /// Do not warn when a ctor is missing the `unsafe` keyword.
-        feature: "no_warn_on_missing_unsafe";
+    no_fail_on_missing_unsafe {
         /// attr
-        /// Marks a ctor as unsafe. Recommended.
-        attr: [(unsafe) => (no_warn_on_missing_unsafe)];
+        /// Marks a ctor as unsafe. Required.
+        ///
+        /// The `ctor` crate will warn if there is no unsafe flag in the `ctor`
+        /// annotation. This warning for a missing unsafe keyword can be hidden
+        /// by passing `RUSTFLAGS="--cfg no_fail_on_missing_unsafe"` to Cargo.
+        attr: [(unsafe) => (no_fail_on_missing_unsafe)];
+        default {
+            (no_fail_on_missing_unsafe) => (no_fail_on_missing_unsafe),
+            _ => (),
+        }
     };
     /// The priority of the constructor. Higher-`N`-priority constructors are
     /// run last. `N` must be between 0 and 999 inclusive for ordering
