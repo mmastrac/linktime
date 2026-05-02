@@ -1,5 +1,5 @@
-//! Constructors beyond the basic ones: anonymous `#[ctor]`, priorities, a nested module,
-//! inherent `#[ctor]` methods in a generic `impl`, and a ctor inside a module-level `const`.
+//! Constructors beyond `ctor-basic` / `ctor-example`: anonymous `#[ctor]`, priorities, nested modules,
+//! inherent `#[ctor]` methods on generic `impl`s, and ctors under a module-level `const`.
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use ctor::ctor;
@@ -17,21 +17,21 @@ pub static SHOWCASE_GLOBAL: HashMap<u32, &'static str> = {
     m
 };
 
-/// Anonymous `#[ctor]` function.
+/// Anonymous ctor (#1 of 2 with the same Rust name).
 #[ctor(unsafe, anonymous)]
 fn anonymous_ctor() {
     libc_println!("ctor_anonymous (#1)");
     let _f = anonymous_ctor;
 }
 
-/// Anonymous `#[ctor]` function.
+/// Anonymous ctor (#2 of 2 with the same Rust name).
 #[ctor(unsafe, anonymous)]
 fn anonymous_ctor() {
     libc_println!("ctor_anonymous (#2)");
 }
 
 const _: () = {
-    /// Equivalent to the `anonymous_ctor` function above.
+    /// Anonymous ctor inside a `const` scope (#3).
     #[ctor(unsafe)]
     fn anonymous_ctor() {
         libc_println!("ctor_anonymous (#3)");

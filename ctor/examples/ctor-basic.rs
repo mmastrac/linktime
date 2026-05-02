@@ -1,4 +1,4 @@
-//! Same code as the `ctor` crate README introduction (`cargo run --example ctor-basic`).
+//! Matches the `ctor` README introduction (`cargo run --example ctor-basic`).
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use ctor::ctor;

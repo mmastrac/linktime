@@ -53,7 +53,7 @@ Contributions to support other platforms or improve testing are welcome.
 | DragonFlyBSD | ✅        | -         |
 | Illumos      | ✅        | -         |
 | Android      | ✅        | -         |
-| iOS/tvOS/etc | ✅        | -         |
+| iOS          | ✅        | -         |
 | AIX          | ✅        | -         |
 | Haiku        | ✅        | -         |
 | VxWorks      | ✅        | -         |
