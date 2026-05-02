@@ -1,5 +1,5 @@
 Shutdown functions for Rust (like `__attribute__((destructor))` in C/C++) for
-Linux, OSX, Windows, mobile (iOS/Android), WASM, BSD/BSD-likes and many other
+Linux, macOS, Windows, mobile (iOS/Android), WASM, BSD/BSD-likes and many other
 platforms.
 
 ```rust

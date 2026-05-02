@@ -7,4 +7,5 @@ rm Cargo.lock
 cargo clean
 cargo build
 cargo run -p ctor --example ctor-example --target $TARGET
+cargo run -p ctor --example ctor-advanced --target $TARGET
 

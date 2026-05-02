@@ -946,7 +946,7 @@ macro_rules! __make_docs {
             #![doc = "\n\n# Crate Features\n\n| Cargo feature | Description |\n| --- | --- |"]
             $(
                 $(
-                    #![doc = concat!("\n| `", stringify!($feature_crate), "` | ", $( $crate_doc_lit, )* " |")]
+                    #![doc = concat!("\n| `", $feature_name, "` | ", $( $crate_doc_lit, )* " |")]
                 )?
             )*
             #![doc = "\n\n# Macro Attributes\n\n<table><tr><th>Attribute</th><th>Description</th></tr>\n"]

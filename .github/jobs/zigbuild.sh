@@ -15,6 +15,11 @@ sleep .1
 target/${TARGET}/debug/examples/ctor-example
 
 sleep .1
+echo "Running advanced ctor example..."
+sleep .1
+target/${TARGET}/debug/examples/ctor-advanced
+
+sleep .1
 echo "Running link-section example..."
 sleep .1
 target/${TARGET}/debug/examples/link-section-example

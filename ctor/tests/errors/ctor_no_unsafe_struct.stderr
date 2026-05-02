@@ -1,4 +1,4 @@
-error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
+error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
 
        #[ctor]
        ^^^^^^^------- replace this with #[ctor(unsafe)]

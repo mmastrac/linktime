@@ -6,6 +6,9 @@ export RUSTFLAGS="-Z extra-const-ub-checks"
 # https://doc.rust-lang.org/nightly/std/ptr/index.html#strict-provenance
 export MIRIFLAGS="-Zmiri-permissive-provenance"
 
+# May need to rebuild when beta/nightly changes
+cargo clean
+
 cargo miri test
 
 cd tests/ctor/edition-2018

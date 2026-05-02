@@ -10,7 +10,7 @@ The crate is part of the [`linktime`](https://crates.io/crates/linktime) project
 | `link-section` | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) |
 # ctor
 Module initialization functions for Rust (like `__attribute__((constructor))` in
-C/C++) for Linux, OSX, Windows, WASM, BSD-likes, and many others.
+C/C++) for Linux, macOS, Windows, WASM, BSD-likes, and many others.
 
 ```rust
 use ctor::ctor;
@@ -30,13 +30,13 @@ MSRV for WASM targets is **Rust >= 1.85**.
 
 ## Lightweight
 
-`ctor` has no dependencies other than the `ctor-proc-macro` and `link-section`
+`ctor` has no dependencies other than the `linktime-proc-macro` and `link-section`
 crates. The proc-macro is only used to delegate to the declarative macro and
 should have minimal effect on compilation time.
 
 ## Support
 
-This library works and is regularly tested on Linux, OSX, Windows, and FreeBSD,
+This library works and is regularly tested on Linux, macOS, Windows, and FreeBSD,
 with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
 
 Contributions to support other platforms or improve testing are welcome.
@@ -44,7 +44,7 @@ Contributions to support other platforms or improve testing are welcome.
 | OS           | Supported | CI Tested |
 | ------------ | --------- | --------- |
 | Linux        | ✅        | ✅        |
-| OSX          | ✅        | ✅        |
+| macOS        | ✅        | ✅        |
 | Windows      | ✅        | ✅        |
 | FreeBSD      | ✅        | ✅        |
 | WASM         | ✅        | ✅        |
@@ -209,7 +209,7 @@ The idea for `ctor` was originally inspired by the Neon project.
 
 | Cargo feature | Description |
 | --- | --- |
-| `priority_enabled` |  Enable support for the priority parameter. |
+| `priority` |  Enable support for the priority parameter. |
 | `proc_macro` |  Enable support for the proc-macro `#[ctor]` attribute. The declarative form (`ctor!(...)`) is always available. It is recommended that crates re-exporting the `ctor` macro disable this feature and only use the declarative form. |
 | `std` |  Enable support for the standard library. |
 
@@ -290,8 +290,8 @@ The idea for `ctor` was originally inspired by the Neon project.
 
  Priority is specified as an isize, string literal, or the identifiers
  `early` or `late`. The integer value will be clamped to a
- platform-defined range (typically 0-65535), while the string value will
- unprocessed.
+ platform-defined range (typically 0-65535), while string priorities are
+ passed through unprocessed.
 
  Priority is applied as follows:
 
@@ -314,28 +314,27 @@ The idea for `ctor` was originally inspired by the Neon project.
 
  Marks a ctor as unsafe. Required.
 
- The `ctor` crate will warn if there is no unsafe flag in the `ctor`
- annotation. This warning for a missing unsafe keyword can be hidden
- by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
- Cargo.
+ The `ctor` crate rejects `#[ctor]` without marking the item unsafe;
+ that error can be suppressed by passing
+ `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to Cargo.
 
 
 </td></tr>
 <tr><td><code>used(linker)</code></td><td>
 
 
- Mark generated functions pointers `used(linker)`. Requires nightly
+ Mark generated function pointers `used(linker)`. Requires nightly
  for the nightly-only feature `feature(used_with_arg)` (see
  <https://github.com/rust-lang/rust/issues/93798>).
 
- The can be made the default by using the `cfg` flag
+ This can be made the default by using the `cfg` flag
  `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
 
  For a crate using this macro to function correctly with and without
  this flag, it is recommended to add the following line to the top of
  lib.rs in the crate root:
 
- `![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
+ `#![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
 
 
 </td></tr>

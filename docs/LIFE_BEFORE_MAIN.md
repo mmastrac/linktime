@@ -71,9 +71,9 @@ resulting in them not being called
 ([rust-ctor #280](https://github.com/mmastrac/linktime/issues/280),
 [🦀 #99721](https://github.com/rust-lang/rust/issues/99721)).
 
-The `used_linker` feature for the `ctor` and `dtor` crates _may_ help - it
-applies `used(linker)` to the linker-generated items, but it requires a nightly
-Rust and `#![feature(used_with_arg)]`.
+Building with `--cfg linktime_used_linker` for the `ctor` and `dtor` crates
+_may_ help — it applies `used(linker)` to the linker-generated items, but it
+requires nightly Rust and `#![feature(used_with_arg)]` on the crate root.
 
 Often a **`use` of the module** that contains the missing registration is enough
 for the linker to retain the code.
