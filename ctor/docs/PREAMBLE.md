@@ -3,10 +3,11 @@ C/C++) for Linux, OSX, Windows, WASM, BSD-likes, and many others.
 
 ```rust
 use ctor::ctor;
+use libc_print::*;
 
 #[ctor(unsafe)]
 fn foo() {
-    println!("Life before main!");
+    libc_println!("Life before main!");
 }
 ```
 

@@ -486,6 +486,7 @@ version = "0.1.0"
 dependencies = [
  "ctor",
  "dtor",
+ "libc-print",
  "link-section",
  "linktime-proc-macro",
 ]

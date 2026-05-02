@@ -1,5 +1,5 @@
 //! Tests for ctor in an executable that loads a dylib.
-#![cfg_attr(feature = "used_linker", feature(used_with_arg))]
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![allow(unused_imports)]
 
 use ctor::ctor;

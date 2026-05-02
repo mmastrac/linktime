@@ -283,7 +283,7 @@ cd "ctor/warn-unsafe";
 defer {
     $ cargo clean --quiet
 }
-$ RUSTFLAGS="--cfg no_fail_on_missing_unsafe" cargo build
+$ RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe" cargo build
 reject {
     ! warning: %{DATA}
 }

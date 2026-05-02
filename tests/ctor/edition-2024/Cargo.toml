@@ -6,9 +6,14 @@ publish = false
 rust-version = "1.85"
 
 [features]
-used_linker = ["ctor/used_linker"]
 
 [dependencies]
 ctor = { path = "../../../ctor" }
 
 [workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_no_fail_on_missing_unsafe)',
+    'cfg(linktime_used_linker)'
+] }

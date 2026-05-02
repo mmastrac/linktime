@@ -21,11 +21,11 @@ priority = ["dep:link-section"]
 # Enable the proc_macro
 proc_macro = ["dep:linktime-proc-macro"]
 
-# For nightly users, used(linker) may be a better choice
-used_linker = []
-
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(no_fail_on_missing_unsafe)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_no_fail_on_missing_unsafe)',
+    'cfg(linktime_used_linker)'
+] }
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }

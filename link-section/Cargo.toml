@@ -13,7 +13,6 @@ categories = ["no-std"]
 default = ["proc_macro", "std"]
 proc_macro = ["dep:linktime-proc-macro"]
 std = []
-used_linker = []
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["link_section"] }

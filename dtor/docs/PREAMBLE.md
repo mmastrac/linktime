@@ -4,10 +4,11 @@ platforms.
 
 ```rust
 use dtor::dtor;
+use libc_print::*;
 
 #[dtor(unsafe)]
 fn foo() {
-    println!("Life after main!");
+    libc_println!("Life after main!");
 }
 ```
 
@@ -83,8 +84,10 @@ fn shutdown() {}
 use dtor::dtor;
 
 /// Use `link_section` with a section name of `.dtors` on most platforms,
-/// and `export_name_prefix` on AIX
-# #[cfg(false)]
+/// and `export_name_prefix` on AIX.
+/// 
+/// Platform note: this will fail to compile on Apple platforms.
+# #[cfg(not(target_vendor = "apple"))]
 #[dtor(unsafe, method = linker, link_section = ".dtors")]
 fn shutdown() {}
 ```

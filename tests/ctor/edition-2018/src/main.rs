@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "used_linker", feature(used_with_arg))]
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 //! Edition 2018 test.
 
 use ctor::ctor;

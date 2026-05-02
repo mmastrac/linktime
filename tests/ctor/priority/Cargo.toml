@@ -6,7 +6,6 @@ publish = false
 rust-version = "1.85"
 
 [features]
-used_linker = ["ctor/used_linker"]
 
 [dependencies]
 ctor = { path = "../../../ctor" }
