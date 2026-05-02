@@ -51,6 +51,7 @@ fn ctor_priority_one() {
     libc_println!("ctor_priority_one");
 }
 
+/// A nested module with a `static` item.
 pub mod module {
     use ctor::*;
     use libc_print::*;
