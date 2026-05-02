@@ -5,6 +5,13 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-05-02
+
+### Fixed
+
+- Documentation fixes (`--cfg` flags were incorrect).
+- Incorrect crate feature in docs.
+
 ## [0.13.0] - 2026-05-02
 
 ### Changed
@@ -12,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[ctor(priority = naked)]` is now `#[ctor(naked)]`.
 - `unsafe` is now required for `#[ctor]` items and the
   `no_warn_on_missing_unsafe` feature is gone.
-  - `RUSTFLAGS="--cfg no_fail_on_missing_unsafe"` can bypass the error.
+  - `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` can bypass the error.
 - `used_linker` feature moved to `--cfg linktime_used_linker` flag.
 
 ### Added

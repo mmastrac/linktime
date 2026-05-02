@@ -87,7 +87,7 @@ pub mod collect {
     /// the constructors will not have been guaranteed to have run.
     #[allow(unsafe_code)]
     pub(crate) unsafe fn run_constructors() {
-        // Mutliple ctor crates may contribute multiple guards, but there will
+        // Multiple ctor crates may contribute multiple guards, but there will
         // only ever be one "first" guard.
         let Some(guard) = _CTR0GR_ISIZE_FN.first() else {
             return;
@@ -179,7 +179,7 @@ pub mod collect {
     );
 }
 
-///Declarative form of the `#[ctor]` macro.
+/// Declarative form of the `#[ctor]` macro.
 pub mod declarative {
     /// Declarative form of the [`#[ctor]`](crate::ctor) macro.
     ///
@@ -480,8 +480,8 @@ __declare_features!(
     ///
     /// Priority is specified as an isize, string literal, or the identifiers
     /// `early` or `late`. The integer value will be clamped to a
-    /// platform-defined range (typically 0-65535), while the string value will
-    /// unprocessed.
+    /// platform-defined range (typically 0-65535), while string priorities are
+    /// passed through unprocessed.
     ///
     /// Priority is applied as follows:
     ///
@@ -525,10 +525,9 @@ __declare_features!(
         ///
         /// Marks a ctor as unsafe. Required.
         ///
-        /// The `ctor` crate will warn if there is no unsafe flag in the `ctor`
-        /// annotation. This warning for a missing unsafe keyword can be hidden
-        /// by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
-        /// Cargo.
+        /// The `ctor` crate rejects `#[ctor]` without marking the item unsafe;
+        /// that error can be suppressed by passing
+        /// `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to Cargo.
         attr: [(unsafe) => (no_fail_on_missing_unsafe)];
         default {
             (linktime_no_fail_on_missing_unsafe) => (no_fail_on_missing_unsafe),
@@ -538,18 +537,18 @@ __declare_features!(
     used_linker {
         /// attr
         ///
-        /// Mark generated functions pointers `used(linker)`. Requires nightly
+        /// Mark generated function pointers `used(linker)`. Requires nightly
         /// for the nightly-only feature `feature(used_with_arg)` (see
         /// <https://github.com/rust-lang/rust/issues/93798>).
         ///
-        /// The can be made the default by using the `cfg` flag
+        /// This can be made the default by using the `cfg` flag
         /// `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
         ///
         /// For a crate using this macro to function correctly with and without
         /// this flag, it is recommended to add the following line to the top of
         /// lib.rs in the crate root:
         ///
-        /// `![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
+        /// `#![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
         attr: [(used(linker)) => (used_linker)];
         default {
             (linktime_used_linker) => used_linker,

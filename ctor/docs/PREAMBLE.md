@@ -19,7 +19,7 @@ MSRV for WASM targets is **Rust >= 1.85**.
 
 ## Lightweight
 
-`ctor` has no dependencies other than the `ctor-proc-macro` and `link-section`
+`ctor` has no dependencies other than the `linktime-proc-macro` and `link-section`
 crates. The proc-macro is only used to delegate to the declarative macro and
 should have minimal effect on compilation time.
 

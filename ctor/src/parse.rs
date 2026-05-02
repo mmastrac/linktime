@@ -235,7 +235,7 @@ macro_rules! __ctor_parse_impl {
 
     // Step 3: Compute no_fail_on_missing_unsafe
 
-    // warn iff no_fail_on_missing_unsafe is not present AND unsafe is not present
+    // Compile error iff no_fail_on_missing_unsafe is not present AND unsafe is not present
     ( @entry next=$next:path[$next_args:tt], input=(
         features = (
             anonymous = $anonymous:tt,
@@ -251,7 +251,7 @@ macro_rules! __ctor_parse_impl {
     ) ) => {
         compile_error!(concat!("Missing unsafe keyword in #[ctor] annotation. \
         Use #[ctor(unsafe)]. This error can be suppressed by passing \
-        `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
+        `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
         `config.toml` file.\n\n\
         \n\
         #[ctor]\n\
@@ -273,7 +273,7 @@ macro_rules! __ctor_parse_impl {
     ) ) => {
         compile_error!(concat!("Missing unsafe keyword in #[ctor] annotation. \
         Use #[ctor(unsafe, ", stringify!($($self)*), ")]. This error can be suppressed by passing \
-        `--cfg no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
+        `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your \
         `config.toml` file.\n\n\
         \n\
         #[ctor(", stringify!($($self)*), ")]\n\
