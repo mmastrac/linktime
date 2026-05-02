@@ -4,6 +4,7 @@
 //! # dtor
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![doc = include_str!("../docs/GENERATED.md")]
+#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 #[cfg(feature = "std")]
 extern crate std;
@@ -24,7 +25,6 @@ pub use native::*;
 /// guaranteed.
 ///
 /// ```rust,ignore
-/// # #![cfg_attr(feature="used_linker", feature(used_with_arg))]
 /// # use dtor::dtor;
 /// # fn main() {}
 ///
@@ -236,14 +236,6 @@ __declare_features!(
             _ => linker,
         }
     };
-    no_warn_on_missing_unsafe {
-        /// crate
-        /// Do not warn when a ctor or dtor is missing the `unsafe` keyword.
-        feature: "no_warn_on_missing_unsafe";
-        /// attr
-        /// Marks a ctor/dtor as unsafe.
-        attr: [(unsafe) => (no_warn_on_missing_unsafe)];
-    };
     /// Enable support for the proc-macro `#[dtor]` attribute. The declarative
     /// form (`dtor!(...)`) is always available. It is recommended that crates
     /// re-exporting the `dtor` macro disable this feature and only use the
@@ -255,13 +247,42 @@ __declare_features!(
     std {
         feature: "std";
     };
-    used_linker {
-        /// crate
-        /// Applies `used(linker)` to all `dtor`-generated functions. Requires nightly and `feature(used_with_arg)`.
-        feature: "used_linker";
+    r#unsafe {
         /// attr
-        /// Mark generated functions for this `dtor` as `used(linker)`. Requires nightly and `feature(used_with_arg)`.
+        ///
+        /// Marks a dtor as unsafe. Required.
+        ///
+        /// The `ctor` crate will warn if there is no unsafe flag in the `ctor`
+        /// annotation. This warning for a missing unsafe keyword can be hidden
+        /// by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
+        /// Cargo.
+        attr: [(unsafe) => (no_fail_on_missing_unsafe)];
+        default {
+            (linktime_no_fail_on_missing_unsafe) => (no_fail_on_missing_unsafe),
+            _ => (),
+        }
+    };
+    used_linker {
+        /// attr
+        ///
+        /// Mark generated functions pointers `used(linker)`. Requires nightly
+        /// for the nightly-only feature `feature(used_with_arg)` (see
+        /// <https://github.com/rust-lang/rust/issues/93798>).
+        ///
+        /// The can be made the default by using the `cfg` flag
+        /// `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
+        ///
+        /// For a crate using this macro to function correctly with and without
+        /// this flag, it is recommended to add the following line to the top of
+        /// lib.rs in the crate root:
+        ///
+        /// `#![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
+        ///
         attr: [(used(linker)) => (used_linker)];
+        default {
+            (linktime_used_linker) => used_linker,
+            _ => (),
+        }
     };
 );
 

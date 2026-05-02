@@ -10,6 +10,7 @@ All notable changes to this crate will be documented in this file.
 - `unsafe` is now required for `#[ctor]` items and the
   `no_warn_on_missing_unsafe` feature is gone.
   - `RUSTFLAGS="--cfg no_fail_on_missing_unsafe"` can bypass the error.
+- `used_linker` feature moved to `--cfg linktime_used_linker` flag.
 
 ### Added
 

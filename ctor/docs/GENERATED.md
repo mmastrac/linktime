@@ -6,7 +6,6 @@
 | `priority_enabled` |  Enable support for the priority parameter. |
 | `proc_macro` |  Enable support for the proc-macro `#[ctor]` attribute. The declarative form (`ctor!(...)`) is always available. It is recommended that crates re-exporting the `ctor` macro disable this feature and only use the declarative form. |
 | `std` |  Enable support for the standard library. |
-| `used_linker` |  Applies `used(linker)` to all `ctor`-generated functions. Requires nightly and `feature(used_with_arg)`. |
 
 # Macro Attributes
 
@@ -77,16 +76,6 @@
 
 
 </td></tr>
-<tr><td><code>unsafe</code></td><td>
-
- Marks a ctor as unsafe. Required.
-
- The `ctor` crate will warn if there is no unsafe flag in the `ctor`
- annotation. This warning for a missing unsafe keyword can be hidden
- by passing `RUSTFLAGS="--cfg no_fail_on_missing_unsafe"` to Cargo.
-
-
-</td></tr>
 <tr><td><code>priority = N | early | late</code></td><td>
 
  The priority of the constructor. Higher-`N`-priority constructors are
@@ -114,9 +103,33 @@
 
 
 </td></tr>
+<tr><td><code>unsafe</code></td><td>
+
+
+ Marks a ctor as unsafe. Required.
+
+ The `ctor` crate will warn if there is no unsafe flag in the `ctor`
+ annotation. This warning for a missing unsafe keyword can be hidden
+ by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
+ Cargo.
+
+
+</td></tr>
 <tr><td><code>used(linker)</code></td><td>
 
- Mark generated functions for this `ctor` as `used(linker)`. Requires nightly and `feature(used_with_arg)`.
+
+ Mark generated functions pointers `used(linker)`. Requires nightly
+ for the nightly-only feature `feature(used_with_arg)` (see
+ <https://github.com/rust-lang/rust/issues/93798>).
+
+ The can be made the default by using the `cfg` flag
+ `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
+
+ For a crate using this macro to function correctly with and without
+ this flag, it is recommended to add the following line to the top of
+ lib.rs in the crate root:
+
+ `![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
 
 
 </td></tr>
@@ -224,20 +237,6 @@ link_section = (compile_error! ("Unsupported target for #[ctor]"))
  # }
  ```
 
-## `no_fail_on_missing_unsafe`
-
- ```rust
- # #[cfg(false)] {
-#[cfg(no_fail_on_missing_unsafe)]
- # const _: () = { let
-no_fail_on_missing_unsafe = (no_fail_on_missing_unsafe)
- # ; };
-
- // default
-no_fail_on_missing_unsafe = ()
- # }
- ```
-
 ## `priority`
 
  ```rust
@@ -249,5 +248,33 @@ priority = early
 
  // default
 priority = ()
+ # }
+ ```
+
+## `r#unsafe`
+
+ ```rust
+ # #[cfg(false)] {
+#[cfg(linktime_no_fail_on_missing_unsafe)]
+ # const _: () = { let
+r#unsafe = (no_fail_on_missing_unsafe)
+ # ; };
+
+ // default
+r#unsafe = ()
+ # }
+ ```
+
+## `used_linker`
+
+ ```rust
+ # #[cfg(false)] {
+#[cfg(linktime_used_linker)]
+ # const _: () = { let
+used_linker = used_linker
+ # ; };
+
+ // default
+used_linker = ()
  # }
  ```

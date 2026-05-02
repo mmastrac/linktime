@@ -1,6 +1,6 @@
 [package]
 name = "dtor"
-version = "0.12.0"
+version = "0.13.0"
 authors.workspace = true
 edition = "2021"
 description = "__attribute__((destructor)) for Rust"
@@ -14,8 +14,6 @@ rust-version = "1.60"
 default = ["std", "proc_macro"]
 std = []
 proc_macro = ["dep:linktime-proc-macro"]
-used_linker = []
-no_warn_on_missing_unsafe = []
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["dtor"] }
@@ -33,3 +31,9 @@ path = "src/example.rs"
 
 [lib]
 name = "dtor"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_no_fail_on_missing_unsafe)',
+    'cfg(linktime_used_linker)'
+] }

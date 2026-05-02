@@ -6,7 +6,7 @@ error: Duplicate meta attribute: 'method = ... ,
   |
   = note: this error originates in the macro `$crate::__extract_meta` which comes from the expansion of the attribute macro `dtor` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error: Duplicate meta attribute: 'no_warn_on_missing_unsafe = ... ,
+error: Duplicate meta attribute: 'r#unsafe = ... ,
  --> tests/errors/dtor_duplicate.rs:7:1
   |
 7 | #[dtor(unsafe, unsafe)]

@@ -1,7 +1,7 @@
 //! This example demonstrates the various types of ctor/dtor in an executable
 //! context.
 
-#![cfg_attr(feature = "used_linker", feature(used_with_arg))]
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use ctor::ctor;
 use libc_print::*;

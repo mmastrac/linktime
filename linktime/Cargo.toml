@@ -22,9 +22,6 @@ std = ["ctor?/std", "dtor?/std", "link-section?/std"]
 # Enable the proc_macro
 proc_macro = ["dep:linktime-proc-macro", "ctor?/proc_macro", "dtor?/proc_macro", "link-section?/proc_macro"]
 
-# For nightly users, prefer #[used(linker)] over #[used]
-used_linker = ["ctor?/used_linker", "dtor?/used_linker", "link-section?/used_linker"]
-
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true }
 ctor = { workspace = true, optional = true }
@@ -32,3 +29,10 @@ dtor = { workspace = true, optional = true }
 link-section = { workspace = true, optional = true }
 
 [dev-dependencies]
+libc-print = "0.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_no_fail_on_missing_unsafe)',
+    'cfg(linktime_used_linker)'
+] }

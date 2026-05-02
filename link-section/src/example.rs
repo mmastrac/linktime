@@ -1,4 +1,5 @@
 //! Example usage of the `link-section` crate.
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use link_section::{in_section, section};
 

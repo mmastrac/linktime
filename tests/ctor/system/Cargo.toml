@@ -5,7 +5,6 @@ edition = "2021"
 publish = false
 
 [features]
-used_linker = ["ctor/used_linker"]
 
 [dependencies]
 ctor = { path = "../../../ctor" }
@@ -24,6 +23,9 @@ name = "dylib_load"
 path = "src/dylib_load.rs"
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(never)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(no_fail_on_missing_unsafe)',
+    'cfg(linktime_used_linker)'
+] }
 
 [workspace]

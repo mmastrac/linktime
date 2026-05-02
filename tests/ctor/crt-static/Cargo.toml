@@ -5,9 +5,11 @@ edition = "2018"
 publish = false
 
 [features]
-used_linker = ["ctor/used_linker"]
 
 [dependencies]
 ctor = { path = "../../../ctor" }
 
 [workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(linktime_used_linker)'] }

@@ -2,6 +2,7 @@
 //! # link-section
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![allow(unsafe_code)]
+#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]
 pub mod life_before_main {}
@@ -71,13 +72,88 @@ pub mod __support {
         };
     }
 
-    #[cfg(feature = "proc_macro")]
+    #[cfg(not(linktime_used_linker))]
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __add_used {
+        (
+            $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $(#[$meta:meta])*
+            $vis:vis static $($static:tt)*
+        ) => {
+            $crate::__add_section_link_attribute_impl!(
+                $section $type $name $($aux)? #[$attr = __]
+                $(#[$meta])*
+                #[used]
+                $vis static $($static)*
+            );
+        };
+    }
+
+    #[cfg(linktime_used_linker)]
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __add_used {
+        (
+            $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $(#[$meta:meta])*
+            $vis:vis static $($static:tt)*
+        ) => {
+            $crate::__add_section_link_attribute_impl!(
+                $section $type $name $($aux)? #[$attr = __]
+                $(#[$meta])*
+                #[used(linker)]
+                $vis static $($static)*
+            );
+        };
+    }
+
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute(
-        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $item:item) => {
+        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $(#[$meta:meta])*
+            $vis:vis static $($static:tt)*
+        ) => {
+            $crate::__add_used!(
+                $section $type $name $($aux)? #[$attr = __]
+                $(#[$meta])*
+                $vis static $($static)*
+            );
+        };
+        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            extern "C" {
+                $(#[$meta:meta])*
+                $vis:vis static $($static:tt)*
+            }
+        ) => {
+            extern "C" {
+                $crate::__add_section_link_attribute_impl!(
+                    $section $type $name $($aux)? #[$attr = __]
+                    $(#[$meta])*
+                    #[allow(unsafe_code)]
+                    $vis static $($static)*
+                );
+            }
+        };
+        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $(#[$meta:meta])* $($item:tt)*) => {
+            $crate::__add_section_link_attribute_impl!(
+                $section $type $name $($aux)? #[$attr = __]
+                $(#[$meta])*
+                #[allow(unsafe_code)]
+                $($item)*
+            );
+        };
+    );
+
+    #[cfg(feature = "proc_macro")]
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __add_section_link_attribute_impl(
+        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
             $crate::__section_name!(
-                (#[$attr = __] #[allow(unsafe_code)] $item)
+                (#[$attr = __] #[allow(unsafe_code)] $($item)*)
                 $section $type $name $($aux)?
             );
         }
@@ -86,11 +162,11 @@ pub mod __support {
     #[cfg(not(feature = "proc_macro"))]
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __add_section_link_attribute(
-        ($section:ident $type:ident $name:ident #[$attr:ident = __] $item:item) => {
+    macro_rules! __add_section_link_attribute_impl(
+        ($section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
             #[$attr = $crate::__section_name!(
                 raw $section $type $name
-            )] $item
+            )] $($item)*
         }
     );
 
@@ -101,7 +177,7 @@ pub mod __support {
             data bare =>    ("__DATA,") __ ();
             code bare =>    ("__TEXT,") __ ();
             data section => ("__DATA,") __ (",regular,no_dead_strip");
-            code section => ("__TEXT,") __ (",regular,no_dead_strip");
+            code section => ("__TEXT,") __ (",regular,pure_instructions");
             data start =>   ("\x01section$start$__DATA$") __ ();
             data end =>     ("\x01section$end$__DATA$") __ ();
         }
@@ -377,20 +453,20 @@ pub mod __support {
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
                 {
-                    extern "C" {
-                        $crate::__support::add_section_link_attribute!(
-                            data start $ident $($aux)?
-                            #[link_name = __]
+                    $crate::__support::add_section_link_attribute!(
+                        data start $ident $($aux)?
+                        #[link_name = __]
+                        extern "C" {
                             static __START: $crate::__support::SectionPtr<$generic_ty>;
-                        );
-                    }
-                    extern "C" {
-                        $crate::__support::add_section_link_attribute!(
-                            data end $ident $($aux)?
-                            #[link_name = __]
+                        }
+                    );
+                    $crate::__support::add_section_link_attribute!(
+                        data end $ident $($aux)?
+                        #[link_name = __]
+                        extern "C" {
                             static __END: $crate::__support::SectionPtr<$generic_ty>;
-                        );
-                    }
+                        }
+                    );
 
                     (
                         unsafe { &raw const __START as $crate::__support::SectionPtr<$generic_ty> },
@@ -499,29 +575,30 @@ pub mod __support {
             $stored_ty
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? $body:block)) => {
+            const _: () = {
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?);
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
+                    $(#[$meta])*
+                    #[allow(non_upper_case_globals)]
+                    $vis static __LINK_SECTION_FN_ITEM: __InSecStoredTy = $ident_fn;
+                );
+            };
+
             $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
+                code section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])*
-                #[used]
-                #[allow(non_upper_case_globals)]
-                $vis static $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
-                    {
-                        $crate::__add_section_link_attribute!(
-                            code section $ident $($aux)?
-                            #[link_section = __]
-                            fn $ident_fn($($args)*) $(-> $ret)? $body
-                        );
-                        $ident_fn
-                    };
+                fn $ident_fn($($args)*) $(-> $ret)? $body
             );
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static _ : $ty:ty = $value:expr;)) => {
             const _: () = {
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, $ty);
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* #[used] $vis static ANONYMOUS: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
+                    $(#[$meta])* $vis static ANONYMOUS: __InSecStoredTy = $value;
                 );
             };
         };
@@ -529,14 +606,14 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])* #[used] $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
+                $(#[$meta])* $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
         };
         (data, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $item:item)) => {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])* #[used] $item
+                $(#[$meta])* $item
             );
         };
     }

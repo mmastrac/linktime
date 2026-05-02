@@ -18,6 +18,9 @@ __declare_features!(
         example: "priority = N";
         validate: [($numeric:literal), (early), (late)];
     };
+    used_linker {
+        attr: [(used(linker)) => (used_linker)];
+    };
     /// Make the ctor function anonymous.
     anonymous {
         attr: [(anonymous) => (anonymous)];
@@ -40,7 +43,7 @@ __test!(__parse_item[my_macro_parse]:
     fn foo() { /* ... */ }
 ) =>
 (
-    features = (std = std : default, unsafe = unsafe : value, priority = 1 : value, anonymous = (): default,),
+    features = (std = std : default, unsafe = unsafe : value, priority = 1 : value, used_linker = (): default, anonymous = (): default,),
     self = (unsafe, priority = 1),
     meta = (),
     item = (fn foo() { /* ... */ })
@@ -54,8 +57,22 @@ __test!(__parse_item[my_macro_parse]:
     fn foo() { /* ... */ }
 ) =>
 (
-    features = (std = std : default, unsafe = unsafe : value, priority = (): default, anonymous = (): default,),
+    features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = (): default, anonymous = (): default,),
     self = (unsafe),
+    meta = (#[other] #[doc]),
+    item = (fn foo() { /* ... */ })
+));
+
+__test!(__parse_item[my_macro_parse]:
+(
+    #[other]
+    #[my_macro(unsafe, used(linker))]
+    #[doc]
+    fn foo() { /* ... */ }
+) =>
+(
+    features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = used_linker : value, anonymous = (): default,),
+    self = (unsafe, used(linker)),
     meta = (#[other] #[doc]),
     item = (fn foo() { /* ... */ })
 ));

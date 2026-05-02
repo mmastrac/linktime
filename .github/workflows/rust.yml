@@ -11,7 +11,7 @@ env:
 
 jobs:
   generate-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
@@ -29,6 +29,7 @@ jobs:
               $match:
                 "this.job == 'miri'": nightly
                 "this.job == 'lint'": nightly
+                "this.job == 'test-used-linker'": nightly
                 "this.job == 'build'": [stable, beta, nightly]
                 "this.job == 'build-minimal'": ["1.65"]
                 "true": "stable"
@@ -40,10 +41,11 @@ jobs:
               $match:
                 "this.job == 'miri'": "miri,rust-src"
                 "this.job == 'lint'": "clippy,rustfmt"
+                "this.job == 'test-used-linker'": rust-src
             label:
               linux:
                 os: ubuntu-latest
-                job: [build, build-minimal, lint, test, miri, wasm, sanitize]
+                job: [build, build-minimal, lint, test, test-used-linker, miri, wasm, sanitize]
                 target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
@@ -51,7 +53,7 @@ jobs:
                 target: x86_64-unknown-linux-musl
               macos:
                 os: macOS-latest
-                job: [lint, test, miri, zigbuild]
+                job: [lint, test, test-used-linker,miri, zigbuild]
                 target: aarch64-apple-darwin
               windows:
                 os: windows-latest
@@ -127,6 +129,14 @@ jobs:
           -D unreachable-pub
           -D missing-docs
       run: ".github/jobs/${{ matrix.job }}.sh"
+
+  success:
+    runs-on: ubuntu-slim
+    needs: build
+    steps:
+      - name: Report success
+        run: |
+          echo "Success"
 
   vmactions:
     runs-on: ubuntu-latest

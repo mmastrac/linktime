@@ -33,10 +33,11 @@ ctor = "..."
 
 ```rust
 use linktime::ctor; // or ctor::ctor
+use libc_print::*;
 
 #[ctor(unsafe)]
 fn foo() {
-    println!("Life before main!");
+    libc_println!("Life before main!");
 }
 ```
 
@@ -55,10 +56,11 @@ dtor = "..."
 
 ```rust
 use linktime::dtor; // or dtor::dtor
+use libc_print::*;
 
 #[dtor(unsafe)]
 fn foo() {
-    println!("Life after main!");
+    libc_println!("Life after main!");
 }
 ```
 
@@ -78,13 +80,14 @@ link-section = "..."
 ```rust
 use linktime::link_section::{section, in_section, TypedSection};
 use linktime::ctor;
+use libc_print::*;
 
 #[section]
 static FOO: TypedSection<fn()>;
 
 #[in_section(FOO)]
 fn foo() {
-    println!("Hello, world!");
+    libc_println!("Hello, world!");
 }
 
 #[ctor(unsafe)]
