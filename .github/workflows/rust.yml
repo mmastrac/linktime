@@ -44,13 +44,13 @@ jobs:
                 "this.job == 'test-used-linker'": rust-src
             label:
               linux:
-                os: ubuntu-latest
-                job: [test, test-used-linker, miri, wasm]
-                target: x86_64-unknown-linux-gnu
-              linux:
-                os: ubuntu-slim
-                job: [build, build-minimal, lint, sanitize]
-                target: x86_64-unknown-linux-gnu
+                os:
+                  ubuntu-latest:
+                    job: [test, test-used-linker, miri, wasm]
+                    target: x86_64-unknown-linux-gnu
+                  ubuntu-slim:
+                    job: [build, build-minimal, lint, sanitize]
+                    target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
                 job: [build, lint, test]
