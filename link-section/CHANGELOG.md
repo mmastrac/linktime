@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `used_linker` feature moved to `--cfg linktime_used_linker` flag.
+- On macOS, `fn` items are placed in a `__TEXT,__text,regular,pure_instructions`
+  section (fixes a linker warning in nightly).
 
 ## [0.11.0] - 2026-04-28
 

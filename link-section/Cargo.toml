@@ -19,6 +19,11 @@ linktime-proc-macro = { workspace = true, optional = true, features = ["link_sec
 
 [dev-dependencies]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_used_linker)',
+] }
+
 [[example]]
 name = "link-section-example"
 path = "src/example.rs"
