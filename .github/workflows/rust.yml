@@ -28,7 +28,7 @@ jobs:
             rust-toolchain:
               $match:
                 "this.job == 'miri'": nightly
-                "this.job == 'lint'": nightly
+                "this.job == 'lint'": [stable, nightly]
                 "this.job == 'test-used-linker'": nightly
                 "this.job == 'build'": [stable, beta, nightly]
                 "this.job == 'build-minimal'": ["1.65"]
@@ -45,7 +45,11 @@ jobs:
             label:
               linux:
                 os: ubuntu-latest
-                job: [build, build-minimal, lint, test, test-used-linker, miri, wasm, sanitize]
+                job: [test, test-used-linker, miri, wasm]
+                target: x86_64-unknown-linux-gnu
+              linux:
+                os: ubuntu-slim
+                job: [build, build-minimal, lint, sanitize]
                 target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
