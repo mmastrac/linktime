@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 /// Define an initializer function that runs before `main`. See [ctor][ctor].
 ///

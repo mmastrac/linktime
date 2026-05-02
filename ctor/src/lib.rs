@@ -1,4 +1,3 @@
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![recursion_limit = "256"]
 #![no_std]
 #![doc = include_str!("../docs/BUILD.md")]
