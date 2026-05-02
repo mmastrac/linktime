@@ -226,7 +226,7 @@ fn dtor_atexit() {
  lib.rs in the crate root:
 
  `#![cfg_attr(linktime_used_linker, feature(used_with_arg))]`
- 
+
 
 
 </td></tr>
