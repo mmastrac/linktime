@@ -101,7 +101,7 @@ pub mod __support {
             data bare =>    ("__DATA,") __ ();
             code bare =>    ("__TEXT,") __ ();
             data section => ("__DATA,") __ (",regular,no_dead_strip");
-            code section => ("__TEXT,") __ (",regular,no_dead_strip");
+            code section => ("__TEXT,") __ (",regular,pure_instructions");
             data start =>   ("\x01section$start$__DATA$") __ ();
             data end =>     ("\x01section$end$__DATA$") __ ();
         }
@@ -499,21 +499,24 @@ pub mod __support {
             $stored_ty
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? $body:block)) => {
+            const _: () = {
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
+                    $(#[$meta])*
+                    #[used]
+                    #[allow(non_upper_case_globals)]
+                    $vis static __LINK_SECTION_FN_ITEM: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
+                        {
+                            $ident_fn
+                        };
+                );
+            };
+
             $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
+                code section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])*
-                #[used]
-                #[allow(non_upper_case_globals)]
-                $vis static $ident_fn: $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?) =
-                    {
-                        $crate::__add_section_link_attribute!(
-                            code section $ident $($aux)?
-                            #[link_section = __]
-                            fn $ident_fn($($args)*) $(-> $ret)? $body
-                        );
-                        $ident_fn
-                    };
+                fn $ident_fn($($args)*) $(-> $ret)? $body
             );
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static _ : $ty:ty = $value:expr;)) => {
