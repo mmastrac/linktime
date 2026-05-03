@@ -5,11 +5,37 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-05-03
+
+### Changed
+
+- Stabilized (yay!). Identical to 0.13.1. Thanks to all the contributors who
+  helped along the way! Please file any upgrade issues in
+  <https://github.com/mmastrac/linktime/issues>.
+- For those upgrading from earlier versions, the major changes for you to note
+  are:
+    - `dtor` was split into the `dtor` crate. You'll need to add it to your
+      dependencies like so:
+      ```toml
+      [dependencies]
+      dtor = "0.13.1" # or later
+      ```
+    - `#[ctor(unsafe)]` is now required for `#[ctor]` items. If you are building a
+      binary, you can use `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"`
+      (or alternatively, specify this in your `config.toml` file) to bypass the
+      error.
+    - For those re-exporting `ctor` from their own crates: the
+      `ctor::declarative::ctor!` macro should be preferred over
+      `#[ctor(crate_path = ...)]`. The latter form will continue to work, but
+      the declarative macro is far more stable for most use cases. See
+      <https://docs.rs/ctor/latest/ctor/declarative/macro.ctor.html> for more
+      details.
+
 ## [0.13.1] - 2026-05-02
 
 ### Changed
 
-- Crate examples reorganized.
+- Crate examples were reorganized.
 
 ### Fixed
 
@@ -42,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- deprecated `dtor` feature and crate dependency from `ctor` crate (use the `dtor` crate directly).
+- Deprecated `dtor` feature and crate dependency from `ctor` crate (use the
+  `dtor` crate directly).
 
 ### Fixed
 
