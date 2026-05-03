@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Identical to 0.13.1. Stabilized (yay!). Thanks to all the contributors who
+- Stabilized (yay!). Identical to 0.13.1. Thanks to all the contributors who
   helped along the way! Please file any upgrade issues in
   <https://github.com/mmastrac/linktime/issues>.
 - For those upgrading from earlier versions, the major changes for you to note
