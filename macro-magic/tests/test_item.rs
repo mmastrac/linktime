@@ -9,7 +9,7 @@ __declare_features!(
     std {
         feature: "std";
     };
-    /// Marks a ctor/dtor as unsafe. This will become a warning in 1.0.
+    /// Marks a ctor/dtor as unsafe.
     unsafe {
         attr: [(unsafe) => (unsafe)];
     };

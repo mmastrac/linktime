@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Identical to 0.13.1. Stabilized (yay!). Thanks to all the contributors who
   helped along the way!
+- For those upgrading from earlier versions, the major changes for you to note
+  are:
+    - `dtor` was split into the `dtor` crate. You'll need to add it to your
+      dependencies like so:
+      ```toml
+      [dependencies]
+      dtor = "0.13.1" # or later
+      ```
+    - `#[ctor(unsafe)]` is now required for `#[ctor]` items.
+    - The `ctor::declarative::ctor!` macro should be preferred over
+      `#[ctor(crate_path = ...)]`.
 
 ## [0.13.1] - 2026-05-02
 
