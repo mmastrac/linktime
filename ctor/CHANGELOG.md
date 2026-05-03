@@ -20,18 +20,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       [dependencies]
       dtor = "0.13.1" # or later
       ```
-    - `#[ctor(unsafe)]` is now required for `#[ctor]` items. If you are building
-    a binary, you can use `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"`
-    (or alternatively, specify this in your `config.toml` file) to bypass the
-    error.
-    - The `ctor::declarative::ctor!` macro should be preferred over
-      `#[ctor(crate_path = ...)]`.
+    - `#[ctor(unsafe)]` is now required for `#[ctor]` items. If you are building a
+      binary, you can use `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"`
+      (or alternatively, specify this in your `config.toml` file) to bypass the
+      error.
+    - For those re-exporting `ctor` from their own crates: the
+      `ctor::declarative::ctor!` macro should be preferred over
+      `#[ctor(crate_path = ...)]`. The latter form will continue to work, but
+      the declarative macro is far more stable for most use cases. See
+      <https://docs.rs/ctor/latest/ctor/declarative/macro.ctor.html> for more
+      details.
 
 ## [0.13.1] - 2026-05-02
 
 ### Changed
 
-- Crate examples reorganized.
+- Crate examples were reorganized.
 
 ### Fixed
 
@@ -64,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- deprecated `dtor` feature and crate dependency from `ctor` crate (use the `dtor` crate directly).
+- Deprecated `dtor` feature and crate dependency from `ctor` crate (use the
+  `dtor` crate directly).
 
 ### Fixed
 
