@@ -12,7 +12,7 @@ cd "$ROOT"
 
 cd "$ROOT/tests/dtor/wasm"
 cargo build --target wasm32-unknown-unknown
-wasmtime run target/wasm32-unknown-unknown/debug/tests_dtor_wasm.wasm
+wasmtime run target/wasm32-unknown-unknown/debug/tests_dtor_wasm.wasm || (echo "WASM should not have succeeded" && exit 1)
 cargo build --target wasm32-wasip1
 wasmtime run target/wasm32-wasip1/debug/tests_dtor_wasm.wasm || echo "WASI failed"
 cd "$ROOT"
