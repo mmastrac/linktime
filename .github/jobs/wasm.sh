@@ -3,18 +3,17 @@ set -xeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-cd "$ROOT/tests/ctor/wasm"
+cd "$ROOT/tests/wasm/rust"
 cargo build --target wasm32-unknown-unknown
-wasmtime run target/wasm32-unknown-unknown/debug/tests_ctor_wasm.wasm
 cargo build --target wasm32-wasip1
-wasmtime run target/wasm32-wasip1/debug/tests_ctor_wasm.wasm || echo "WASI failed"
-cd "$ROOT"
+cargo build --target wasm32-wasip2
 
-cd "$ROOT/tests/dtor/wasm"
-cargo build --target wasm32-unknown-unknown
-wasmtime run target/wasm32-unknown-unknown/debug/tests_dtor_wasm.wasm && (echo "WASM should not have succeeded" && exit 1)
-cargo build --target wasm32-wasip1
-wasmtime run target/wasm32-wasip1/debug/tests_dtor_wasm.wasm || echo "WASI failed"
+# WASI smoketest
+wasmtime run target/wasm32-wasip1/debug/wasm_rust.wasm
+
+# WASI via node
+npx tsx "$ROOT/tests/wasm/js/test-wasm32-unknown-unknown.mts"
+npx tsx "$ROOT/tests/wasm/js/test-wasm32-wasi.mts"
 cd "$ROOT"
 
 # We don't have a way to initialize the runtime yet...

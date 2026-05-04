@@ -8,8 +8,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 linktime = { path = "../../../linktime" }
-
-[dependencies.'cfg(all(target_family = "wasm", )']
 libc-print = "0.2"
 
 [workspace]
