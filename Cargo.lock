@@ -457,9 +457,9 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "libc-print"
-version = "0.1.23"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a660208db49e35faf57b37484350f1a61072f2a5becf0592af6015d9ddd4b0"
+checksum = "8115323750f8cfc82d71bf6e518498e00bd5ce6e14b1f05938a2d67b688bf4e5"
 dependencies = [
  "libc",
 ]
