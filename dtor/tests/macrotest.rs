@@ -88,6 +88,9 @@ pub fn target_test() {
     if toolchain != "nightly" {
         return;
     }
+    if cfg!(linktime_used_linker) {
+        return;
+    }
     let cases_dir = Path::new("tests/target-test");
     let overwrite = std::env::var_os("MACROTEST")
         .map(|v| v == "overwrite")

@@ -34,7 +34,8 @@ fn shutdown() {
 | Linux                      | `.fini_array`                             | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | MacOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
-| AIX                        | No <sup><sup>🔵</sup></sup>               | Yes            | Yes                  |
+| WASM                       | No                                        | Yes            | No                   |
+| AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
 | Other POSIX-like platforms | `.fini_array`/`.dtors`                    | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 
 Notes:
@@ -45,7 +46,8 @@ Notes:
   call functions in link sections, unless a binary is built with a static CRT.
 - <sup><sup>🔵</sup></sup> Link sections are not supported on AIX, but the
   platform calls functions with the prefix `__sinit` and `__sterm` at startup
-  and shutdown respectively.
+  and shutdown respectively. `__sterm`-prefixed functions are used when the
+  method is specified as `linker`.
 
 # Shutdown Method (`#[dtor(method = ...)]`)
 
@@ -60,7 +62,7 @@ The `#[dtor]` macro supports multiple registration strategies via
   termination method. Not recommended: code may be unloaded before the dtor
   runs.
 - `at_module_exit`: Register using `__cxa_atexit` (non-Windows) or `atexit`
-  (Windows) so the dtor runs when the module unloads.
+  (Windows) so the dtor runs when the module unloads. Unsupported on WASM.
 - `at_binary_exit`: Register to run at process exit (unsupported on Windows).
 - `linker`: Register using the platform's linker mechanism (`link_section` on
   all platforms with the exception of `export_name_prefix` on AIX). Unsupported
@@ -69,6 +71,8 @@ The `#[dtor]` macro supports multiple registration strategies via
 Default:
 
 - Apple and Windows default to `at_module_exit`
+- WASM defaults to `at_binary_exit` (note that you will need to provide your own
+  atexit implementation for `wasm32-unknown-unknown`)
 - Most other platforms default to `linker`
 
 Examples:

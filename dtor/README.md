@@ -43,7 +43,8 @@ fn shutdown() {
 | Linux                      | `.fini_array`                             | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | MacOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
-| AIX                        | No <sup><sup>🔵</sup></sup>               | Yes            | Yes                  |
+| WASM                       | No                                        | Yes            | No                   |
+| AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
 | Other POSIX-like platforms | `.fini_array`/`.dtors`                    | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 
 Notes:
@@ -54,7 +55,8 @@ Notes:
   call functions in link sections, unless a binary is built with a static CRT.
 - <sup><sup>🔵</sup></sup> Link sections are not supported on AIX, but the
   platform calls functions with the prefix `__sinit` and `__sterm` at startup
-  and shutdown respectively.
+  and shutdown respectively. `__sterm`-prefixed functions are used when the
+  method is specified as `linker`.
 
 # Shutdown Method (`#[dtor(method = ...)]`)
 
@@ -69,7 +71,7 @@ The `#[dtor]` macro supports multiple registration strategies via
   termination method. Not recommended: code may be unloaded before the dtor
   runs.
 - `at_module_exit`: Register using `__cxa_atexit` (non-Windows) or `atexit`
-  (Windows) so the dtor runs when the module unloads.
+  (Windows) so the dtor runs when the module unloads. Unsupported on WASM.
 - `at_binary_exit`: Register to run at process exit (unsupported on Windows).
 - `linker`: Register using the platform's linker mechanism (`link_section` on
   all platforms with the exception of `export_name_prefix` on AIX). Unsupported
@@ -78,6 +80,8 @@ The `#[dtor]` macro supports multiple registration strategies via
 Default:
 
 - Apple and Windows default to `at_module_exit`
+- WASM defaults to `at_binary_exit` (note that you will need to provide your own
+  atexit implementation for `wasm32-unknown-unknown`)
 - Most other platforms default to `linker`
 
 Examples:
@@ -132,7 +136,9 @@ fn dtor_atexit() {
 <table><tr><th>Attribute</th><th>Description</th></tr>
 <tr><td><code>anonymous</code></td><td>
 
- Make the ctor function anonymous.
+ Do not give the destructor's registration entry a name in the generated
+ code (allows for multiple items with the same name). Equivalent to
+ wrapping the registration in an anonymous const (i.e.: `const _ = { ... };`).
 
 
 </td></tr>
@@ -144,9 +150,11 @@ fn dtor_atexit() {
 </td></tr>
 <tr><td><code>ctor(export_name_prefix = "ctor_")</code></td><td>
 
- Specify a custom export name prefix for the constructor function.
+ Specify a custom export name prefix for the generated constructor
+ function.
 
- If specified, an export with the given prefix will be generated in the form:
+ If specified, an export with the given prefix will be generated in the
+ form:
 
  `<prefix>_<unique_id>`
 
@@ -154,7 +162,8 @@ fn dtor_atexit() {
 </td></tr>
 <tr><td><code>ctor(link_section = ".ctors")</code></td><td>
 
- Place the initialization function pointer in a custom link section.
+ Place the generated registration constructor's function pointer in a
+ custom link section.
 
 
 </td></tr>
@@ -204,21 +213,20 @@ fn dtor_atexit() {
 
  Marks a dtor as unsafe. Required.
 
- The `ctor` crate will warn if there is no unsafe flag in the `ctor`
- annotation. This warning for a missing unsafe keyword can be hidden
- by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
- Cargo.
+ The `dtor` crate rejects `#[dtor]` without marking the item unsafe;
+ that error can be suppressed by passing
+ `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to Cargo.
 
 
 </td></tr>
 <tr><td><code>used(linker)</code></td><td>
 
 
- Mark generated functions pointers `used(linker)`. Requires nightly
+ Mark generated function pointers `used(linker)`. Requires nightly
  for the nightly-only feature `feature(used_with_arg)` (see
  <https://github.com/rust-lang/rust/issues/93798>).
 
- The can be made the default by using the `cfg` flag
+ This can be made the default by using the `cfg` flag
  `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
 
  For a crate using this macro to function correctly with and without
@@ -341,6 +349,9 @@ method = at_module_exit
 
 #[cfg(target_vendor = "pc")]
 method = at_module_exit
+
+#[cfg(target_family = "wasm")]
+method = at_binary_exit
 
  // default
 method = linker
