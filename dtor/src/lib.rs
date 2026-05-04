@@ -93,10 +93,11 @@ __declare_features!(
         attr: [(crate_path = $path:pat) => (($path))];
         example: "crate_path = ::path::to::dtor::crate";
     };
-    /// Specify a custom export name prefix for the generated `#[ctor]` that
-    /// registers this destructor (for example the AIX `__sinit` hook).
+    /// Specify a custom export name prefix for the generated constructor
+    /// function.
     ///
-    /// If specified, an export with the given prefix will be generated in the form:
+    /// If specified, an export with the given prefix will be generated in the
+    /// form:
     ///
     /// `<prefix>_<unique_id>`
     ctor_export_name_prefix {
