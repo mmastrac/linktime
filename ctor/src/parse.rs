@@ -751,6 +751,13 @@ macro_rules! __ctor_parse_impl {
                 #[allow(unused_unsafe)]
                 $(#[allow(unsafe_code)] #$body_link_meta)?
                 extern "C" fn __ctor_private() {
+                    #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                    {
+                        static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                        if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                            return;
+                        }
+                    }
                     $body
                 }
                 __ctor_private
@@ -769,6 +776,13 @@ macro_rules! __ctor_parse_impl {
             #[allow(unsafe_code, unused_unsafe)]
             $(#$body_link_meta)?
             extern "C" fn __ctor_private() {
+                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                {
+                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                        return;
+                    }
+                }
                 $body
             }
 
@@ -789,6 +803,13 @@ macro_rules! __ctor_parse_impl {
             #[export_name = $($link_name)*]
             $(#$body_link_meta)?
             extern "C" fn __ctor_private() {
+                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                {
+                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                        return;
+                    }
+                }
                 $body
             }
         };

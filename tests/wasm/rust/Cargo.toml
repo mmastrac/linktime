@@ -1,0 +1,14 @@
+[package]
+name = "wasm-rust"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+linktime = { path = "../../../linktime" }
+libc-print = "0.2"
+
+[workspace]
+
