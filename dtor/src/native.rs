@@ -34,9 +34,9 @@ pub unsafe fn at_binary_exit(cb: extern "C" fn()) {
 #[inline(always)]
 pub unsafe fn at_module_exit(cb: extern "C" fn()) {
     unsafe {
-        #[cfg(not(windows))]
+        #[cfg(all(not(windows), not(target_family = "wasm")))]
         _run_cxa_atexit(cb);
-        #[cfg(windows)]
+        #[cfg(any(windows, target_family = "wasm"))]
         _run_atexit(cb);
     }
 }
@@ -52,7 +52,7 @@ pub unsafe fn at_library_exit(cb: extern "C" fn()) {
 }
 
 /// Register a function to be called at libc exit time.
-#[cfg(not(miri))]
+#[cfg(all(not(miri), not(target_family = "wasm")))]
 #[inline(always)]
 unsafe fn _run_atexit(cb: unsafe extern "C" fn()) {
     #[allow(missing_unsafe_on_extern)] // MSRV
@@ -64,8 +64,20 @@ unsafe fn _run_atexit(cb: unsafe extern "C" fn()) {
     }
 }
 
+#[cfg(all(not(miri), target_family = "wasm"))]
+#[inline(always)]
+unsafe fn _run_atexit(cb: unsafe extern "C" fn()) {
+    #[allow(missing_unsafe_on_extern)] // MSRV
+    extern "C" {
+        fn atexit(cb: unsafe extern "C" fn()) -> i32;
+    }
+    unsafe {
+        atexit(cb);
+    }
+}
+
 /// Register a function scoped to the current dynamic shared object.
-#[cfg(all(not(miri), not(windows)))]
+#[cfg(all(not(miri), not(windows), not(target_family = "wasm")))]
 #[inline(always)]
 unsafe fn _run_cxa_atexit(cb: extern "C" fn()) {
     #[allow(missing_unsafe_on_extern)] // MSRV

@@ -28,7 +28,7 @@ pub use native::*;
 /// # use dtor::dtor;
 /// # fn main() {}
 ///
-/// #[dtor]
+/// #[dtor(unsafe)]
 /// fn shutdown() {
 ///   /* ... */
 /// }
@@ -47,7 +47,7 @@ pub use linktime_proc_macro::dtor;
 /// ```rust
 /// # #[cfg(any())] mod test { use dtor::*; use libc_print::*;
 /// dtor::declarative::dtor! {
-///   #[dtor]
+///   #[dtor(unsafe)]
 ///   fn foo() {
 ///     libc_println!("Goodbye, world!");
 ///   }
@@ -57,7 +57,7 @@ pub use linktime_proc_macro::dtor;
 /// // ... the above is identical to:
 ///
 /// # #[cfg(any())] mod test_2 { use dtor::*; use libc_print::*;
-/// #[dtor]
+/// #[dtor(unsafe)]
 /// fn foo() {
 ///   libc_println!("Goodbye, world!");
 /// }
@@ -82,7 +82,9 @@ pub mod __support {
 __declare_features!(
     dtor: __dtor_features;
 
-    /// Make the ctor function anonymous.
+    /// Do not give the destructor's registration entry a name in the generated
+    /// code (allows for multiple items with the same name). Equivalent to
+    /// wrapping the registration in an anonymous const (i.e.: `const _ = { ... };`).
     anonymous {
         attr: [(anonymous) => (anonymous)];
     };
@@ -91,7 +93,8 @@ __declare_features!(
         attr: [(crate_path = $path:pat) => (($path))];
         example: "crate_path = ::path::to::dtor::crate";
     };
-    /// Specify a custom export name prefix for the constructor function.
+    /// Specify a custom export name prefix for the generated `#[ctor]` that
+    /// registers this destructor (for example the AIX `__sinit` hook).
     ///
     /// If specified, an export with the given prefix will be generated in the form:
     ///
@@ -104,7 +107,8 @@ __declare_features!(
             _ => (),
         }
     };
-    /// Place the initialization function pointer in a custom link section.
+    /// Place the generated registration constructor's function pointer in a
+    /// custom link section.
     ctor_link_section {
         attr: [(ctor(link_section = $ctor_link_section_name:literal)) => ($ctor_link_section_name)];
         example: "ctor(link_section = \".ctors\")";
@@ -233,6 +237,9 @@ __declare_features!(
         default {
             (target_vendor = "apple") => at_module_exit,
             (target_vendor = "pc") => at_module_exit,
+            // WASI/Emscripten support atexit only
+            // For wasm-unknown-unknown, you'll need to provide one
+            (target_family = "wasm") => at_binary_exit,
             _ => linker,
         }
     };
@@ -252,10 +259,9 @@ __declare_features!(
         ///
         /// Marks a dtor as unsafe. Required.
         ///
-        /// The `ctor` crate will warn if there is no unsafe flag in the `ctor`
-        /// annotation. This warning for a missing unsafe keyword can be hidden
-        /// by passing `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to
-        /// Cargo.
+        /// The `dtor` crate rejects `#[dtor]` without marking the item unsafe;
+        /// that error can be suppressed by passing
+        /// `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"` to Cargo.
         attr: [(unsafe) => (no_fail_on_missing_unsafe)];
         default {
             (linktime_no_fail_on_missing_unsafe) => (no_fail_on_missing_unsafe),
@@ -265,11 +271,11 @@ __declare_features!(
     used_linker {
         /// attr
         ///
-        /// Mark generated functions pointers `used(linker)`. Requires nightly
+        /// Mark generated function pointers `used(linker)`. Requires nightly
         /// for the nightly-only feature `feature(used_with_arg)` (see
         /// <https://github.com/rust-lang/rust/issues/93798>).
         ///
-        /// The can be made the default by using the `cfg` flag
+        /// This can be made the default by using the `cfg` flag
         /// `linktime_used_linker` (`RUSTFLAGS="--cfg linktime_used_linker"`).
         ///
         /// For a crate using this macro to function correctly with and without
