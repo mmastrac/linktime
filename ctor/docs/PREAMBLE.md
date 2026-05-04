@@ -19,14 +19,14 @@ MSRV for WASM targets is **Rust >= 1.85**.
 
 ## Lightweight
 
-`ctor` has no dependencies other than the `linktime-proc-macro` and `link-section`
-crates. The proc-macro is only used to delegate to the declarative macro and
-should have minimal effect on compilation time.
+`ctor` has no dependencies other than the `linktime-proc-macro` and
+`link-section` crates. The proc-macro is only used to delegate to the
+declarative macro and should have minimal effect on compilation time.
 
 ## Support
 
-This library works and is regularly tested on Linux, macOS, Windows, and FreeBSD,
-with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
+This library works and is regularly tested on Linux, macOS, Windows, and
+FreeBSD, with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
 
 Contributions to support other platforms or improve testing are welcome.
 
@@ -36,7 +36,7 @@ Contributions to support other platforms or improve testing are welcome.
 | macOS        | ✅        | ✅        |
 | Windows      | ✅        | ✅        |
 | FreeBSD      | ✅        | ✅        |
-| WASM         | ✅        | ✅        |
+| WASM 🕸️      | ✅        | ✅        |
 | NetBSD       | ✅        | -         |
 | OpenBSD      | ✅        | -         |
 | DragonFlyBSD | ✅        | -         |
@@ -48,6 +48,13 @@ Contributions to support other platforms or improve testing are welcome.
 | VxWorks      | ✅        | -         |
 | Xtensa       | ✅        | -         |
 | NTO          | ✅        | -         |
+
+🕸️ = WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
+
+- `wasm-unknown-unknown` requires host environment support for `atexit` if used
+  with `dtor`.
+- `wasm-wasip2` may require you to manually call `__wasm_call_ctors` and
+  `__wasm_call_dtors` at the appropriate times.
 
 ## Warnings
 
@@ -169,7 +176,6 @@ impl Driver for MyDriver {
 }
 
 register_driver!("my_driver", MyDriver {});
-
 ```
 
 ## Under the Hood

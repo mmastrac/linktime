@@ -39,10 +39,7 @@ async function main(): Promise<void> {
 
   const atexitHandlers: number[] = [];
   function atexit(ptr: number) {
-    console.log("atexit: ", ptr);
-    if (atexitHandlers) {
-        atexitHandlers.push(ptr);
-    }
+    atexitHandlers.push(ptr);
   }
 
   const buf = await readFile(wasmPath);

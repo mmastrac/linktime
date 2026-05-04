@@ -43,7 +43,7 @@ fn shutdown() {
 | Linux                      | `.fini_array`                             | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | MacOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
-| WASM                       | No                                        | Yes            | No                   |
+| WASM 🕸️                    | No                                        | Yes            | No                   |
 | AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
 | Other POSIX-like platforms | `.fini_array`/`.dtors`                    | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 
@@ -57,6 +57,14 @@ Notes:
   platform calls functions with the prefix `__sinit` and `__sterm` at startup
   and shutdown respectively. `__sterm`-prefixed functions are used when the
   method is specified as `linker`.
+- <sup><sup>🕸️</sup></sup> WASM `wasm-unknown-unknown`, `wasm-wasip1`,
+  `wasm-wasip2` are supported.
+  - Rust does not currently allow linking into `.fini_array` sections on WASM,
+    regardless of target, so `at_binary_exit` is the only supported method on
+    all WASM targets.
+  - `wasm-unknown-unknown` requires host environment support for `atexit`.
+  - `wasm-wasip2` may require you to manually call `__wasm_call_ctors` and
+    `__wasm_call_dtors` at the appropriate times.
 
 # Shutdown Method (`#[dtor(method = ...)]`)
 
