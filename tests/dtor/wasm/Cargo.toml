@@ -1,5 +1,5 @@
 [package]
-name = "tests-ctor-wasm"
+name = "tests-dtor-wasm"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -8,6 +8,6 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-ctor = { path = "../../../ctor" }
+dtor = { path = "../../../dtor" }
 
 [workspace]
