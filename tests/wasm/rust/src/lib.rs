@@ -20,5 +20,21 @@ pub extern "C" fn _call_atexit(f: extern "C" fn()) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
+    {
+        unsafe extern "C" {
+            fn __wasm_call_ctors();
+        }
+        unsafe { __wasm_call_ctors(); }
+    }
+
     println!("start");
+
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
+    {
+        unsafe extern "C" {
+            fn __wasm_call_dtors();
+        }
+        unsafe { __wasm_call_dtors(); }
+    }
 }
