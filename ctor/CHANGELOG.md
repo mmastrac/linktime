@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       dependencies like so:
       ```toml
       [dependencies]
-      dtor = "0.13.1" # or later
+      dtor = "1.0.0" # or later
       ```
     - `#[ctor(unsafe)]` is now required for `#[ctor]` items. If you are building a
       binary, you can use `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"`

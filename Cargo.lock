@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "dtor"
-version = "0.14.1"
+version = "1.0.0"
 dependencies = [
  "libc-print",
  "linktime-proc-macro",
@@ -482,7 +482,7 @@ dependencies = [
 
 [[package]]
 name = "linktime"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "ctor",
  "dtor",

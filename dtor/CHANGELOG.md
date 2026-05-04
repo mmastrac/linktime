@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-05-03
+
+### Changed
+
+- Stabilized (yay!). Functionally identical to 0.14.1. Thanks to all the
+  contributors who helped along the way! Please file any upgrade issues in
+  <https://github.com/mmastrac/linktime/issues>.
+- For those upgrading from earlier versions, the major changes for you to note
+  are:
+    - `#[dtor(unsafe)]` is now required for `#[dtor]` items. If you are building a
+      binary, you can use `RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe"`
+      (or alternatively, specify this in your `config.toml` file) to bypass the
+      error.
+    - For those re-exporting `dtor` from their own crates: the
+      `dtor::declarative::dtor!` macro should be preferred over
+      `#[dtor(crate_path = ...)]`. The latter form will continue to work, but
+      the declarative macro is far more stable for most use cases. See
+      <https://docs.rs/dtor/latest/dtor/declarative/macro.dtor.html> for more
+      details.
+
 ## [0.14.1] - 2026-05-04
 
 ### Changed
