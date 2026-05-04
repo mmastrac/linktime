@@ -44,8 +44,6 @@ macro_rules! __dtor_parse_impl {
             $($body:tt)*
         })
     ) ) => {
-        $crate::__dtor_parse_impl!(@checkfail method=$method);
-
         $crate::__dtor_parse_impl!(@entry next=$next[$next_args], input=(
             features = (
                 anonymous = $anonymous,
@@ -66,17 +64,6 @@ macro_rules! __dtor_parse_impl {
             })
         ));
     };
-
-    ( @checkfail method=term ) => {};
-    ( @checkfail method=unload ) => {};
-    ( @checkfail method=at_module_exit ) => {};
-    ( @checkfail method=at_binary_exit ) => {};
-    ( @checkfail method=linker ) => {};
-    ( @checkfail method=$any:tt ) => {
-        compile_error!(concat!("Invalid dtor method: ", stringify!($any)));
-    };
-
-    ( @checkfail $($rest:tt)* ) => {};
 
     ( @entry next=$next:path[$next_args:tt], input=(
         features = (
