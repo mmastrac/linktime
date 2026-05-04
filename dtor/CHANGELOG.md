@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - WASM support now uses `atexit` on all platforms (including
   `wasm32-unknown-unknown`).
+- Typos and other documentation nits.
 
 ## [0.13.1] - 2026-05-02
 
