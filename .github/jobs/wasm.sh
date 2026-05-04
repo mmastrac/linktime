@@ -10,6 +10,7 @@ cargo build --target wasm32-wasip2
 
 # WASI smoketest
 wasmtime run target/wasm32-wasip1/debug/wasm_rust.wasm
+wasmtime run target/wasm32-wasip2/debug/wasm_rust.wasm
 
 # WASI via node
 npx tsx "$ROOT/tests/wasm/js/test-wasm32-unknown-unknown.mts"

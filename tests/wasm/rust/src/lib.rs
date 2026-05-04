@@ -19,7 +19,6 @@ pub extern "C" fn _call_atexit(f: extern "C" fn()) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn _start() -> u32 {
+pub extern "C" fn _start() {
     println!("start");
-    42
 }
