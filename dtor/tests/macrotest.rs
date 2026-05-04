@@ -80,6 +80,7 @@ pub fn trybuild() {
     t.pass("tests/pass/*.rs");
 }
 
+#[cfg(not(linktime_used_linker))] // we don't want to change tests for this
 #[test]
 pub fn target_test() {
     let Some(toolchain) = std::env::var_os("TOOLCHAIN") else {
