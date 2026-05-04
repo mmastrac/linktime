@@ -7,6 +7,9 @@
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]
 pub mod life_before_main {}
 
+#[cfg(target_family = "wasm")]
+extern crate alloc;
+
 /// Declarative forms of the `#[section]` and `#[in_section(...)]` macros.
 ///
 /// The declarative forms wrap and parse a proc_macro-like syntax like so, and
@@ -31,6 +34,17 @@ pub mod __support {
     pub use linktime_proc_macro::hash;
     #[cfg(feature = "proc_macro")]
     pub use linktime_proc_macro::ident_concat;
+
+    #[cfg(target_family = "wasm")]
+    extern "C" {
+        /// Read custom section with name/name_length as a UTF8 string
+        pub(crate) fn read_custom_section(
+            name: *const u8,
+            name_length: usize,
+            target_address: *mut u8,
+            target_address_length: usize,
+        ) -> usize;
+    }
 
     /// Declares the section_name macro.
     #[macro_export]
@@ -395,13 +409,6 @@ pub mod __support {
                         ::core::sync::atomic::AtomicPtr::<::core::marker::PhantomData<$generic_ty>>::new(::core::ptr::null_mut())
                     };
 
-                    $crate::__support::ident_concat!((#[no_mangle]pub extern "C" fn) (register_link_section_ $ident) ((data_ptr: *const u8, data_len: usize) {
-                        unsafe {
-                            __START.store(data_ptr as *mut ::core::marker::PhantomData<$generic_ty>, ::core::sync::atomic::Ordering::Relaxed);
-                            __END.store(data_ptr.add(data_len) as *mut ::core::marker::PhantomData<$generic_ty>, ::core::sync::atomic::Ordering::Relaxed);
-                        }
-                    }));
-
                     (&__START, &__END)
                 }
             }
@@ -698,10 +705,29 @@ impl Section {
     pub fn start_ptr(&self) -> *const () {
         let ptr = self.start.load(::core::sync::atomic::Ordering::Relaxed) as *const ();
         if ptr.is_null() {
-            panic!(
-                "Section {} was not initialized by the host environment",
-                self.name
-            );
+            unsafe {
+                let required = crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ::core::ptr::null_mut(),
+                    0,
+                );
+                let ptr = ::alloc::alloc::alloc(
+                    ::core::alloc::Layout::from_size_align(required, 1).unwrap(),
+                );
+                self.start
+                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
+                self.end.store(
+                    ptr.add(required) as _,
+                    ::core::sync::atomic::Ordering::Relaxed,
+                );
+                crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ptr as *mut u8,
+                    required,
+                );
+            }
         }
         ptr
     }
@@ -709,10 +735,29 @@ impl Section {
     pub fn end_ptr(&self) -> *const () {
         let ptr = self.end.load(::core::sync::atomic::Ordering::Relaxed) as *const ();
         if ptr.is_null() {
-            panic!(
-                "Section {} was not initialized by the host environment",
-                self.name
-            );
+            unsafe {
+                let required = crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ::core::ptr::null_mut(),
+                    0,
+                );
+                let ptr = ::alloc::alloc::alloc(
+                    ::core::alloc::Layout::from_size_align(required, 1).unwrap(),
+                );
+                self.start
+                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
+                self.end.store(
+                    ptr.add(required) as _,
+                    ::core::sync::atomic::Ordering::Relaxed,
+                );
+                crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ptr as *mut u8,
+                    required,
+                );
+            }
         }
         ptr
     }
@@ -760,10 +805,30 @@ impl<T: 'static> TypedSection<T> {
     pub fn start_ptr(&self) -> *const T {
         let ptr = self.start.load(::core::sync::atomic::Ordering::Relaxed) as *const T;
         if ptr.is_null() {
-            panic!(
-                "TypedSection {} was not initialized by the host environment",
-                self.name
-            );
+            unsafe {
+                let required = crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ::core::ptr::null_mut(),
+                    0,
+                );
+                let ptr = ::alloc::alloc::alloc(
+                    ::core::alloc::Layout::from_size_align(required, ::core::mem::align_of::<T>())
+                        .unwrap(),
+                );
+                self.start
+                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
+                self.end.store(
+                    ptr.add(required) as _,
+                    ::core::sync::atomic::Ordering::Relaxed,
+                );
+                crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ptr as *mut u8,
+                    required,
+                );
+            }
         }
         ptr
     }
@@ -772,10 +837,30 @@ impl<T: 'static> TypedSection<T> {
     pub fn end_ptr(&self) -> *const T {
         let ptr = self.end.load(::core::sync::atomic::Ordering::Relaxed) as *const T;
         if ptr.is_null() {
-            panic!(
-                "TypedSection {} was not initialized by the host environment",
-                self.name
-            );
+            unsafe {
+                let required = crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ::core::ptr::null_mut(),
+                    0,
+                );
+                let ptr = ::alloc::alloc::alloc(
+                    ::core::alloc::Layout::from_size_align(required, ::core::mem::align_of::<T>())
+                        .unwrap(),
+                );
+                self.start
+                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
+                self.end.store(
+                    ptr.add(required) as _,
+                    ::core::sync::atomic::Ordering::Relaxed,
+                );
+                crate::__support::read_custom_section(
+                    self.name.as_ptr(),
+                    self.name.len(),
+                    ptr as *mut u8,
+                    required,
+                );
+            }
         }
         ptr
     }

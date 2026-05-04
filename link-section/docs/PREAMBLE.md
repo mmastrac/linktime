@@ -77,6 +77,44 @@ ordering, and are stored out-of-band. The host environment is responsible for
 registering this out-of-band section with this library as this data is not
 accessible by the WASM runtime.
 
+The WASM support expects a function in the module's environment with the
+following signature and functionality. The wasm import only passes the four
+`usize` / pointer parameters; the embedder should close over
+`WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
+installing the import.
+
+```js
+/**
+ * Support function for `link-section` crate.
+ */
+export function readCustomSection(
+  wasmModule: WebAssembly.Module,
+  wasmInstance: WebAssembly.Instance,
+  namePtr: number,
+  nameLength: number,
+  targetPtr: number,
+  targetLength: number,
+): number {
+    const memory = wasmInstance.exports.memory as WebAssembly.Memory;
+    const nameBytes = new Uint8Array(memory.buffer, namePtr, nameLength);
+    const sectionName = new TextDecoder().decode(nameBytes);
+
+    const sections = WebAssembly.Module.customSections(wasmModule, sectionName);
+    if (sections.length === 0) {
+        return 0;
+    }
+
+    const section = sections[0];
+    const need = section.byteLength;
+    if (targetLength < need) {
+        return need;
+    }
+
+    new Uint8Array(memory.buffer, targetPtr, need).set(new Uint8Array(section));
+    return need;
+}
+```
+
 ## Typed Sections
 
 Typed sections provide a section where all items are of a specific, sized type.

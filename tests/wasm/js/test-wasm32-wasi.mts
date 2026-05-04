@@ -7,6 +7,8 @@ import { argv } from "node:process";
 import { fileURLToPath } from "node:url";
 import { WASI } from "node:wasi";
 
+import { readCustomSection } from "./link-section.mts";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const wasmPath = join(here, "../rust/target/wasm32-wasip1/debug/wasm_rust.wasm");
 
@@ -23,6 +25,9 @@ async function main(): Promise<void> {
   const wasmModule = await WebAssembly.compile(wasmBuf);
   const instance = await WebAssembly.instantiate(wasmModule, {
     wasi_snapshot_preview1: wasi.wasiImport,
+    env: {
+        read_custom_section: (...args: [number, number, number, number]) => readCustomSection.apply(null, [wasmModule, instance, ...args]),
+    },
   });
 
   const exitCode = wasi.start(instance);

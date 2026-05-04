@@ -12,3 +12,7 @@ libc-print = "0.2"
 
 [workspace]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(wasmtime)',
+] }
