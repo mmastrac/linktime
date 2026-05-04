@@ -32,7 +32,7 @@ fn shutdown() {
 | Platform                   | Link Section                              | at_binary_exit | at_module_exit       |
 | -------------------------- | ----------------------------------------- | -------------- | -------------------- |
 | Linux                      | `.fini_array`                             | Yes (`atexit`) | Yes (`__cxa_atexit`) |
-| MacOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
+| macOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
 | WASM 🕸️                    | No                                        | Yes            | No                   |
 | AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
