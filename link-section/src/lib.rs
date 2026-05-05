@@ -627,15 +627,14 @@ pub mod __support {
                 __LINK_SECTION_CONST_ITEM_VALUE
             };
         };
+        // Simplify anonymous constants.
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const _: $ty:ty = $value:expr;)) => {
-            $(#[$meta])* $vis const _: $ty = {
-                const __LINK_SECTION_CONST_ITEM_VALUE: $ty = $value;
+            $(#[$meta])* $vis const _: () = {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = __LINK_SECTION_CONST_ITEM_VALUE;
+                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = $value;
                 );
-                __LINK_SECTION_CONST_ITEM_VALUE
             };
         };
         (data, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $item:item)) => {

@@ -15,15 +15,13 @@ const _: () = {
             extern "C" fn __ctor_private() {
                 { unsafe { __ctor_private_inner() } }
             }
-            pub const _: ::ctor::collect::Constructor = {
-                const __LINK_SECTION_CONST_ITEM_VALUE: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
+            pub const _: () = {
+                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
+                #[used]
+                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
                     priority: 0,
                     ctor: __ctor_private,
                 };
-                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
-                #[used]
-                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = __LINK_SECTION_CONST_ITEM_VALUE;
-                __LINK_SECTION_CONST_ITEM_VALUE
             };
         };
         unsafe { __ctor_private_inner() }
@@ -45,15 +43,13 @@ const _: () = {
             extern "C" fn __ctor_private() {
                 { unsafe { __ctor_private_inner() } }
             }
-            pub const _: ::ctor::collect::Constructor = {
-                const __LINK_SECTION_CONST_ITEM_VALUE: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
+            pub const _: () = {
+                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
+                #[used]
+                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
                     priority: 0,
                     ctor: __ctor_private,
                 };
-                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
-                #[used]
-                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = __LINK_SECTION_CONST_ITEM_VALUE;
-                __LINK_SECTION_CONST_ITEM_VALUE
             };
         };
         unsafe { __ctor_private_inner() }
