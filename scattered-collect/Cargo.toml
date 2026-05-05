@@ -1,0 +1,15 @@
+[package]
+name = "scattered-collect"
+version = "0.1.0"
+edition = "2024"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Link-time scattered collections for Rust"
+
+[dependencies]
+link-section.workspace = true
+ctor.workspace = true
+scattered-collect-proc-macro = { path = "../scattered-collect-proc-macro" }
+xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
+wide = "1.3"
