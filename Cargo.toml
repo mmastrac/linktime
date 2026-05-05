@@ -7,6 +7,8 @@ members = [
     "linktime",
     "linktime-proc-macro",
     "link-section",
+    "scattered-collect",
+    "scattered-collect-proc-macro",
     "tests"
 ]
 default-members = [
@@ -15,6 +17,8 @@ default-members = [
     "linktime",
     "macro-magic",
     "link-section",
+    "scattered-collect",
+    "scattered-collect-proc-macro",
     "tests"
 ]
 exclude = []

@@ -1,0 +1,14 @@
+[package]
+name = "scattered-collect"
+version = "0.1.0"
+edition = "2024"
+authors = ["Matt Mastracci <matthew@mastracci.com>"]
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/mmastrac/linktime"
+
+[dependencies]
+link-section.workspace = true
+ctor.workspace = true
+scattered-collect-proc-macro = { path = "../scattered-collect-proc-macro" }
+xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
+wide = "1.3"
