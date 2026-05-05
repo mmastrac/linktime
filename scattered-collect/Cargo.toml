@@ -2,9 +2,10 @@
 name = "scattered-collect"
 version = "0.1.0"
 edition = "2024"
-authors = ["Matt Mastracci <matthew@mastracci.com>"]
-license = "Apache-2.0 OR MIT"
-repository = "https://github.com/mmastrac/linktime"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Link-time scattered collections for Rust"
 
 [dependencies]
 link-section.workspace = true
