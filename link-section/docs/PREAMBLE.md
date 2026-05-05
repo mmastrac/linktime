@@ -121,6 +121,13 @@ Typed sections provide a section where all items are of a specific, sized type.
 The typed section may be accessed as a slice of the type at zero cost if
 desired.
 
+A typed section can be created from either `static` or `const` items.
+
+For `const` items: a copy of the `const` is materialized at link time, while the
+constant itself remains available for use as a constant in `const` contexts.
+
+For `static` items: the static is stored directly in the link section.
+
 `fn` items are special-cased and stored as function pointers in the typed
 section.
 
@@ -142,7 +149,7 @@ pub fn link_section_function() {
 ```
 
 Create a typed section using the `#[section]` macro that stores items of a
-specific, sized type:
+specific, sized type from `static` or `const` items:
 
 ```rust
 mod my_registry {
@@ -155,16 +162,20 @@ mod my_registry {
     #[section]
     pub static MY_REGISTRY: link_section::TypedSection<MyStruct>;
 
-    mod a {
+    // Registers a `const` item.
+    mod register_a_constant {
         use super::*;
 
+        // A copy of this constant is registered in the link section.
         #[in_section(MY_REGISTRY)]
-        pub static LINKED_MY_STRUCT: MyStruct = MyStruct { name: "my_struct" };
+        pub const LINKED_MY_STRUCT: MyStruct = MyStruct { name: "my_struct" };
     }
 
-    mod b {
+    // Registers a `static` item.
+    mod register_a_static {
         use super::*;
 
+        // This static lives directly in the link section.
         #[in_section(MY_REGISTRY)]
         pub static LINKED_MY_STRUCT: MyStruct = MyStruct { name: "my_struct_2" };
     }
