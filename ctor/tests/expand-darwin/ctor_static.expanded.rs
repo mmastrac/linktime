@@ -17,10 +17,14 @@ const _: () = {
     extern "C" fn __ctor_private() {
         { _ = &*STATIC_CTOR }
     }
-    #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
-    #[used]
-    pub static CTOR: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
-        priority: 0,
-        ctor: __ctor_private,
+    pub const _: ::ctor::collect::Constructor = {
+        const __LINK_SECTION_CONST_ITEM_VALUE: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
+            priority: 0,
+            ctor: __ctor_private,
+        };
+        #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
+        #[used]
+        pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = __LINK_SECTION_CONST_ITEM_VALUE;
+        __LINK_SECTION_CONST_ITEM_VALUE
     };
 };
