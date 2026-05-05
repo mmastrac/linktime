@@ -67,11 +67,8 @@ pub static DEBUGGABLE_2: &'static (dyn ::core::fmt::Debug + Sync) = &2;
 
 /// A function pointer in the `DEBUGGABLES` section.
 #[in_section(DEBUGGABLES)]
-pub static DEBUGGABLE_FUNCTION: fn() = {
-    fn debuggable_function() {
-        eprintln!("debuggable_function");
-    }
-    &(debuggable_function as fn())
+pub static DEBUGGABLE_FUNCTION: &'static (dyn ::core::fmt::Debug + Sync) = {
+    &::core::fmt::from_fn(|f| f.write_str("debuggable_function"))
 };
 
 /// Dumps the various sections.

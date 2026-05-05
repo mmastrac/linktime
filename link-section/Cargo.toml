@@ -1,6 +1,6 @@
 [package]
 name = "link-section"
-version = "0.14.0"
+version = "0.15.0"
 authors.workspace = true
 edition = "2021"
 description = "Low-level link-section macro support for Rust"
@@ -26,4 +26,4 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [[example]]
 name = "link-section-example"
-path = "src/example.rs"
+path = "examples/example.rs"

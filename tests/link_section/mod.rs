@@ -27,7 +27,10 @@ unordered {
     ! f: %{BASE16NUM}
     ! linked_function_2
 }
-! DEBUGGABLES: [1, 2, %{BASE16NUM}]
+choice {
+    ! DEBUGGABLES: [1, 2, debuggable_function]
+    ! DEBUGGABLES: [debuggable_function, 2, 1]
+}
 "#
 );
 

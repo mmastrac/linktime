@@ -532,7 +532,7 @@ pub mod __support {
         ((v=0 (name=$ident:ident (path=[$path:path] (item=$item:tt $rest:tt)))) () )=> {
             $crate::__support::in_section_crate!(section, $ident,, $path, $item);
         };
-        (v=$v:literal $rest:tt) => {
+        ((v=$v:literal $rest:tt)) => {
             const _: () = {
                 compile_error!(concat!(
                     "link-section: Unsupported version: `",
@@ -556,7 +556,7 @@ pub mod __support {
         ((v=0 (name=$ident:ident (path=[$path:path] (item=$item:tt $rest:tt)))) () )=> {
             $crate::__support::in_section_crate!(data, $ident,, $path, $item);
         };
-        (v=$v:literal $rest:tt) => {
+        ((v=$v:literal $rest:tt)) => {
             const _: () = {
                 compile_error!(concat!(
                     "link-section: Unsupported version: `",
@@ -615,6 +615,28 @@ pub mod __support {
                 #[link_section = __]
                 $(#[$meta])* $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
+        };
+        ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const $name:ident: $ty:ty = $value:expr;)) => {
+            $(#[$meta])* $vis const $name: $ty = {
+                const __LINK_SECTION_CONST_ITEM_VALUE: $ty = $value;
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
+                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = __LINK_SECTION_CONST_ITEM_VALUE;
+                );
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
+        };
+        ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const _: $ty:ty = $value:expr;)) => {
+            $(#[$meta])* $vis const _: $ty = {
+                const __LINK_SECTION_CONST_ITEM_VALUE: $ty = $value;
+                $crate::__add_section_link_attribute!(
+                    data section $ident $($aux)?
+                    #[link_section = __]
+                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = __LINK_SECTION_CONST_ITEM_VALUE;
+                );
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
         };
         (data, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $item:item)) => {
             $crate::__add_section_link_attribute!(
