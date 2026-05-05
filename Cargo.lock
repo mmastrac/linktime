@@ -192,7 +192,7 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "libc-print",
  "link-section",
@@ -481,7 +481,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "linktime-proc-macro",
 ]

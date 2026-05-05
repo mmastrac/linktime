@@ -159,7 +159,7 @@ pub mod collect {
         (priority = $priority:tt, fn = $fn:ident) => {
             $crate::__support::in_section!(
                 #[in_section(unsafe, type = $crate::collect::Constructor, name = _CTOR0_ISIZE_FN)]
-                pub static CTOR: $crate::collect::Constructor = $crate::collect::Constructor {
+                pub const _: $crate::collect::Constructor = $crate::collect::Constructor {
                     priority: $priority,
                     ctor: $fn,
                 };
