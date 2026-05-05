@@ -618,11 +618,12 @@ pub mod __support {
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const $name:ident: $ty:ty = $value:expr;)) => {
             $(#[$meta])* $vis const $name: $ty = {
-                const __LINK_SECTION_CONST_ITEM_VALUE: $ty = $value;
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, $ty);
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = __LINK_SECTION_CONST_ITEM_VALUE;
+                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
                 __LINK_SECTION_CONST_ITEM_VALUE
             };
@@ -630,10 +631,11 @@ pub mod __support {
         // Simplify anonymous constants.
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const _: $ty:ty = $value:expr;)) => {
             $(#[$meta])* $vis const _: () = {
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, $ty);
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: $ty = $value;
+                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
                 );
             };
         };

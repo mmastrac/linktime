@@ -16,9 +16,10 @@ const _: () = {
                 { unsafe { __ctor_private_inner() } }
             }
             pub const _: () = {
+                type __InSecStoredTy = ::ctor::collect::Constructor;
                 #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
-                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
+                pub static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = ::ctor::collect::Constructor {
                     priority: 0,
                     ctor: __ctor_private,
                 };
@@ -44,9 +45,10 @@ const _: () = {
                 { unsafe { __ctor_private_inner() } }
             }
             pub const _: () = {
+                type __InSecStoredTy = ::ctor::collect::Constructor;
                 #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
-                pub static __LINK_SECTION_CONST_ITEM: ::ctor::collect::Constructor = ::ctor::collect::Constructor {
+                pub static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = ::ctor::collect::Constructor {
                     priority: 0,
                     ctor: __ctor_private,
                 };
