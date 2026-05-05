@@ -893,7 +893,7 @@ impl<T: 'static> TypedSection<T> {
     /// The start address of the section.
     #[inline(always)]
     pub fn start_ptr(&self) -> *const T {
-        self.start as usize as *const T
+        self.start as *const T
     }
 
     /// The end address of the section.

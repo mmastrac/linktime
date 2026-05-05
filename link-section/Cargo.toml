@@ -27,3 +27,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [[example]]
 name = "link-section-example"
 path = "examples/example.rs"
+
+[[example]]
+name = "link-section-const"
+path = "examples/const.rs"

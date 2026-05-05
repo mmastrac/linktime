@@ -10,6 +10,8 @@ cargo clean
 
 cargo miri test
 
+cargo miri run --example "link-section-const"
+
 miri_crates=(
   tests/ctor/edition-2018
   tests/ctor/priority
