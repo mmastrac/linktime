@@ -46,6 +46,9 @@ pub mod __support {
         ) -> usize;
     }
 
+    #[cfg(target_family = "wasm")]
+    pub use section::{register_wasm_link_section_item, LinkSectionInfo};
+
     /// Declares the section_name macro.
     #[macro_export]
     #[doc(hidden)]
@@ -79,7 +82,7 @@ pub mod __support {
                 )*
                 ($pattern:tt $unknown_section:ident $unknown_type:ident $name:ident) => {
                     const _: () = {
-                        compile_error!("Unknown section type: `{}`/`{}`", stringify!($unknown_section), stringify!($unknown_type));
+                        compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                     };
                 };
             }
@@ -151,10 +154,9 @@ pub mod __support {
             }
         };
         ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
-            $(#[$meta:meta])* $($item:tt)*) => {
+            $($item:tt)*) => {
             $crate::__add_section_link_attribute_impl!(
                 $section $type $name $($aux)? #[$attr = __]
-                $(#[$meta])*
                 #[allow(unsafe_code)]
                 $($item)*
             );
@@ -208,6 +210,7 @@ pub mod __support {
             data section => (".data", ".link_section.") __ ();
             code bare =>    (".text", ".link_section.") __ ();
             code section => (".text", ".link_section.") __ ();
+            data bounds =>   (".data", ".link_section.") __ (".bounds");
         }
         AUXILIARY = ".";
         MAX_LENGTH = 16;
@@ -356,7 +359,7 @@ pub mod __support {
                         let name = $crate::__section_name!(
                             raw data bare $ident
                         );
-                        unsafe { <$ty>::new(name, section.0, section.1) }
+                        unsafe { <$ty>::new(name, section) }
                     };
                     &SECTION
                 }
@@ -372,7 +375,7 @@ pub mod __support {
                         let name = $crate::__section_name!(
                             raw data bare $aux $ident // swap
                         );
-                        unsafe { <$ty>::new(name, section.0, section.1) }
+                        unsafe { <$ty>::new(name, section) }
                     };
                     &SECTION
                 }
@@ -390,37 +393,113 @@ pub mod __support {
             }};
         }
 
-        /// On Apple platforms, the linker provides a pointer to the start and end
-        /// of the section regardless of the section's name.
         pub type SectionPtr<T> = *const ::core::marker::PhantomData<T>;
     }
 
     #[cfg(all(not(miri), target_family = "wasm"))]
     mod section {
+        use core::ptr;
+
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
                 {
-                    static __START: ::core::sync::atomic::AtomicPtr::<::core::marker::PhantomData<$generic_ty>> = unsafe {
-                        ::core::sync::atomic::AtomicPtr::<::core::marker::PhantomData<$generic_ty>>::new(::core::ptr::null_mut())
-                    };
-                    static __END: ::core::sync::atomic::AtomicPtr::<::core::marker::PhantomData<$generic_ty>> = unsafe {
-                        ::core::sync::atomic::AtomicPtr::<::core::marker::PhantomData<$generic_ty>>::new(::core::ptr::null_mut())
-                    };
+                    static __LINK_SECTION_NAME: &'static str = $crate::__section_name!(
+                        raw data bare $ident $($aux)?
+                    );
+                    $crate::__support::add_section_link_attribute!(
+                        data bounds $ident $($aux)?
+                        #[export_name = __]
+                        #[used]
+                        static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionInfo = $crate::__support::LinkSectionInfo::new(__LINK_SECTION_NAME);
+                    );
 
-                    (&__START, &__END)
+                    $crate::__support::Bounds(&raw mut __LINK_SECTION_INFO)
                 }
+            }
+        }
+
+        #[repr(C)]
+        pub struct LinkSectionInfo {
+            name: *const u8,
+            name_length: usize,
+            start: *const (),
+            end: *const (),
+            current: *const (),
+        }
+
+        impl LinkSectionInfo {
+            pub const fn new(name: &'static str) -> Self {
+                Self {
+                    name: name.as_ptr(),
+                    name_length: name.len(),
+                    start: ptr::null_mut(),
+                    end: ptr::null_mut(),
+                    current: ptr::null_mut(),
+                }
+            }
+        }
+
+        pub fn register_wasm_link_section_item<T>(info_ptr: *mut LinkSectionInfo) -> *mut T {
+            let mut info = unsafe { ptr::read(info_ptr) };
+            if info.current.is_null() {
+                unsafe {
+                    let size = crate::__support::read_custom_section(
+                        info.name,
+                        info.name_length,
+                        ptr::null_mut(),
+                        0,
+                    );
+
+                    let ptr = ::alloc::alloc::alloc(
+                        ::core::alloc::Layout::from_size_align(
+                            size * ::core::mem::size_of::<T>(),
+                            ::core::mem::align_of::<T>(),
+                        )
+                        .unwrap(),
+                    );
+                    let layout_bytes = size * ::core::mem::size_of::<T>();
+                    info.start = ptr as *const ();
+                    info.current = ptr as *const ();
+                    info.end = ptr.add(layout_bytes) as *const ();
+                }
+            }
+
+            unsafe {
+                let ptr = info.current;
+                info.current = ptr.byte_add(::core::mem::size_of::<T>()) as *const ();
+                ptr::write(info_ptr, info);
+                ptr as _
             }
         }
 
         /// On WASM, we use an atomic pointer to the start and end of the
         /// section. The host environment is responsible for registering the
         /// section with the runtime.
-        pub type SectionPtr<T> =
-            &'static ::core::sync::atomic::AtomicPtr<::core::marker::PhantomData<T>>;
+        pub struct Bounds(pub *mut LinkSectionInfo);
+
+        impl Bounds {
+            pub fn start_ptr(&self) -> *const () {
+                let start = unsafe { ::core::ptr::read(self.0).start };
+                if start.is_null() {
+                    panic!("slice accessed before registration");
+                }
+                start
+            }
+            pub fn end_ptr(&self) -> *const () {
+                let end = unsafe { ::core::ptr::read(self.0).end };
+                if end.is_null() {
+                    panic!("slice accessed before registration");
+                }
+                end
+            }
+        }
     }
 
+    /// On Windows platforms we don't have start/end symbols, but we do have
+    /// section sorting so we drop a [T; 0] at the start and end of the
+    /// section.
     #[cfg(all(not(miri), target_vendor = "pc"))]
     mod section {
         #[doc(hidden)]
@@ -447,12 +526,14 @@ pub mod __support {
             }
         }
 
-        /// On Windows platforms we don't have start/end symbols, but we do have
-        /// section sorting so we drop a [T; 0] at the start and end of the
-        /// section.
-        pub type SectionPtr<T> = *const [T; 0];
+        pub type Bounds = crate::__support::PtrBounds;
     }
 
+    /// On LLVM/GCC platforms we can use orphan sections with _start and
+    /// _end symbols.
+    ///
+    /// On Apple platforms, the linker provides a pointer to the start and end
+    /// of the section regardless of the section's name.
     #[cfg(all(not(miri), not(target_family = "wasm"), not(target_vendor = "pc")))]
     mod section {
         #[doc(hidden)]
@@ -460,32 +541,32 @@ pub mod __support {
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
                 {
+                    // These are not valid items, but they are valid pointers.
+                    // We cannot safely use them - only take pointers to them.
                     $crate::__support::add_section_link_attribute!(
                         data start $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static __START: $crate::__support::SectionPtr<$generic_ty>;
+                            static __START: $generic_ty;
                         }
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static __END: $crate::__support::SectionPtr<$generic_ty>;
+                            static __END: $generic_ty;
                         }
                     );
 
-                    (
-                        unsafe { &raw const __START as $crate::__support::SectionPtr<$generic_ty> },
-                        unsafe { &raw const __END as $crate::__support::SectionPtr<$generic_ty> },
-                    )
+                    $crate::__support::PtrBounds {
+                        start: unsafe { &raw const __START as *const () },
+                        end: unsafe { &raw const __END as *const () },
+                    }
                 }
             }
         }
 
-        /// On LLVM/GCC platforms we can use orphan sections with _start and
-        /// _end symbols.
-        pub type SectionPtr<T> = *const ::core::marker::PhantomData<T>;
+        pub type Bounds = crate::__support::PtrBounds;
     }
 
     /// Export a symbol into a link section.
@@ -582,49 +663,76 @@ pub mod __support {
             $stored_ty
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? $body:block)) => {
-            const _: () = {
-                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, fn($($args)*) $(-> $ret)?);
-                $crate::__add_section_link_attribute!(
-                    data section $ident $($aux)?
-                    #[link_section = __]
-                    $(#[$meta])*
-                    #[allow(non_upper_case_globals)]
-                    $vis static __LINK_SECTION_FN_ITEM: __InSecStoredTy = $ident_fn;
-                );
-            };
-
+            $crate::__in_section_crate!($type_source, $ident, $($aux)?, $path, (
+                const _: fn($($args)*) $(-> $ret)? = $ident_fn;
+            ));
             $crate::__add_section_link_attribute!(
                 code section $ident $($aux)?
                 #[link_section = __]
-                fn $ident_fn($($args)*) $(-> $ret)? $body
+                $(#[$meta])*
+                $vis fn $ident_fn($($args)*) $(-> $ret)? $body
             );
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static _ : $ty:ty = $value:expr;)) => {
-            const _: () = {
-                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, $ty);
-                $crate::__add_section_link_attribute!(
-                    data section $ident $($aux)?
-                    #[link_section = __]
-                    $(#[$meta])* $vis static ANONYMOUS: __InSecStoredTy = $value;
-                );
-            };
+            $crate::__in_section_crate!($type_source, $ident, $($aux)?, $path, (
+                $(#[$meta])*
+                const _: fn($($args)*) $(-> $ret)? = $ident_fn;
+            ));
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static $ident_static:ident : $ty:ty = $value:expr;)) => {
+            #[cfg(target_family = "wasm")]
+            compile_error!("static items are not supported on WASM: use const items instead");
+
+            #[cfg(not(target_family = "wasm"))]
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])* $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
+                $(#[$meta])*
+                $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const $name:ident: $ty:ty = $value:expr;)) => {
             $(#[$meta])* $vis const $name: $ty = {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $type_source $path, $ty);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
+
+                #[cfg(target_family = "wasm")]
+                {
+                    // Register a counting item
+                    $crate::__add_section_link_attribute!(
+                        data section $ident $($aux)?
+                        #[link_section = __]
+                        $vis static __LINK_SECTION_CONST_ITEM: u8 = 0;
+                    );
+
+                    $crate::__add_section_link_attribute!(
+                        data bounds $ident $($aux)?
+                        #[link_name = __]
+                        extern "C" {
+                            static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionInfo;
+                        }
+                    );
+
+                    #[link_section = ".init_array.0"]
+                    static __LINK_SECTION_ITEM_FN: extern "C" fn() = {
+                        extern "C" fn __LINK_SECTION_ITEM_FN() {
+                            unsafe {
+                                let ptr = $crate::__support::register_wasm_link_section_item(&raw mut __LINK_SECTION_INFO);
+                                ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
+                            }
+                        }
+                        __LINK_SECTION_ITEM_FN
+                    };
+                }
+
+                #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
+                    $(#[$meta])*
+                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
+
                 __LINK_SECTION_CONST_ITEM_VALUE
             };
         };
@@ -635,7 +743,8 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
-                    $(#[$meta])* $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
+                    $(#[$meta])*
+                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
                 );
             };
         };
@@ -643,7 +752,8 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
-                $(#[$meta])* $item
+                $(#[$meta])*
+                $item
             );
         };
     }
@@ -656,7 +766,23 @@ pub mod __support {
         type Item = T;
     }
 
-    pub use section::SectionPtr;
+    pub struct PtrBounds {
+        pub start: *const (),
+        pub end: *const (),
+    }
+
+    impl PtrBounds {
+        #[inline(always)]
+        pub const fn start_ptr(&self) -> *const () {
+            self.start
+        }
+        #[inline(always)]
+        pub const fn end_ptr(&self) -> *const () {
+            self.end
+        }
+    }
+
+    pub use section::Bounds;
 }
 
 /// Define a link section.
@@ -702,99 +828,29 @@ pub use ::linktime_proc_macro::in_section;
 #[repr(C)]
 pub struct Section {
     name: &'static str,
-    start: __support::SectionPtr<()>,
-    end: __support::SectionPtr<()>,
+    bounds: __support::Bounds,
 }
 
 impl Section {
     #[doc(hidden)]
-    pub const unsafe fn new(
-        name: &'static str,
-        start: __support::SectionPtr<()>,
-        end: __support::SectionPtr<()>,
-    ) -> Self {
-        Self { name, start, end }
+    pub const unsafe fn new(name: &'static str, bounds: __support::Bounds) -> Self {
+        Self { name, bounds }
     }
 
     /// The byte length of the section.
     pub fn byte_len(&self) -> usize {
         unsafe { (self.end_ptr() as *const u8).offset_from(self.start_ptr() as *const u8) as usize }
     }
-}
 
-#[cfg(target_family = "wasm")]
-impl Section {
     /// The start address of the section.
+    #[inline]
     pub fn start_ptr(&self) -> *const () {
-        let ptr = self.start.load(::core::sync::atomic::Ordering::Relaxed) as *const ();
-        if ptr.is_null() {
-            unsafe {
-                let required = crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ::core::ptr::null_mut(),
-                    0,
-                );
-                let ptr = ::alloc::alloc::alloc(
-                    ::core::alloc::Layout::from_size_align(required, 1).unwrap(),
-                );
-                self.start
-                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
-                self.end.store(
-                    ptr.add(required) as _,
-                    ::core::sync::atomic::Ordering::Relaxed,
-                );
-                crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ptr as *mut u8,
-                    required,
-                );
-            }
-        }
-        ptr
+        self.bounds.start_ptr()
     }
     /// The end address of the section.
+    #[inline]
     pub fn end_ptr(&self) -> *const () {
-        let ptr = self.end.load(::core::sync::atomic::Ordering::Relaxed) as *const ();
-        if ptr.is_null() {
-            unsafe {
-                let required = crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ::core::ptr::null_mut(),
-                    0,
-                );
-                let ptr = ::alloc::alloc::alloc(
-                    ::core::alloc::Layout::from_size_align(required, 1).unwrap(),
-                );
-                self.start
-                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
-                self.end.store(
-                    ptr.add(required) as _,
-                    ::core::sync::atomic::Ordering::Relaxed,
-                );
-                crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ptr as *mut u8,
-                    required,
-                );
-            }
-        }
-        ptr
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-impl Section {
-    /// The start address of the section.
-    pub fn start_ptr(&self) -> *const () {
-        self.start as *const ()
-    }
-    /// The end address of the section.
-    pub fn end_ptr(&self) -> *const () {
-        self.end as *const ()
+        self.bounds.end_ptr()
     }
 }
 
@@ -817,110 +873,47 @@ unsafe impl Send for Section {}
 #[repr(C)]
 pub struct TypedSection<T: 'static> {
     name: &'static str,
-    start: __support::SectionPtr<T>,
-    end: __support::SectionPtr<T>,
+    bounds: __support::Bounds,
     _phantom: ::core::marker::PhantomData<T>,
-}
-
-#[cfg(target_family = "wasm")]
-impl<T: 'static> TypedSection<T> {
-    /// The start address of the section.
-    pub fn start_ptr(&self) -> *const T {
-        let ptr = self.start.load(::core::sync::atomic::Ordering::Relaxed) as *const T;
-        if ptr.is_null() {
-            unsafe {
-                let required = crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ::core::ptr::null_mut(),
-                    0,
-                );
-                let ptr = ::alloc::alloc::alloc(
-                    ::core::alloc::Layout::from_size_align(required, ::core::mem::align_of::<T>())
-                        .unwrap(),
-                );
-                self.start
-                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
-                self.end.store(
-                    ptr.add(required) as _,
-                    ::core::sync::atomic::Ordering::Relaxed,
-                );
-                crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ptr as *mut u8,
-                    required,
-                );
-            }
-        }
-        ptr
-    }
-
-    /// The end address of the section.
-    pub fn end_ptr(&self) -> *const T {
-        let ptr = self.end.load(::core::sync::atomic::Ordering::Relaxed) as *const T;
-        if ptr.is_null() {
-            unsafe {
-                let required = crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ::core::ptr::null_mut(),
-                    0,
-                );
-                let ptr = ::alloc::alloc::alloc(
-                    ::core::alloc::Layout::from_size_align(required, ::core::mem::align_of::<T>())
-                        .unwrap(),
-                );
-                self.start
-                    .store(ptr as _, ::core::sync::atomic::Ordering::Relaxed);
-                self.end.store(
-                    ptr.add(required) as _,
-                    ::core::sync::atomic::Ordering::Relaxed,
-                );
-                crate::__support::read_custom_section(
-                    self.name.as_ptr(),
-                    self.name.len(),
-                    ptr as *mut u8,
-                    required,
-                );
-            }
-        }
-        ptr
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-impl<T: 'static> TypedSection<T> {
-    /// The start address of the section.
-    #[inline(always)]
-    pub fn start_ptr(&self) -> *const T {
-        self.start as *const T
-    }
-
-    /// The end address of the section.
-    #[inline(always)]
-    pub fn end_ptr(&self) -> *const T {
-        self.end as *const T
-    }
 }
 
 // Non-const, shared functions (or functions that don't depend on the pointers)
 impl<T: 'static> TypedSection<T> {
     #[doc(hidden)]
-    pub const unsafe fn new(
-        name: &'static str,
-        start: __support::SectionPtr<T>,
-        end: __support::SectionPtr<T>,
-    ) -> Self {
+    pub const unsafe fn new(name: &'static str, bounds: __support::Bounds) -> Self {
         Self {
             name,
-            start,
-            end,
+            bounds,
             _phantom: ::core::marker::PhantomData,
         }
     }
 
+    /// The start address of the section.
+    #[inline(always)]
+    pub fn start_ptr(&self) -> *const T {
+        self.bounds.start_ptr() as *const T
+    }
+
+    /// The end address of the section.
+    #[inline(always)]
+    pub fn end_ptr(&self) -> *const T {
+        self.bounds.end_ptr() as *const T
+    }
+
+    /// The start address of the section.
+    #[inline]
+    pub fn start_ptr_mut(&self) -> *mut T {
+        self.bounds.start_ptr() as *mut T
+    }
+
+    /// The start address of the section.
+    #[inline]
+    pub fn end_ptr_mut(&self) -> *mut T {
+        self.bounds.end_ptr() as *mut T
+    }
+
     /// The stride of the typed section.
+    #[inline(always)]
     pub const fn stride(&self) -> usize {
         assert!(
             ::core::mem::size_of::<T>() > 0
@@ -930,21 +923,25 @@ impl<T: 'static> TypedSection<T> {
     }
 
     /// The byte length of the section.
+    #[inline]
     pub fn byte_len(&self) -> usize {
         unsafe { (self.end_ptr() as *const u8).offset_from(self.start_ptr() as *const u8) as usize }
     }
 
     /// The number of elements in the section.
+    #[inline]
     pub fn len(&self) -> usize {
         self.byte_len() / self.stride()
     }
 
     /// True if the section is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// The section as a slice.
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
         if self.is_empty() {
             &[]
@@ -954,6 +951,7 @@ impl<T: 'static> TypedSection<T> {
     }
 
     /// The offset of the item in the section, if it is in the section.
+    #[inline]
     pub fn offset_of(&self, item: &T) -> Option<usize> {
         let ptr = item as *const T;
         if ptr < self.start_ptr() || ptr >= self.end_ptr() {
@@ -970,24 +968,13 @@ impl<T: 'static> TypedSection<T> {
     /// This cannot be safely used and is _absolutely unsound_ if any other
     /// slices are live.
     #[allow(clippy::mut_from_ref)]
+    #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
         if self.is_empty() {
             &mut []
         } else {
             unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
         }
-    }
-
-    /// The start address of the section.
-    #[inline(always)]
-    pub fn start_ptr_mut(&self) -> *mut T {
-        self.start_ptr() as *mut T
-    }
-
-    /// The start address of the section.
-    #[inline(always)]
-    pub fn end_ptr_mut(&self) -> *mut T {
-        self.end_ptr() as *mut T
     }
 }
 
