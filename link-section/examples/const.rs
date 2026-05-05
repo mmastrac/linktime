@@ -10,7 +10,7 @@ struct Driver {
 
 impl Driver {
     /// Create a new driver.
-    pub const fn new(name: &'static str, f: fn()) -> Self {
+    const fn new(name: &'static str, f: fn()) -> Self {
         Self { name, f }
     }
 }
