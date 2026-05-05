@@ -40,9 +40,9 @@ pub mod __support {
     pub use crate::__gather_parse as gather_parse;
     pub use crate::__scatter_parse as scatter_parse;
 
-    pub use scattered_collect_proc_macro::ident_concat;
-    pub use link_section;
     pub use ctor;
+    pub use link_section;
+    pub use scattered_collect_proc_macro::ident_concat;
 }
 
 pub mod declarative {
