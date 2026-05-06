@@ -7,7 +7,7 @@ description = "Link-time initialized slices for Rust, with full support for Linu
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-categories = ["no-std", "development-tools::procedural-macro-helpers", "development-tools::build-utils"]
+categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 
 [features]
 default = ["proc_macro", "std"]

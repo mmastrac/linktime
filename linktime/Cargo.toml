@@ -3,11 +3,11 @@ name = "linktime"
 version = "0.14.1"
 authors.workspace = true
 edition = "2021"
-description = "Link-time tricks for Rust"
+description = "Link-time registration patterns for Rust (ctors, dtors, link-time slices and sections)"
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-categories = ["no-std"]
+categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.60"
 
 [features]
