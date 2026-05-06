@@ -3,9 +3,13 @@
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![allow(unsafe_code)]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
+#![no_std]
 
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]
 pub mod life_before_main {}
+
+#[cfg(target_family = "wasm")]
+mod wasm;
 
 #[cfg(target_family = "wasm")]
 extern crate alloc;
@@ -47,7 +51,7 @@ pub mod __support {
     }
 
     #[cfg(target_family = "wasm")]
-    pub use section::{register_wasm_link_section_item, LinkSectionInfo};
+    pub use crate::wasm::{register_wasm_link_section_item, LinkSectionRawInfo};
 
     /// Declares the section_name macro.
     #[macro_export]
@@ -389,7 +393,7 @@ pub mod __support {
         #[macro_export]
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {{
-                (std::ptr::null_mut(), std::ptr::null_mut())
+                (core::ptr::null_mut(), core::ptr::null_mut())
             }};
         }
 
@@ -398,8 +402,6 @@ pub mod __support {
 
     #[cfg(all(not(miri), target_family = "wasm"))]
     mod section {
-        use core::ptr;
-
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __get_section {
@@ -412,89 +414,15 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[export_name = __]
                         #[used]
-                        static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionInfo = $crate::__support::LinkSectionInfo::new(__LINK_SECTION_NAME);
+                        static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo = $crate::__support::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
                     );
 
-                    $crate::__support::Bounds(&raw mut __LINK_SECTION_INFO)
+                    unsafe { $crate::__support::Bounds::new(&raw mut __LINK_SECTION_INFO) }
                 }
             }
         }
 
-        #[repr(C)]
-        pub struct LinkSectionInfo {
-            name: *const u8,
-            name_length: usize,
-            start: *const (),
-            end: *const (),
-            current: *const (),
-        }
-
-        impl LinkSectionInfo {
-            pub const fn new(name: &'static str) -> Self {
-                Self {
-                    name: name.as_ptr(),
-                    name_length: name.len(),
-                    start: ptr::null_mut(),
-                    end: ptr::null_mut(),
-                    current: ptr::null_mut(),
-                }
-            }
-        }
-
-        pub fn register_wasm_link_section_item<T>(info_ptr: *mut LinkSectionInfo) -> *mut T {
-            let mut info = unsafe { ptr::read(info_ptr) };
-            if info.current.is_null() {
-                unsafe {
-                    let size = crate::__support::read_custom_section(
-                        info.name,
-                        info.name_length,
-                        ptr::null_mut(),
-                        0,
-                    );
-
-                    let ptr = ::alloc::alloc::alloc(
-                        ::core::alloc::Layout::from_size_align(
-                            size * ::core::mem::size_of::<T>(),
-                            ::core::mem::align_of::<T>(),
-                        )
-                        .unwrap(),
-                    );
-                    let layout_bytes = size * ::core::mem::size_of::<T>();
-                    info.start = ptr as *const ();
-                    info.current = ptr as *const ();
-                    info.end = ptr.add(layout_bytes) as *const ();
-                }
-            }
-
-            unsafe {
-                let ptr = info.current;
-                info.current = ptr.byte_add(::core::mem::size_of::<T>()) as *const ();
-                ptr::write(info_ptr, info);
-                ptr as _
-            }
-        }
-
-        /// On WASM, we use an atomic pointer to the start and end of the
-        /// section. The host environment is responsible for registering the
-        /// section with the runtime.
-        pub struct Bounds(pub *mut LinkSectionInfo);
-
-        impl Bounds {
-            pub fn start_ptr(&self) -> *const () {
-                let start = unsafe { ::core::ptr::read(self.0).start };
-                if start.is_null() {
-                    panic!("slice accessed before registration");
-                }
-                start
-            }
-            pub fn end_ptr(&self) -> *const () {
-                let end = unsafe { ::core::ptr::read(self.0).end };
-                if end.is_null() {
-                    panic!("slice accessed before registration");
-                }
-                end
-            }
-        }
+        pub use crate::wasm::Bounds;
     }
 
     /// On Windows platforms we don't have start/end symbols, but we do have
@@ -709,7 +637,7 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionInfo;
+                            static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo;
                         }
                     );
 
@@ -780,6 +708,10 @@ pub mod __support {
         pub const fn end_ptr(&self) -> *const () {
             self.end
         }
+        #[inline(always)]
+        pub const fn byte_len(&self) -> usize {
+            unsafe { (self.end).byte_offset_from(self.start) as usize }
+        }
     }
 
     pub use section::Bounds;
@@ -838,8 +770,9 @@ impl Section {
     }
 
     /// The byte length of the section.
+    #[inline]
     pub fn byte_len(&self) -> usize {
-        unsafe { (self.end_ptr() as *const u8).offset_from(self.start_ptr() as *const u8) as usize }
+        self.bounds.byte_len()
     }
 
     /// The start address of the section.
@@ -925,7 +858,7 @@ impl<T: 'static> TypedSection<T> {
     /// The byte length of the section.
     #[inline]
     pub fn byte_len(&self) -> usize {
-        unsafe { (self.end_ptr() as *const u8).offset_from(self.start_ptr() as *const u8) as usize }
+        self.bounds.byte_len()
     }
 
     /// The number of elements in the section.
