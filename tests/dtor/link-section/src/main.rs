@@ -1,11 +1,12 @@
 use dtor::dtor;
+use libc_print::*;
 
 /// This will not be called in all cases.
 #[dtor(method = linker)]
 unsafe fn _dtor_no_default_features() {
-    println!("dtor-link-section:dtor");
+    libc_println!("dtor-link-section:dtor");
 }
 
 fn main() {
-    println!("dtor-link-section:main");
+    libc_println!("dtor-link-section:main");
 }

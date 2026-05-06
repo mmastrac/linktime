@@ -1,32 +1,33 @@
 use ctor::ctor;
+use libc_print::*;
 
 /// This should warn
 #[ctor]
 fn foo() {
-    println!("foo");
+    libc_println!("foo");
 }
 
 /// This should not warn
 #[ctor]
 unsafe fn bar() {
-    println!("bar");
+    libc_println!("bar");
 }
 
 /// This should also not warn
 #[ctor(unsafe)]
 fn bar2() {
-    println!("bar2");
+    libc_println!("bar2");
 }
 
 #[ctor]
 pub static FOO: u32 = {
-    println!("side-effect");
+    libc_println!("side-effect");
     42
 };
 
 #[ctor(unsafe)]
 pub static FOO_UNSAFE: u32 = {
-    println!("side-effect");
+    libc_println!("side-effect");
     42
 };
 

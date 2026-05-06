@@ -1,6 +1,7 @@
 //! Example usage of the `link-section` crate.
 
 use link_section::{in_section, section};
+use libc_print::*;
 
 /// An untyped link section with `code` linkage.
 #[section]
@@ -9,7 +10,7 @@ pub static LINK_SECTION: link_section::Section;
 /// A function in the `LINK_SECTION` section.
 #[in_section(LINK_SECTION)]
 pub fn link_section_function() {
-    eprintln!("link_section_function");
+    libc_eprintln!("link_section_function");
 }
 
 /// A typed link section with `data` linkage.
@@ -39,13 +40,13 @@ pub static FN_ARRAY: link_section::TypedSection<fn()>;
 /// A function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
 pub fn linked_function() {
-    eprintln!("linked_function");
+    libc_eprintln!("linked_function");
 }
 
 /// Another function in the `FN_ARRAY` section.
 #[in_section(FN_ARRAY)]
 pub fn linked_function_2() {
-    eprintln!("linked_function_2");
+    libc_eprintln!("linked_function_2");
 }
 
 /// Yet another function in the `FN_ARRAY` section.
@@ -71,30 +72,30 @@ pub const DEBUGGABLE_FUNCTION: &'static (dyn ::core::fmt::Debug + Sync) =
 
 #[cfg(miri)]
 pub fn main() {
-    eprintln!("Miri is not supported for this test");
+    libc_eprintln!("Miri is not supported for this test");
     assert_eq!(TYPED_LINK_SECTION.len(), 0);
 }
 
 #[cfg(not(miri))]
 pub fn main() {
-    eprintln!("LINK_SECTION: {:?}", LINK_SECTION);
+    libc_eprintln!("LINK_SECTION: {:?}", LINK_SECTION);
     link_section_function();
-    eprintln!("TYPED_LINK_SECTION: {:?}", TYPED_LINK_SECTION);
-    eprintln!("address of TYPED_LINK_SECTION[0]: {:p}", &LINKED_U32);
-    eprintln!("address of TYPED_LINK_SECTION[1]: {:p}", &LINKED_U32_2);
+    libc_eprintln!("TYPED_LINK_SECTION: {:?}", TYPED_LINK_SECTION);
+    libc_eprintln!("address of TYPED_LINK_SECTION[0]: {:p}", &LINKED_U32);
+    libc_eprintln!("address of TYPED_LINK_SECTION[1]: {:p}", &LINKED_U32_2);
     for aux in AUX_LINK_SECTION {
-        eprintln!("aux: {:?}", aux);
+        libc_eprintln!("aux: {:?}", aux);
     }
     assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32).is_some());
     assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32_2).is_some());
     let random_u32 = 1234567890;
     assert!(TYPED_LINK_SECTION.offset_of(&random_u32).is_none());
-    eprintln!("CODE_SECTION: {:?}", FN_ARRAY);
-    eprintln!("{:?}", FN_ARRAY.as_slice());
+    libc_eprintln!("CODE_SECTION: {:?}", FN_ARRAY);
+    libc_eprintln!("{:?}", FN_ARRAY.as_slice());
     for f in FN_ARRAY {
-        eprintln!("f: {:?}", f);
+        libc_eprintln!("f: {:?}", f);
         f();
         assert!(FN_ARRAY.offset_of(f).is_some());
     }
-    eprintln!("DEBUGGABLES: {:?}", DEBUGGABLES.as_slice());
+    libc_eprintln!("DEBUGGABLES: {:?}", DEBUGGABLES.as_slice());
 }

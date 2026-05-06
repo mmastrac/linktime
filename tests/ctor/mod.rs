@@ -236,15 +236,10 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
        ^^^^^^^------- replace this with #[ctor(unsafe)]
 
 """
-if TARGET_OS == "windows" {
-!  --> src\main.rs:4:1
-}
-if TARGET_OS != "windows" {
-!  --> src/main.rs:4:1
-}
+? ^\s*--> .*main\.rs:%{NUMBER}:1
 """
   |
-4 | #[ctor]
+5 | #[ctor]
   | ^^^^^^^
   |
   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -256,15 +251,10 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
        ^^^^^^^------- replace this with #[ctor(unsafe)]
 
 """
-if TARGET_OS == "windows" {
-!   --> src\main.rs:21:1
-}
-if TARGET_OS != "windows" {
-!   --> src/main.rs:21:1
-}
+? ^\s*--> .*main\.rs:%{NUMBER}:1
 """
    |
-21 | #[ctor]
+22 | #[ctor]
    | ^^^^^^^
    |
    = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)

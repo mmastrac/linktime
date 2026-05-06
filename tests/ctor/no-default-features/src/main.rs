@@ -1,12 +1,13 @@
 use ctor::declarative::ctor;
+use libc_print::*;
 
 ctor! {
     #[ctor]
     unsafe fn _ctor_no_default_features() {
-        println!("ctor-no-default-features:ctor");
+        libc_println!("ctor-no-default-features:ctor");
     }
 }
 
 fn main() {
-    println!("ctor-no-default-features:main");
+    libc_println!("ctor-no-default-features:main");
 }

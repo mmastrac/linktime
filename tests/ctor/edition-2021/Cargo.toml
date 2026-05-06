@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 ctor = { path = "../../../ctor" }
+libc-print = "0.2"
 
 [workspace]
 
