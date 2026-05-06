@@ -426,8 +426,8 @@ pub mod __support {
     }
 
     /// On Windows platforms we don't have start/end symbols, but we do have
-    /// section sorting so we drop a [T; 0] at the start and end of the
-    /// section.
+    /// section sorting so we drop a minimum-sized type with the same alignment
+    /// as T at the start and end of the section.
     #[cfg(all(not(miri), target_vendor = "pc"))]
     mod section {
         #[doc(hidden)]
@@ -457,7 +457,8 @@ pub mod __support {
             }
         }
 
-        /// A non-zero-sized type that is used to align the start and end of the section.
+        /// A non-zero-sized type that is used to align the start and end of the
+        /// section.
         #[repr(C)]
         pub struct Alignment<T> {
             _align: [T; 0],
@@ -476,8 +477,8 @@ pub mod __support {
         pub type Bounds = crate::__support::PtrBounds;
     }
 
-    /// On LLVM/GCC platforms we can use orphan sections with _start and
-    /// _end symbols.
+    /// On LLVM/GCC platforms we can use orphan sections with _start and _end
+    /// symbols.
     ///
     /// On Apple platforms, the linker provides a pointer to the start and end
     /// of the section regardless of the section's name.
