@@ -468,6 +468,7 @@ pub mod __support {
         /// A non-zero-sized type that is used to align the start and end of the
         /// section.
         #[repr(C)]
+        #[allow(clippy::new_without_default)]
         pub struct Alignment<T> {
             _align: [T; 0],
             _padding: u8,
