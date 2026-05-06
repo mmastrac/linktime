@@ -397,7 +397,7 @@ pub mod __support {
             }};
         }
 
-        pub type SectionPtr<T> = *const ::core::marker::PhantomData<T>;
+        pub type Bounds = crate::__support::PtrBounds;
     }
 
     #[cfg(all(not(miri), target_family = "wasm"))]
@@ -475,20 +475,20 @@ pub mod __support {
                         data start $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static __START: $generic_ty;
+                            static __START: u8;
                         }
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static __END: $generic_ty;
+                            static __END: u8;
                         }
                     );
 
                     $crate::__support::PtrBounds {
-                        start: unsafe { &raw const __START as *const () },
-                        end: unsafe { &raw const __END as *const () },
+                        start: unsafe { core::hint::black_box(&raw const __START as *const () )},
+                        end: unsafe { core::hint::black_box(&raw const __END as *const () ) },
                     }
                 }
             }

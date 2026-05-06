@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for `const` items in link sections.
+- WASM now requires `const` items, and uses `ctor`-like initialization to copy
+  data to a contiguous section. To access link-section slices in WASM in
+  constructor functions, make sure to use `priority = 1`.
 
 ## [0.14.0] - 2026-05-04
 
