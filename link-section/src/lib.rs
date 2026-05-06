@@ -438,18 +438,37 @@ pub mod __support {
                     $crate::__support::add_section_link_attribute!(
                         data start $ident $($aux)?
                         #[link_section = __]
-                        static __START: [$generic_ty; 0] = [];
+                        static __START: Alignment<$generic_ty> = Alignment::new();
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_section = __]
-                        static __END: [$generic_ty; 0] = [];
+                        static __END: Alignment<$generic_ty> = Alignment::new();
                     );
 
-                    (
-                        unsafe { &raw const __START as $crate::__support::SectionPtr<$generic_ty> },
+                    $crate::__support::PtrBounds(
+                        unsafe {
+                            let start = &raw const __START as $crate::__support::SectionPtr<$generic_ty>;
+                            start.cast::<u8>().add(::core::mem::size_of::<Alignment<$generic_ty>>())
+                        },
                         unsafe { &raw const __END as $crate::__support::SectionPtr<$generic_ty> },
                     )
+                }
+            }
+        }
+
+        /// A non-zero-sized type that is used to align the start and end of the section.
+        #[repr(C)]
+        pub struct Alignment<T> {
+            _align: [T; 0],
+            _padding: u8,
+        }
+
+        impl<T> Alignment<T> {
+            pub const fn new() -> Self {
+                Self {
+                    _align: [T; 0],
+                    _padding: 0,
                 }
             }
         }
