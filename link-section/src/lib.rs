@@ -438,21 +438,26 @@ pub mod __support {
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
                 {
-                    $crate::__support::add_section_link_attribute!(
+                    use $crate::__support::Alignment;
+                    use $crate::__support::PtrBounds;
+                    use $crate::__support::add_section_link_attribute;
+                    use core::mem;
+
+                    add_section_link_attribute!(
                         data start $ident $($aux)?
                         #[link_section = __]
-                        static __START: $crate::__support::Alignment<$generic_ty> = Alignment::new();
+                        static __START: Alignment<$generic_ty> = Alignment::new();
                     );
-                    $crate::__support::add_section_link_attribute!(
+                    add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_section = __]
-                        static __END: $crate::__support::Alignment<$generic_ty> = Alignment::new();
+                        static __END: Alignment<$generic_ty> = Alignment::new();
                     );
 
-                    $crate::__support::PtrBounds::new(
+                    PtrBounds::new(
                         unsafe {
                             let start = &raw const __START;
-                            start.cast::<u8>().add(::core::mem::size_of::<$crate::__support::Alignment<$generic_ty>>()) as *const()
+                            start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
                         },
                         unsafe { &raw const __END as *const () },
                     )
