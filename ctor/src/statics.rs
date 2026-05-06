@@ -82,7 +82,15 @@ impl<T: Sync> Static<T> {
     }
 }
 
+// Common trait delegates
+
 impl<T: Sync + ::core::fmt::Debug> ::core::fmt::Debug for Static<T> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
+impl<T: Sync + ::core::fmt::Display> ::core::fmt::Display for Static<T> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         (**self).fmt(f)
     }
