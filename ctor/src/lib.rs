@@ -58,7 +58,8 @@ crate::__ctor_parse_internal!(
 pub mod collect {
     use core::sync::atomic::{AtomicU8, Ordering};
 
-    const PROCESSED: isize = isize::MIN;
+    #[doc(hidden)]
+    pub const PROCESSED: isize = isize::MIN;
     #[doc(hidden)]
     pub const LATE: isize = isize::MAX;
 
@@ -162,6 +163,40 @@ pub mod collect {
                 pub const _: $crate::collect::Constructor = $crate::collect::Constructor {
                     priority: $priority,
                     ctor: $fn,
+                };
+            );
+        };
+        (priority = $priority:tt, fn = (array $array:ident)) => {
+            $crate::__support::in_section!(
+                #[in_section(unsafe, type = [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }], name = _CTOR0_ISIZE_FN)]
+                pub const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {
+                    use core::mem::MaybeUninit;
+
+                    // If length zero, register a stub that doesn't get executed
+                    if $array.len() == 0 {
+                        unsafe extern "C" fn empty_ctor() {}
+                        [$crate::collect::Constructor {
+                            priority: $crate::collect::PROCESSED,
+                            ctor: empty_ctor,
+                        }; if $array.len() == 0 { 1 } else { $array.len() }]
+                    } else {
+                        let mut array: MaybeUninit<[$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }]> = MaybeUninit::uninit();
+                        let mut array_ptr: *mut $crate::collect::Constructor = array.as_mut_ptr() as _;
+                        const fn ctor_fn(i: usize) -> $crate::collect::Constructor {
+                            $crate::collect::Constructor {
+                                priority: $priority,
+                                ctor: $array[i],
+                            }
+                        }
+
+                        let mut i = 0;
+                        while i < $array.len() {
+                            unsafe { array_ptr.add(i).write(ctor_fn(i)) };
+                            i += 1;
+                        }
+
+                        unsafe { array.assume_init() }
+                    }
                 };
             );
         };

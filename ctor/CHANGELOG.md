@@ -5,14 +5,22 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.2] - Unreleased
+## [1.0.2] - 2026-05-06
 
 ### Changed
 
-- Use `const` items for collected constructors on macOS.
+- Bump `link-section` dependency to 0.15.0.
+- Use `const` rather than `static` items for collected constructors on macOS.
 - Allow various forms of `&'static` for `#[ctor]` statics which desugar to
   `&'static Static`.
 - Static items delegate `Display` directly as well.
+- Support for multiple `#[ctor]` items in a single `#[ctor]` block:
+```rust
+#[ctor]
+static CTOR: &[fn()] = const {
+  // ...
+}
+```
 
 ## [1.0.1] - 2026-05-04
 

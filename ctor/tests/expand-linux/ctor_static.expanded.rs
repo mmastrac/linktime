@@ -4,10 +4,10 @@ static STATIC_CTOR: ::ctor::statics::Static<HashMap<u32, &'static str>> = {
     #[allow(unsafe_code)]
     #[link_section = ".text.startup"]
     fn init() -> HashMap<u32, &'static str> {
-        unsafe {
+        return unsafe {
             let m = HashMap::new();
             m
-        }
+        };
     }
     unsafe { ::ctor::statics::Static::<HashMap<u32, &'static str>>::new(init) }
 };

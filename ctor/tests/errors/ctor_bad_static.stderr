@@ -22,7 +22,7 @@ error: Trivial const expressions are not supported. Remove the #[ctor] and use a
   |
   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error: Trivial const expressions are not supported. Remove the #[ctor] and use a regular `static`.
+error: Static const expressions are not supported. Remove the #[ctor] and use a regular `static`.
   --> tests/errors/ctor_bad_static.rs:12:1
    |
 12 | #[ctor]
