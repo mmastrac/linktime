@@ -446,7 +446,7 @@ pub mod __support {
                         static __END: Alignment<$generic_ty> = Alignment::new();
                     );
 
-                    $crate::__support::PtrBounds(
+                    $crate::__support::PtrBounds::new(
                         unsafe {
                             let start = &raw const __START as $crate::__support::SectionPtr<$generic_ty>;
                             start.cast::<u8>().add(::core::mem::size_of::<Alignment<$generic_ty>>())
@@ -506,10 +506,11 @@ pub mod __support {
                         }
                     );
 
-                    $crate::__support::PtrBounds {
-                        start: unsafe { &raw const __START as *const () },
-                        end: unsafe { &raw const __END as *const () },
-                    }
+                    $crate::__support::PtrBounds::new(
+                        // TODO: black_box when hint is stable
+                        unsafe { &raw const __START as *const () },
+                        unsafe { &raw const __END as *const () },
+                    )
                 }
             }
         }
@@ -720,6 +721,10 @@ pub mod __support {
     }
 
     impl PtrBounds {
+        pub const fn new(start: *const (), end: *const ()) -> Self {
+            Self { start, end }
+        }
+
         #[inline(always)]
         pub const fn start_ptr(&self) -> *const () {
             self.start
