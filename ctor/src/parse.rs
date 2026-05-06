@@ -938,11 +938,6 @@ macro_rules! __ctor_parse_impl {
         priority=$priority:tt,
         used=(#$used_linker_meta:tt),
      ) fns=$ident:ident ) => {
-        // #[allow(unsafe_code)]
-        // #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
-        // #[link_section = $($link_section)*]
-        // #$used_linker_meta
-        // static __CTOR_PRIVATE_REF: unsafe extern "C" [fn() = {
         const _: () = {
             const fn __ctor_array() -> [fn(); $ident.len()] {
                 use core::mem::MaybeUninit;
