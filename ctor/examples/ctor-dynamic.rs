@@ -1,4 +1,5 @@
 //! Demonstrate dynamic `#[ctor]`s.
+#![allow(clippy::incompatible_msrv)]
 use ctor::ctor;
 use libc_print::*;
 
