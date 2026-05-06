@@ -53,7 +53,7 @@ pub mod __support {
     #[cfg(target_family = "wasm")]
     pub use crate::wasm::{register_wasm_link_section_item, LinkSectionRawInfo};
 
-    #[cfg(target_vendor = "pc")]
+    #[cfg(all(not(miri), target_vendor = "pc"))]
     pub use section::Alignment;
 
     /// Declares the section_name macro.
