@@ -7,7 +7,7 @@ rm Cargo.lock
 cargo clean
 cargo build
 
-ctor_examples=(ctor-example ctor-advanced)
+ctor_examples=(ctor-basic ctor-example ctor-advanced ctor-dynamic ctor-statics)
 for example in "${ctor_examples[@]}"; do
   cargo run -p ctor --example "$example" --target "$TARGET"
 done
