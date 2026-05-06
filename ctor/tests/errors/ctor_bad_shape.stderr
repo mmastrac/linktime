@@ -1,7 +1,7 @@
 error: Invalid ctor item. Expected a function with no args, return value, or type parameters or a static variable.
        Valid forms are:
        - [pub] [unsafe] [extern $abi] fn $name() { ... }
-       - static $name : $ty = [unsafe] { ... };
+       - static $name : [&'static] $ty = [unsafe] { ... };
  --> tests/errors/ctor_bad_shape.rs:3:1
   |
 3 | #[ctor(unsafe)]
@@ -12,7 +12,7 @@ error: Invalid ctor item. Expected a function with no args, return value, or typ
 error: Invalid ctor item. Expected a function with no args, return value, or type parameters or a static variable.
        Valid forms are:
        - [pub] [unsafe] [extern $abi] fn $name() { ... }
-       - static $name : $ty = [unsafe] { ... };
+       - static $name : [&'static] $ty = [unsafe] { ... };
  --> tests/errors/ctor_bad_shape.rs:8:1
   |
 8 | #[ctor(unsafe)]
@@ -23,7 +23,7 @@ error: Invalid ctor item. Expected a function with no args, return value, or typ
 error: Invalid ctor item. Expected a function with no args, return value, or type parameters or a static variable.
        Valid forms are:
        - [pub] [unsafe] [extern $abi] fn $name() { ... }
-       - static $name : $ty = [unsafe] { ... };
+       - static $name : [&'static] $ty = [unsafe] { ... };
   --> tests/errors/ctor_bad_shape.rs:15:5
    |
 15 |     #[ctor(unsafe)]

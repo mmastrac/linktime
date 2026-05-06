@@ -1,15 +1,15 @@
 use ctor::ctor;
 use std::collections::HashMap;
-static STATIC_CTOR: ::ctor::statics::Static<HashMap<u32, &'static str>> = {
+static STATIC_CTOR: ::ctor::statics::Static<&'static HashMap<u32, &'static str>> = {
     #[allow(unsafe_code)]
     #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
-    fn init() -> HashMap<u32, &'static str> {
+    fn init() -> &'static HashMap<u32, &'static str> {
         return unsafe {
             let m = HashMap::new();
             m
         };
     }
-    unsafe { ::ctor::statics::Static::<HashMap<u32, &'static str>>::new(init) }
+    unsafe { ::ctor::statics::Static::<&'static HashMap<u32, &'static str>>::new(init) }
 };
 const _: () = {
     #[allow(unsafe_code, unused_unsafe)]

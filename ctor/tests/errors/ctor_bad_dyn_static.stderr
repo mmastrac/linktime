@@ -1,0 +1,15 @@
+error: &'static dyn types are not supported. Use a Box<dyn ...> instead.
+ --> tests/errors/ctor_bad_dyn_static.rs:1:1
+  |
+1 | #[ctor::ctor(unsafe)]
+  | ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor::ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: &'static dyn types are not supported. Use a Box<dyn ...> instead.
+ --> tests/errors/ctor_bad_dyn_static.rs:5:1
+  |
+5 | #[ctor::ctor(unsafe)]
+  | ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor::ctor` (in Nightly builds, run with -Z macro-backtrace for more info)

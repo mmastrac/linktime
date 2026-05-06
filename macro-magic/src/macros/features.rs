@@ -173,6 +173,36 @@ macro_rules! __extract_unsafe {
         features = $features:tt,
         self = $self:tt,
         meta = $meta:tt,
+        item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = &unsafe $($rest:tt)*)
+    ) ) => {
+        $next ! ( $next_args, (
+            features = $features,
+            self = $self,
+            meta = $meta,
+            unsafe = (unsafe),
+            item = ($vis static $ident : & $lt $ty = &unsafe $($rest)*)
+        ));
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = $features:tt,
+        self = $self:tt,
+        meta = $meta:tt,
+        item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = unsafe $($rest:tt)*)
+    ) ) => {
+        $next ! ( $next_args, (
+            features = $features,
+            self = $self,
+            meta = $meta,
+            unsafe = (unsafe),
+            item = ($vis static $ident : & $lt $ty = unsafe $($rest)*)
+        ));
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = $features:tt,
+        self = $self:tt,
+        meta = $meta:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = unsafe $($rest:tt)*)
     ) ) => {
         $next ! ( $next_args, (
