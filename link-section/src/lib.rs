@@ -467,7 +467,7 @@ pub mod __support {
         impl<T> Alignment<T> {
             pub const fn new() -> Self {
                 Self {
-                    _align: [T; 0],
+                    _align: [],
                     _padding: 0,
                 }
             }
