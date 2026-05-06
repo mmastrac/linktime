@@ -151,15 +151,26 @@ impl LinkSectionInfo {
 
         // We can jump directly to initialized if the section is empty
         if size == 0 {
+            // Avoid leaving null pointers behind: `byte_offset_from` and
+            // slice creation may be called even for empty sections.
+            let dangling = NonNull::<u8>::dangling().as_ptr() as *const ();
+            self.start = dangling;
+            self.end = dangling;
+            self.current = dangling;
             self.state = LinkSectionState::Initialized as _;
             return;
         }
 
-        let layout_bytes = size * self.size_of;
+        let layout_bytes = size
+            .checked_mul(self.size_of)
+            .unwrap_or_else(|| panic!("Link section size overflow"));
         unsafe {
             // We got these from a type, so they are always valid
             let ptr =
                 alloc(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
+            if ptr.is_null() {
+                panic!("Link section allocation failed");
+            }
             self.start = ptr as *const ();
             self.current = ptr as *const ();
             self.end = (ptr as *mut u8).add(layout_bytes) as *const ();
@@ -173,9 +184,18 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *mut LinkSectionRawIn
     let mut info = link_section.lock();
 
     unsafe {
+        if info.state == LinkSectionState::Initialized as _ {
+            panic!("Link section already initialized");
+        }
+
         let slot = info.current;
-        info.current = slot.byte_add(info.size_of) as *const ();
-        if info.current == info.end {
+        let next = slot.byte_add(info.size_of) as *const ();
+        if next > info.end {
+            panic!("Link section overflow: too many registered items");
+        }
+
+        info.current = next;
+        if next == info.end {
             info.state = LinkSectionState::Initialized as _;
         }
         slot as *mut T
@@ -210,6 +230,8 @@ impl Bounds {
         return lock.end;
     }
 
+    /// This is intentionally safe to call before the section is fully
+    /// initialized.
     pub fn byte_len(&self) -> usize {
         let lock = self.0.lock();
         return unsafe { lock.end.byte_offset_from(lock.start) as usize };
