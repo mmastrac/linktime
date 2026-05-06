@@ -6,7 +6,7 @@
 #![doc = include_str!("../docs/GENERATED.md")]
 // Used as part of ctor collection
 #![cfg_attr(
-    all(target_vendor = "apple", linktime_used_linker),
+    linktime_used_linker,
     feature(used_with_arg)
 )]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
@@ -32,15 +32,15 @@ pub mod __support {
     pub use crate::__ctor_parse as ctor_parse;
 
     // Re-export link_section::TypedSection and declarative::{section, in_section}
-    #[cfg(all(feature = "priority", target_vendor = "apple"))]
+    #[cfg(feature = "priority")]
     pub use link_section::declarative::in_section;
 }
 
-#[cfg(all(feature = "priority", target_vendor = "apple"))]
+#[cfg(all(feature = "priority", any(target_vendor = "apple", miri)))]
 crate::__ctor_parse_internal!(
     __ctor_features,
-    /// Define a link section when using the priority parameter on Apple
-    /// targets. This is awkwardly placed in the root module because it needs to
+    /// Define a link section when using the priority parameter on Apple targets
+    /// or Miri. This is awkwardly placed in the root module because it needs to
     /// use a generated macro and we cannot use an absolute path to it. (see
     /// <https://github.com/rust-lang/rust/issues/52234>)
     #[ctor(unsafe, naked)]
@@ -53,7 +53,7 @@ crate::__ctor_parse_internal!(
 );
 
 /// Collected constructors for platforms requiring manual invocation.
-#[cfg(all(feature = "priority", target_vendor = "apple"))]
+#[cfg(feature = "priority")]
 #[doc(hidden)]
 pub mod collect {
     use core::sync::atomic::{AtomicU8, Ordering};

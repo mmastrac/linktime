@@ -659,7 +659,7 @@ macro_rules! __ctor_parse_impl {
         unsafe = $unsafe:tt,
         item = $item:tt
     ) ) => {
-        #[cfg(target_vendor = "apple")]
+        #[cfg(any(target_vendor = "apple", miri))]
         $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
             link_args = (
                 body_link_section = $body_link_section,
@@ -673,7 +673,7 @@ macro_rules! __ctor_parse_impl {
         ));
 
         // Get a priority literal
-        #[cfg(not(target_vendor = "apple"))]
+        #[cfg(not(any(target_vendor = "apple", miri)))]
         $crate::__priority_to_literal!($crate::__ctor_parse_impl,[
             @priority next=$next[$next_args],
             features = (
@@ -1131,10 +1131,13 @@ macro_rules! __map_priority {
         #[cfg(all(target_os = "aix", not(target_vendor = "apple")))]
         $next!($next_args, 89999999);
 
-        #[cfg(all(not(target_os = "aix"), not(target_vendor = "apple")))]
+        #[cfg(all(
+            not(target_os = "aix"),
+            not(all(target_vendor = "apple", not(miri))),
+        ))]
         $next!($next_args, 65535);
 
-        #[cfg(target_vendor = "apple")]
+        #[cfg(all(target_vendor = "apple", not(miri)))]
         $next!($next_args, ($crate::collect::LATE));
     };
 
