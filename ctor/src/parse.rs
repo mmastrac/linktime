@@ -156,6 +156,34 @@ macro_rules! __ctor_parse_impl {
         compile_error!("Trivial const expressions are not supported. Remove the #[ctor] and use a regular `static`.");
     };
 
+    // Allow dynamic #[ctor]s - a const expression determines the actual functions.
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = (
+            anonymous = $anonymous:tt,
+            linker_options = $linker_options:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
+            priority = $priority:tt,
+        ),
+        self = $self:tt,
+        meta = $meta:tt,
+        unsafe = $unsafe:tt,
+        item = ($vis:vis static $ident:ident : &[fn()] = const $body:block;)
+    ) ) => {
+        $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
+            features = (
+                anonymous = $anonymous,
+                linker_options = $linker_options,
+                link_name = $ident,
+                no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
+                priority = $priority,
+            ),
+            self = $self,
+            meta = $meta,
+            unsafe = $unsafe,
+            item = ($vis static $ident : &[fn()] = const $body;)
+        ));
+    };
+
     ( @entry next=$next:path[$next_args:tt], input=(
         features = (
             anonymous = $anonymous:tt,
@@ -168,7 +196,7 @@ macro_rules! __ctor_parse_impl {
         unsafe = $unsafe:tt,
         item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? const $body:block;)
     ) ) => {
-        compile_error!("Trivial const expressions are not supported. Remove the #[ctor] and use a regular `static`.");
+        compile_error!("Static const expressions are not supported. Remove the #[ctor] and use a regular `static`.");
     };
 
     ( @entry next=$next:path[$next_args:tt], input=(
@@ -778,6 +806,21 @@ macro_rules! __ctor_parse_impl {
         body_link_meta = ($($body_link_meta:tt)?),
         meta = ($($meta:tt)*),
         unsafe = ($($unsafe:tt)*),
+        item = ($vis:vis static $ident:ident : &[fn()] = const $body:block;)
+    ) ) => {
+        $($meta)*
+        $vis static $ident: &[fn()] = const {
+            $crate::__ctor_parse_impl!(@ctor $link_args fns=$ident);
+
+            $body
+        };
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        link_args = $link_args:tt,
+        body_link_meta = ($($body_link_meta:tt)?),
+        meta = ($($meta:tt)*),
+        unsafe = ($($unsafe:tt)*),
         item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = &$($body:tt)*)
     ) ) => {
         $($meta)*
@@ -886,6 +929,34 @@ macro_rules! __ctor_parse_impl {
             }
 
             $crate::__register_ctor!(priority = $priority, fn = __ctor_private);
+        };
+    };
+
+    ( @ctor (
+        body_link_meta = ($($body_link_meta:tt)?),
+        export_name=(),
+        priority=$priority:tt,
+        used=(#$used_linker_meta:tt),
+     ) fns=$ident:ident ) => {
+        // #[allow(unsafe_code)]
+        // #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
+        // #[link_section = $($link_section)*]
+        // #$used_linker_meta
+        // static __CTOR_PRIVATE_REF: unsafe extern "C" [fn() = {
+        const _: () = {
+            const fn __ctor_array() -> [fn(); $ident.len()] {
+                use core::mem::MaybeUninit;
+                let mut array: MaybeUninit<[fn(); $ident.len()]> = MaybeUninit::uninit();
+                let mut array_ptr: *mut fn() = array.as_mut_ptr() as _;
+                let mut i = 0;
+                while i < $ident.len() {
+                    unsafe { array_ptr.add(i).write($ident[i]) };
+                    i += 1;
+                }
+                unsafe { array.assume_init() }
+            }
+
+            $crate::__register_ctor!(priority = $priority, fn = (array __ctor_array));
         };
     };
 
