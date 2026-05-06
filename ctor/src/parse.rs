@@ -810,7 +810,41 @@ macro_rules! __ctor_parse_impl {
     ) ) => {
         $($meta)*
         $vis static $ident: &[fn()] = const {
-            $crate::__ctor_parse_impl!(@ctor $link_args fns=$ident);
+            const __EXTERN_C_FNS: [extern "C" fn(); $ident.len()] = {
+                use ::core::mem::MaybeUninit;
+                let mut array: MaybeUninit<[extern "C" fn(); $ident.len()]> = MaybeUninit::uninit();
+                let mut array_ptr: *mut extern "C" fn() = array.as_mut_ptr() as _;
+
+                extern "C" fn bind_array<const N: usize>() {
+                    $ident[N]()
+                }
+
+                unsafe {
+                    let array_ptr = array.as_mut_ptr() as *mut extern "C" fn();
+                    const LEN: usize = $ident.len();
+                    if LEN > 0 { array_ptr.add(0).write(bind_array::<0>); }
+                    if LEN > 1 { array_ptr.add(1).write(bind_array::<1>); }
+                    if LEN > 2 { array_ptr.add(2).write(bind_array::<2>); }
+                    if LEN > 3 { array_ptr.add(3).write(bind_array::<3>); }
+                    if LEN > 4 { array_ptr.add(4).write(bind_array::<4>); }
+                    if LEN > 5 { array_ptr.add(5).write(bind_array::<5>); }
+                    if LEN > 6 { array_ptr.add(6).write(bind_array::<6>); }
+                    if LEN > 7 { array_ptr.add(7).write(bind_array::<7>); }
+                    if LEN > 8 { array_ptr.add(8).write(bind_array::<8>); }
+                    if LEN > 9 { array_ptr.add(9).write(bind_array::<9>); }
+                    if LEN > 10 { array_ptr.add(10).write(bind_array::<10>); }
+                    if LEN > 11 { array_ptr.add(11).write(bind_array::<11>); }
+                    if LEN > 12 { array_ptr.add(12).write(bind_array::<12>); }
+                    if LEN > 13 { array_ptr.add(13).write(bind_array::<13>); }
+                    if LEN > 14 { array_ptr.add(14).write(bind_array::<14>); }
+                    if LEN > 15 { array_ptr.add(15).write(bind_array::<15>); }
+                    if LEN > 16 {
+                        panic!("Unexpected array length, expected <= 16");
+                    }
+                }
+                unsafe { array.assume_init() }
+            };
+            $crate::__ctor_parse_impl!(@ctor $link_args fns=__EXTERN_C_FNS);
 
             $body
         };
@@ -878,6 +912,8 @@ macro_rules! __ctor_parse_impl {
     };
 
     // ctor definitions
+
+    // linux-style, one ctor
     ( @ctor (
         body_link_meta = ($($body_link_meta:tt)?),
         export_name=(),
@@ -907,6 +943,37 @@ macro_rules! __ctor_parse_impl {
         };
     };
 
+    // linux-style, multiple ctor
+    ( @ctor (
+        body_link_meta = ($($body_link_meta:tt)?),
+        export_name=(),
+        link_section=($($link_section:tt)*),
+        used=(#$used_linker_meta:tt),
+     ) fns=$ident:ident ) => {
+        #[allow(unsafe_code)]
+        #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
+        #[link_section = $($link_section)*]
+        #$used_linker_meta
+        static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
+            #[allow(unused_unsafe)]
+            $(#[allow(unsafe_code)] #$body_link_meta)?
+            extern "C" fn __ctor_private() {
+                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                {
+                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                        return;
+                    }
+                }
+                for f in $ident {
+                    f();
+                }
+            }
+            __ctor_private
+        };
+    };
+
+    // "collect"-style, one ctor
     ( @ctor (
         body_link_meta = ($($body_link_meta:tt)?),
         export_name=(),
@@ -932,6 +999,7 @@ macro_rules! __ctor_parse_impl {
         };
     };
 
+    // "collect"-style, multiple ctors
     ( @ctor (
         body_link_meta = ($($body_link_meta:tt)?),
         export_name=(),
@@ -939,22 +1007,11 @@ macro_rules! __ctor_parse_impl {
         used=(#$used_linker_meta:tt),
      ) fns=$ident:ident ) => {
         const _: () = {
-            const fn __ctor_array() -> [fn(); $ident.len()] {
-                use core::mem::MaybeUninit;
-                let mut array: MaybeUninit<[fn(); $ident.len()]> = MaybeUninit::uninit();
-                let mut array_ptr: *mut fn() = array.as_mut_ptr() as _;
-                let mut i = 0;
-                while i < $ident.len() {
-                    unsafe { array_ptr.add(i).write($ident[i]) };
-                    i += 1;
-                }
-                unsafe { array.assume_init() }
-            }
-
-            $crate::__register_ctor!(priority = $priority, fn = (array __ctor_array));
+            $crate::__register_ctor!(priority = $priority, fn = (array $ident));
         };
     };
 
+    // AIX-style, one ctor
     ( @ctor (
         body_link_meta = ($($body_link_meta:tt)?),
         export_name=($($link_name:tt)*),
@@ -976,6 +1033,34 @@ macro_rules! __ctor_parse_impl {
                     }
                 }
                 $body
+            }
+        };
+    };
+
+    // AIX-style, multiple ctor
+    ( @ctor (
+        body_link_meta = ($($body_link_meta:tt)?),
+        export_name=($($link_name:tt)*),
+        link_section=$link_section:tt,
+        used=(#$used_linker_meta:tt),
+     ) fns=$ident:ident ) => {
+        const _: () = {
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
+            #[allow(unused_unsafe, unsafe_code)]
+            #[no_mangle]
+            #[export_name = $($link_name)*]
+            $(#$body_link_meta)?
+            extern "C" fn __ctor_private() {
+                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                {
+                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                        return;
+                    }
+                }
+                for f in $ident {
+                    f();
+                }
             }
         };
     };

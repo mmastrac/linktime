@@ -166,56 +166,35 @@ pub mod collect {
                 };
             );
         };
-        (priority = $priority:tt, fn = (array $fn:ident)) => {
+        (priority = $priority:tt, fn = (array $array:ident)) => {
             $crate::__support::in_section!(
-                #[in_section(unsafe, type = [$crate::collect::Constructor; if $fn().len() == 0 { 1 } else { $fn().len() }], name = _CTOR0_ISIZE_FN)]
-                pub const _: [$crate::collect::Constructor; if $fn().len() == 0 { 1 } else { $fn().len() }] = {
+                #[in_section(unsafe, type = [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }], name = _CTOR0_ISIZE_FN)]
+                pub const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {
                     use core::mem::MaybeUninit;
 
                     // If length zero, register a stub that doesn't get executed
-                    if $fn().len() == 0 {
+                    if $array.len() == 0 {
                         unsafe extern "C" fn empty_ctor() {}
                         [$crate::collect::Constructor {
                             priority: $crate::collect::PROCESSED,
                             ctor: empty_ctor,
-                        }; if $fn().len() == 0 { 1 } else { $fn().len() }]
+                        }; if $array.len() == 0 { 1 } else { $array.len() }]
                     } else {
-                        let mut array: MaybeUninit<[$crate::collect::Constructor; if $fn().len() == 0 { 1 } else { $fn().len() }]> = MaybeUninit::uninit();
-
-                        const fn ctor_fn<const N: usize>() -> $crate::collect::Constructor {
+                        let mut array: MaybeUninit<[$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }]> = MaybeUninit::uninit();
+                        let mut array_ptr: *mut $crate::collect::Constructor = array.as_mut_ptr() as _;
+                        const fn ctor_fn(i: usize) -> $crate::collect::Constructor {
                             $crate::collect::Constructor {
                                 priority: $priority,
-                                ctor: bind_array::<N>,
+                                ctor: $array[i],
                             }
                         }
 
-                        extern "C" fn bind_array<const N: usize>() {
-                            $fn()[N]()
+                        let mut i = 0;
+                        while i < $array.len() {
+                            unsafe { array_ptr.add(i).write(ctor_fn(i)) };
+                            i += 1;
                         }
 
-                        unsafe {
-                            let array_ptr = array.as_mut_ptr() as *mut $crate::collect::Constructor;
-                            const LEN: usize = $fn().len();
-                            if LEN > 0 { array_ptr.add(0).write(ctor_fn::<0>()); }
-                            if LEN > 1 { array_ptr.add(1).write(ctor_fn::<1>()); }
-                            if LEN > 2 { array_ptr.add(2).write(ctor_fn::<2>()); }
-                            if LEN > 3 { array_ptr.add(3).write(ctor_fn::<3>()); }
-                            if LEN > 4 { array_ptr.add(4).write(ctor_fn::<4>()); }
-                            if LEN > 5 { array_ptr.add(5).write(ctor_fn::<5>()); }
-                            if LEN > 6 { array_ptr.add(6).write(ctor_fn::<6>()); }
-                            if LEN > 7 { array_ptr.add(7).write(ctor_fn::<7>()); }
-                            if LEN > 8 { array_ptr.add(8).write(ctor_fn::<8>()); }
-                            if LEN > 9 { array_ptr.add(9).write(ctor_fn::<9>()); }
-                            if LEN > 10 { array_ptr.add(10).write(ctor_fn::<10>()); }
-                            if LEN > 11 { array_ptr.add(11).write(ctor_fn::<11>()); }
-                            if LEN > 12 { array_ptr.add(12).write(ctor_fn::<12>()); }
-                            if LEN > 13 { array_ptr.add(13).write(ctor_fn::<13>()); }
-                            if LEN > 14 { array_ptr.add(14).write(ctor_fn::<14>()); }
-                            if LEN > 15 { array_ptr.add(15).write(ctor_fn::<15>()); }
-                            if LEN > 16 {
-                                panic!("Unexpected array length, expected <= 16");
-                            }
-                        }
                         unsafe { array.assume_init() }
                     }
                 };
