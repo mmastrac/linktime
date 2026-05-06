@@ -195,8 +195,38 @@ macro_rules! __ctor_parse_impl {
         ),
         self = $self:tt,
         meta = $meta:tt,
+        unsafe = $unsafe:tt,
+        item = ($vis:vis static $ident:ident : &'static dyn $($rest:tt)*)
+    ) ) => {
+        compile_error!("&'static dyn types are not supported. Use a Box<dyn ...> instead.");
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = (
+            anonymous = $anonymous:tt,
+            linker_options = $linker_options:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
+            priority = $priority:tt,
+        ),
+        self = $self:tt,
+        meta = $meta:tt,
+        unsafe = $unsafe:tt,
+        item = ($vis:vis static $ident:ident : &'static (dyn $($dyn:tt)*) $($rest:tt)*)
+    ) ) => {
+        compile_error!("&'static dyn types are not supported. Use a Box<dyn ...> instead.");
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = (
+            anonymous = $anonymous:tt,
+            linker_options = $linker_options:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
+            priority = $priority:tt,
+        ),
+        self = $self:tt,
+        meta = $meta:tt,
         unsafe = ($($unsafe:tt)?),
-        item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? { $($body:tt)* };)
+        item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = $($body:tt)*)
     ) ) => {
         $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
             features = (
@@ -209,7 +239,34 @@ macro_rules! __ctor_parse_impl {
             self = $self,
             meta = $meta,
             unsafe = ($($unsafe)?),
-            item = ($vis static $ident : $ty = $($unsafe)? { $($body)* };)
+            item = ($vis static $ident : & $lt $ty = $($body)*)
+        ));
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        features = (
+            anonymous = $anonymous:tt,
+            linker_options = $linker_options:tt,
+            no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe:tt,
+            priority = $priority:tt,
+        ),
+        self = $self:tt,
+        meta = $meta:tt,
+        unsafe = ($($unsafe:tt)?),
+        item = ($vis:vis static $ident:ident : $ty:ty = $($body:tt)*)
+    ) ) => {
+        $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
+            features = (
+                anonymous = $anonymous,
+                linker_options = $linker_options,
+                link_name = $ident,
+                no_fail_on_missing_unsafe = $no_fail_on_missing_unsafe,
+                priority = $priority,
+            ),
+            self = $self,
+            meta = $meta,
+            unsafe = ($($unsafe)?),
+            item = ($vis static $ident : $ty = $($body)*)
         ));
     };
 
@@ -230,7 +287,7 @@ macro_rules! __ctor_parse_impl {
             return value, or type parameters or a static variable.\n\
             Valid forms are:\n\
              - [pub] [unsafe] [extern $abi] fn $name() { ... }\n\
-             - static $name : $ty = [unsafe] { ... };");
+             - static $name : [&'static] $ty = [unsafe] { ... };");
     };
 
     // Step 3: Compute no_fail_on_missing_unsafe
@@ -721,14 +778,56 @@ macro_rules! __ctor_parse_impl {
         body_link_meta = ($($body_link_meta:tt)?),
         meta = ($($meta:tt)*),
         unsafe = ($($unsafe:tt)*),
-        item = ($vis:vis static $ident:ident : $ty:ty = $(unsafe)? { $($body:tt)* };)
+        item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = &$($body:tt)*)
+    ) ) => {
+        $($meta)*
+        $vis static $ident: & $lt $crate::statics::Static<$ty> = {
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
+            $(#[allow(unsafe_code)] #$body_link_meta)?
+            fn init() -> $ty {
+                return $($body)*
+            }
+
+            static __STATIC_CTOR: $crate::statics::Static<$ty> = {
+                unsafe { $crate::statics::Static::<$ty>::new(init) }
+            };
+            &__STATIC_CTOR
+        };
+        $crate::__ctor_parse_impl!(@ctor $link_args body={ _ = &*$ident } );
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        link_args = $link_args:tt,
+        body_link_meta = ($($body_link_meta:tt)?),
+        meta = ($($meta:tt)*),
+        unsafe = ($($unsafe:tt)*),
+        item = ($vis:vis static $ident:ident : & $lt:lifetime $ty:ty = $($body:tt)*)
+    ) ) => {
+        $($meta)*
+        $vis static $ident: $crate::statics::Static<&'static $ty> = {
+            #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
+            $(#[allow(unsafe_code)] #$body_link_meta)?
+            fn init() -> &'static $ty {
+                return $($body)*
+            }
+            unsafe { $crate::statics::Static::<&'static $ty>::new(init) }
+        };
+        $crate::__ctor_parse_impl!(@ctor $link_args body={ _ = &*$ident } );
+    };
+
+    ( @entry next=$next:path[$next_args:tt], input=(
+        link_args = $link_args:tt,
+        body_link_meta = ($($body_link_meta:tt)?),
+        meta = ($($meta:tt)*),
+        unsafe = ($($unsafe:tt)*),
+        item = ($vis:vis static $ident:ident : $ty:ty = $($body:tt)*)
     ) ) => {
         $($meta)*
         $vis static $ident: $crate::statics::Static<$ty> = {
             #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
             $(#[allow(unsafe_code)] #$body_link_meta)?
             fn init() -> $ty {
-                $($unsafe)* {$($body)*}
+                return $($body)*
             }
             unsafe { $crate::statics::Static::<$ty>::new(init) }
         };

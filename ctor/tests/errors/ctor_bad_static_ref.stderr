@@ -1,0 +1,26 @@
+error[E0308]: mismatched types
+  --> tests/errors/ctor_bad_static_ref.rs:12:51
+   |
+11 | #[ctor(unsafe)]
+   | --------------- expected `&'static MyStatic` because of return type
+12 | static STATIC_CTOR_REF_BAD_1: &'static MyStatic = MyStatic::new("foo");
+   |                                                   ^^^^^^^^^^^^^^^^^^^^ expected `&MyStatic`, found `MyStatic`
+   |
+help: consider borrowing here
+   |
+12 | static STATIC_CTOR_REF_BAD_1: &'static MyStatic = &MyStatic::new("foo");
+   |                                                   +
+
+error[E0308]: mismatched types
+  --> tests/errors/ctor_bad_static_ref.rs:15:42
+   |
+15 | static STATIC_CTOR_REF_BAD_2: MyStatic = &MyStatic::new("foo");
+   |                               --------   ^^^^^^^^^^^^^^^^^^^^^ expected `MyStatic`, found `&MyStatic`
+   |                               |
+   |                               expected `MyStatic` because of return type
+   |
+help: consider removing the borrow
+   |
+15 - static STATIC_CTOR_REF_BAD_2: MyStatic = &MyStatic::new("foo");
+15 + static STATIC_CTOR_REF_BAD_2: MyStatic = MyStatic::new("foo");
+   |

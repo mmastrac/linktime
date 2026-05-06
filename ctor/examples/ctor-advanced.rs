@@ -79,7 +79,7 @@ impl<T: Default> Foo<T> {
     /// A `#[ctor]` method in a generic `impl`.
     #[ctor(unsafe)]
     fn ctor() {
-        libc_eprintln!("Foo::ctor");
+        libc_println!("Foo::ctor");
     }
 }
 

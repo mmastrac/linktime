@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Use `const` items for collected constructors on macOS.
+- Allow various forms of `&'static` for `#[ctor]` statics which desugar to
+  `&'static Static`.
 
 ## [1.0.1] - 2026-05-04
 
