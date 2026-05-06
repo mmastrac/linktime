@@ -191,7 +191,6 @@ __declare_features!(
                 target_os = "android",
                 target_os = "freebsd",
                 target_os = "netbsd",
-                target_os = "openbsd",
                 target_os = "dragonfly",
                 target_os = "illumos",
                 target_os = "haiku",
@@ -199,6 +198,8 @@ __declare_features!(
                 target_os = "nto",
                 target_family = "wasm"
             )) => ".fini_array",
+            // OpenBSD only seems to support .fini_array for binaries
+            (target_os = "openbsd") => ".dtors",
             // No OS
             (target_os = "none") => ".fini_array",
             // xtensa targets: .dtors
@@ -241,6 +242,8 @@ __declare_features!(
             // WASI/Emscripten support atexit only
             // For wasm-unknown-unknown, you'll need to provide one
             (target_family = "wasm") => at_binary_exit,
+            // .fini_array works in dylibs, but does not appear to work in binaries
+            (target_os = "openbsd") => at_module_exit,
             _ => linker,
         }
     };

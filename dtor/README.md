@@ -325,10 +325,13 @@ export_name_prefix = ()
 link_section = "__DATA,__mod_term_func,mod_term_funcs"
 
 #[cfg(any(target_os = "linux", target_os = "android", target_os = "freebsd",
-target_os = "netbsd", target_os = "openbsd", target_os = "dragonfly",
-target_os = "illumos", target_os = "haiku", target_os = "vxworks", target_os =
-"nto", target_family = "wasm"))]
+target_os = "netbsd", target_os = "dragonfly", target_os = "illumos",
+target_os = "haiku", target_os = "vxworks", target_os = "nto", target_family =
+"wasm"))]
 link_section = ".fini_array"
+
+#[cfg(target_os = "openbsd")]
+link_section = ".dtors"
 
 #[cfg(target_os = "none")]
 link_section = ".fini_array"
@@ -360,6 +363,9 @@ method = at_module_exit
 
 #[cfg(target_family = "wasm")]
 method = at_binary_exit
+
+#[cfg(target_os = "openbsd")]
+method = at_module_exit
 
  // default
 method = linker

@@ -137,10 +137,18 @@ jobs:
   success:
     runs-on: ubuntu-slim
     needs: build
+    if: always()
     steps:
-      - name: Report success
+      - name: Report success or fail the workflow
         run: |
+          echo "build matrix result: ${BUILD_RESULT}"
+          if [ "${BUILD_RESULT}" != success ]; then
+            echo "::error::Matrix job failed or did not succeed (result=${BUILD_RESULT})."
+            exit 1
+          fi
           echo "Success"
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
 
   # Tier-*BSD smoke tests (QEMU); see https://github.com/vmactions
 
