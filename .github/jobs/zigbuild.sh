@@ -7,6 +7,8 @@ zig_examples=(
   ctor-basic
   ctor-example
   ctor-advanced
+  ctor-dynamic
+  ctor-statics
   link-section-example
 )
 

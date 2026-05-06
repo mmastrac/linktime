@@ -10,7 +10,16 @@ cargo clean
 
 cargo miri test
 
-cargo miri run --example "link-section-const"
+miri_examples=(
+  ctor-basic
+  ctor-example
+  ctor-advanced
+  ctor-dynamic
+  ctor-statics
+)
+for example in "${miri_examples[@]}"; do
+  cargo miri run --example "$example"
+done
 
 miri_crates=(
   tests/ctor/edition-2018
