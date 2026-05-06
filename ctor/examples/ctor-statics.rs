@@ -1,3 +1,4 @@
+//! Demonstrate various forms of `#[ctor]` statics.
 use std::mem::MaybeUninit;
 
 use ctor::ctor;
@@ -18,6 +19,8 @@ static STATIC_CTOR: MyStatic = MyStatic::new("foo");
 #[ctor(unsafe)]
 static STATIC_CTOR_REF: &'static MyStatic = &MyStatic::new("foo");
 
+/// This is not a recommended pattern - just demonstrating how to return static
+/// refs.
 #[ctor(unsafe)]
 #[allow(static_mut_refs)]
 static STATIC_CTOR_REF_GLOBAL: &'static MyStatic = {
