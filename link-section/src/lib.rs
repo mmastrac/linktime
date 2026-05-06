@@ -54,7 +54,7 @@ pub mod __support {
     pub use crate::wasm::{register_wasm_link_section_item, LinkSectionRawInfo};
 
     #[cfg(target_vendor = "pc")]
-    pub use crate::section::Alignment;
+    pub use section::Alignment;
 
     /// Declares the section_name macro.
     #[macro_export]
@@ -840,7 +840,6 @@ pub struct TypedSection<T: 'static> {
     _phantom: ::core::marker::PhantomData<T>,
 }
 
-// Non-const, shared functions (or functions that don't depend on the pointers)
 impl<T: 'static> TypedSection<T> {
     #[doc(hidden)]
     pub const unsafe fn new(name: &'static str, bounds: __support::Bounds) -> Self {

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zero-sized types are no longer used in `extern`s. Windows now uses a
   non-zero-sized alignment marker to align the start and end of the section.
   Other LLVM/GCC platforms use a `u8`.
+- `link-section` is now `no_std`-compatible.
 
 ## [0.14.0] - 2026-05-04
 
