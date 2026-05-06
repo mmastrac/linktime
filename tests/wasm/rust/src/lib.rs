@@ -1,10 +1,10 @@
 use linktime::{ctor, dtor};
 
-use libc_print::std_name::println;
+use libc_print::*;
 
 #[ctor(unsafe)]
 pub fn ctor() {
-    println!("ctor");
+    libc_println!("ctor");
 }
 
 #[cfg(all(
@@ -15,14 +15,14 @@ pub fn ctor() {
 ))]
 mod link_section {
     use linktime::ctor;
-    use libc_print::std_name::println;
+    use libc_print::*;
     use linktime::link_section::{section, in_section, TypedSection};
 
     #[ctor(unsafe, priority = 1)]
     pub fn ctor_slices() {
-        println!("ctor_slices:");
+        libc_println!("ctor_slices:");
         for (idx, s) in SLICES.iter().enumerate() {
-            println!("{idx}: {s}");
+            libc_println!("{idx}: {s}");
         }
     }
         
@@ -38,7 +38,7 @@ mod link_section {
 
 #[dtor(unsafe)]
 pub fn dtor() {
-    println!("dtor");
+    libc_println!("dtor");
 }
 
 #[cfg(target_family = "wasm")]
@@ -57,7 +57,7 @@ pub extern "C" fn _start() {
         unsafe { __wasm_call_ctors(); }
     }
 
-    println!("start");
+    libc_println!("start");
 
     #[cfg(all(target_os = "wasi", target_env = "p2"))]
     {

@@ -5,6 +5,7 @@ publish = false
 
 [dependencies]
 ctor = { path = "../../../ctor", default-features = false, features = ["proc_macro", "std"] }
+libc-print = "0.3"
 
 [features]
 

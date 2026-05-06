@@ -1,4 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
+use libc_print::*;
 
 static STATE: AtomicUsize = AtomicUsize::new(0);
 
@@ -16,6 +17,6 @@ pub fn init_2() {
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> u32 {
     assert_eq!(STATE.load(Ordering::Relaxed), 2);
-    println!("WASM ran successfully!");
+    libc_println!("WASM ran successfully!");
     42
 }

@@ -2,19 +2,20 @@
 //! `+crt-static` test.
 
 use ctor::ctor;
+use libc_print::*;
 
 #[cfg(target_feature = "crt-static")]
 #[ctor]
 unsafe fn foo() {
-    println!("+crt-static");
+    libc_println!("+crt-static");
 }
 
 #[cfg(not(target_feature = "crt-static"))]
 #[ctor]
 unsafe fn foo() {
-    println!("-crt-static");
+    libc_println!("-crt-static");
 }
 
 fn main() {
-    println!("main");
+    libc_println!("main");
 }

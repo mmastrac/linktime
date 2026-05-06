@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 linktime = { path = "../../../linktime" }
-libc-print = "0.2"
+libc-print = "0.3"
 
 [workspace]
 

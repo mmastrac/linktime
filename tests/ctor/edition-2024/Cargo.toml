@@ -9,6 +9,7 @@ rust-version = "1.85"
 
 [dependencies]
 ctor = { path = "../../../ctor" }
+libc-print = "0.3"
 
 [workspace]
 

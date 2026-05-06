@@ -9,5 +9,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 dtor = { path = "../../../dtor" }
+libc-print = "0.3"
 
 [workspace]

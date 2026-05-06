@@ -2,13 +2,14 @@
 //! Edition 2018 test.
 
 use ctor::ctor;
+use libc_print::*;
 
 #[ctor]
 #[allow(unsafe_code)]
 unsafe fn foo() {
-    println!("foo");
+    libc_println!("foo");
 }
 
 fn main() {
-    println!("main");
+    libc_println!("main");
 }

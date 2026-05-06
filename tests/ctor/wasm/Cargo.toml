@@ -9,5 +9,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ctor = { path = "../../../ctor" }
+libc-print = "0.3"
 
 [workspace]

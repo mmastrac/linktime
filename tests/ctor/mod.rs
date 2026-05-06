@@ -222,12 +222,8 @@ defer {
 }
 $ cargo build
 %EXIT 101
-ignore {
-    !    Compiling %{DATA}
-    !     Blocking waiting for file lock on package cache
-    !     Blocking waiting for file lock on shared package cache
-    !      Locking %{DATA} to latest compatible version%{DATA}
-}
+*
+! Compiling warn-unsafe v0.0.0 %{DATA}
 """
 error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
 
@@ -236,15 +232,10 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
        ^^^^^^^------- replace this with #[ctor(unsafe)]
 
 """
-if TARGET_OS == "windows" {
-!  --> src\main.rs:4:1
-}
-if TARGET_OS != "windows" {
-!  --> src/main.rs:4:1
-}
+? ^\s*--> .*main\.rs:%{NUMBER}:1
 """
   |
-4 | #[ctor]
+5 | #[ctor]
   | ^^^^^^^
   |
   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -256,15 +247,10 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
        ^^^^^^^------- replace this with #[ctor(unsafe)]
 
 """
-if TARGET_OS == "windows" {
-!   --> src\main.rs:21:1
-}
-if TARGET_OS != "windows" {
-!   --> src/main.rs:21:1
-}
+? ^\s*--> .*main\.rs:%{NUMBER}:1
 """
    |
-21 | #[ctor]
+22 | #[ctor]
    | ^^^^^^^
    |
    = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
