@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [dev-dependencies]
-clitest-lib = { version = "0.4.7", default-features = false, features = ["fancy-regex"] }
+clitest-lib = { version = "0.5.0", default-features = false, features = ["fancy-regex"] }
 libc-print = "0.3"
 
 [lib]
