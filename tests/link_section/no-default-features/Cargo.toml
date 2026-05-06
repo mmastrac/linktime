@@ -6,6 +6,6 @@ publish = false
 
 [dependencies]
 link-section = { path = "../../../link-section", default-features = false }
-libc-print = "0.2"
+libc-print = "0.3"
 
 [workspace]

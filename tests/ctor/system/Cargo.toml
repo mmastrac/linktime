@@ -10,7 +10,7 @@ publish = false
 ctor = { path = "../../../ctor" }
 dtor = { path = "../../../dtor" }
 dlopen = "0.1.8"
-libc-print = "0.2"
+libc-print = "0.3"
 libc = { version = "0.2.96", default-features = false }
 
 [[example]]
