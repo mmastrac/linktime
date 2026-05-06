@@ -489,8 +489,8 @@ pub mod __support {
                     );
 
                     $crate::__support::PtrBounds {
-                        start: unsafe { core::hint::black_box(&raw const __START as *const () )},
-                        end: unsafe { core::hint::black_box(&raw const __END as *const () ) },
+                        start: unsafe { &raw const __START as *const () },
+                        end: unsafe { &raw const __END as *const () },
                     }
                 }
             }
