@@ -393,7 +393,7 @@ pub mod __support {
         #[macro_export]
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {{
-                (core::ptr::null_mut(), core::ptr::null_mut())
+                crate::__support::PtrBounds::new(core::ptr::null_mut(), core::ptr::null_mut())
             }};
         }
 
@@ -451,6 +451,8 @@ pub mod __support {
                         unsafe { &raw const __END as $crate::__support::SectionPtr<$generic_ty> },
                     )
                 }
+
+                pub type Bounds = crate::__support::PtrBounds;
             }
         }
 
