@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow various forms of `&'static` for `#[ctor]` statics which desugar to
   `&'static Static`.
 - Static items delegate `Display` directly as well.
+- Support for multiple `#[ctor]` items in a single `#[ctor]` block:
+```rust
+#[ctor]
+static CTOR: &[fn()] = const {
+  // ...
+}
+```
 
 ## [1.0.1] - 2026-05-04
 
