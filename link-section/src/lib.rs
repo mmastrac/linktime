@@ -672,8 +672,12 @@ pub mod __support {
                     );
 
                     #[link_section = ".init_array.0"]
-                    static __LINK_SECTION_ITEM_FN: extern "C" fn() = {
+                    static mut __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
                         extern "C" fn __LINK_SECTION_ITEM_FN() {
+                            static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                            if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                                return;
+                            }
                             unsafe {
                                 let ptr = $crate::__support::register_wasm_link_section_item(&raw mut __LINK_SECTION_INFO);
                                 ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
