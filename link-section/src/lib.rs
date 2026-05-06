@@ -53,6 +53,9 @@ pub mod __support {
     #[cfg(target_family = "wasm")]
     pub use crate::wasm::{register_wasm_link_section_item, LinkSectionRawInfo};
 
+    #[cfg(target_vendor = "pc")]
+    pub use crate::section::Alignment;
+
     /// Declares the section_name macro.
     #[macro_export]
     #[doc(hidden)]
@@ -438,20 +441,20 @@ pub mod __support {
                     $crate::__support::add_section_link_attribute!(
                         data start $ident $($aux)?
                         #[link_section = __]
-                        static __START: Alignment<$generic_ty> = Alignment::new();
+                        static __START: $crate::__support::Alignment<$generic_ty> = Alignment::new();
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_section = __]
-                        static __END: Alignment<$generic_ty> = Alignment::new();
+                        static __END: $crate::__support::Alignment<$generic_ty> = Alignment::new();
                     );
 
                     $crate::__support::PtrBounds::new(
                         unsafe {
-                            let start = &raw const __START as $crate::__support::SectionPtr<$generic_ty>;
-                            start.cast::<u8>().add(::core::mem::size_of::<Alignment<$generic_ty>>())
+                            let start = &raw const __START;
+                            start.cast::<u8>().add(::core::mem::size_of::<$crate::__support::Alignment<$generic_ty>>()) as *const()
                         },
-                        unsafe { &raw const __END as $crate::__support::SectionPtr<$generic_ty> },
+                        unsafe { &raw const __END as *const () },
                     )
                 }
             }

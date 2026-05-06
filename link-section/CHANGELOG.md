@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   constructor functions, make sure to use `priority = 1`.
 - Zero-sized types are no longer used in `extern`s. Windows now uses a
   non-zero-sized alignment marker to align the start and end of the section.
+  Other LLVM/GCC platforms use a `u8`.
 
 ## [0.14.0] - 2026-05-04
 
