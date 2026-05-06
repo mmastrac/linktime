@@ -5,7 +5,6 @@ edition = "2021"
 publish = false
 
 [dependencies]
-ctor = { path = "../../../ctor" }
 link-section = { path = "../../../link-section" }
 libc-print = "0.3"
 
