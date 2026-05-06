@@ -5,11 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.15.0] - Unreleased
+## [0.15.0] - 2026-05-06
 
 ### Added
 
 - Support for `const` items in link sections.
+- WASM now requires `const` items, and uses `ctor`-like initialization to copy
+  data to a contiguous section. To access link-section slices in WASM in
+  constructor functions, make sure to use `priority = 1`.
+- Zero-sized types are no longer used in `extern`s. Windows now uses a
+  non-zero-sized alignment marker to align the start and end of the section.
+  Other LLVM/GCC platforms use a `u8`.
+- `link-section` is now `no_std`-compatible.
 
 ## [0.14.0] - 2026-05-04
 

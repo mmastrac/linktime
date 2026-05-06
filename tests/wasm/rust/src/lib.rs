@@ -18,29 +18,22 @@ mod link_section {
     use libc_print::std_name::println;
     use linktime::link_section::{section, in_section, TypedSection};
 
-    #[ctor(unsafe)]
+    #[ctor(unsafe, priority = 1)]
     pub fn ctor_slices() {
         println!("ctor_slices:");
-        for slice in SLICES {
-            let string = std::str::from_utf8(&slice.as_slice()).unwrap();
-            println!("{string}");
+        for (idx, s) in SLICES.iter().enumerate() {
+            println!("{idx}: {s}");
         }
     }
         
     #[section]
-    pub static SLICES: TypedSection<[u8; 1024]>;
+    pub static SLICES: TypedSection<&'static str>;
 
     #[in_section(SLICES)]
-    pub static SLICE: [u8; 1024] = string_to_slice("Hello, world!");
+    pub const SLICE: &'static str = "Hello, world!";
 
     #[in_section(SLICES)]
-    pub static SLICE2: [u8; 1024] = string_to_slice("These slices were loaded from the custom section!");
-
-    const fn string_to_slice(string: &str) -> [u8; 1024] {
-        let mut slice = [0; 1024];
-        slice.split_at_mut(string.len()).0.copy_from_slice(string.as_bytes());
-        slice
-    }
+    pub const SLICE2: &'static str = "These slices were loaded from the custom section!";
 }
 
 #[dtor(unsafe)]

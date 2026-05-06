@@ -23,18 +23,18 @@ are placed into the associated section.
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1)                                               |
 | macOS                    | ✅ Fully supported                                                                            |
 | Windows                  | ✅ Fully supported                                                                            |
-| WASM                     | ⚠️ Only integers can be stored in sections and may require host environment support (§2) (§3) |
+| WASM                     | ✅ Fully supported (§2) (§3) |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1)                                               |
 
 (§1) Orphan section handling is a feature of the linker that allows sections to
 be defined without a pre-defined name.
 
-(§2) Wasm only allows plain bytes in `#[link_section]` statics (no pointers).
+(§2) WASM requires `const` items, and uses `ctor`-like initialization to copy
+data to a contiguous section. To access link-section slices in WASM in
+`#[ctor]` functions, make sure to use at least `#[ctor(priority = 1)]`.
 
 (§3) Host environment support (by calling the exported `register_link_section`
-function) is required to register each section with the runtime. As a
-consequence, the functions available on the `Section` and `TypedSection` types
-are not `const`.
+function) is required to register each section with the runtime.
 
 ## Platform Details
 
@@ -87,6 +87,12 @@ On WASM platforms, Rust emits data into custom sections which do not support
 ordering, and are stored out-of-band. The host environment is responsible for
 registering this out-of-band section with this library as this data is not
 accessible by the WASM runtime.
+
+Normally, WASM does not support placing arbitrary data in link sections - only
+non-pointer data is supported. However, the WASM support uses `const` items and
+pre-main construction functions to copy each entry into a contiguous section
+allocated at startup. The number of items in a link-section is computed by
+generating a custom data section containing one byte per item.
 
 The WASM support expects a function in the module's environment with the
 following signature and functionality. The wasm import only passes the four
