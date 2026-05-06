@@ -3,11 +3,11 @@ name = "dtor"
 version = "1.0.0"
 authors.workspace = true
 edition = "2021"
-description = "__attribute__((destructor)) for Rust"
+description = "Global, no_std-compatible destructors for all platforms that run after main (like C/C++ __attribute__((destructor)))"
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-categories = ["no-std"]
+categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.60"
 
 exclude = ["tests"]
