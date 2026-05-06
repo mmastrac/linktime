@@ -393,7 +393,7 @@ pub mod __support {
         #[macro_export]
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {{
-                crate::__support::PtrBounds::new(core::ptr::null_mut(), core::ptr::null_mut())
+                $crate::__support::PtrBounds::new(core::ptr::null_mut(), core::ptr::null_mut())
             }};
         }
 
@@ -451,8 +451,6 @@ pub mod __support {
                         unsafe { &raw const __END as $crate::__support::SectionPtr<$generic_ty> },
                     )
                 }
-
-                pub type Bounds = crate::__support::PtrBounds;
             }
         }
 
@@ -712,7 +710,9 @@ pub mod __support {
         }
         #[inline(always)]
         pub const fn byte_len(&self) -> usize {
-            unsafe { (self.end).byte_offset_from(self.start) as usize }
+            // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
+            // so we manually implement it here.
+            unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
         }
     }
 
