@@ -32,7 +32,7 @@ static STATIC_CTOR_REF_GLOBAL: &'static MyStatic = {
     }
 };
 
-// The above is a similar form to this:
+/// The above is a similar form to this:
 pub static FOO: &'static (dyn ::core::fmt::Debug + Sync) = &"foo";
 
 fn main() {
