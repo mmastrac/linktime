@@ -80,12 +80,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-
-    - name: Install required Rust tools
-      uses: taiki-e/install-action@v2
-      if: ${{ matrix.needs }}
-      with:
-        tool: ${{ matrix.needs }}
   
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }})
       uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
@@ -93,6 +87,12 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: ${{ matrix.rust-components }}
         target: ${{ matrix.rust-extra-target }}
+
+    - name: Install required Rust tools
+      uses: taiki-e/install-action@v2
+      if: ${{ matrix.needs }}
+      with:
+        tool: ${{ matrix.needs }}
 
     - name: Install Zig
       if: ${{ matrix.job == 'zigbuild' }}
