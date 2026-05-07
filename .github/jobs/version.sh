@@ -73,39 +73,47 @@ while IFS=$'\t' read -r name version; do
 
   echo "::group::${name}@${version}"
 
-  # If this exact version is not published, we consider it "bumped" and OK.
-  meta_body="$TMP_DIR/${name}-${version}.meta.body"
-  meta_headers="$TMP_DIR/${name}-${version}.meta.headers"
-  meta_stderr="$TMP_DIR/${name}-${version}.meta.stderr"
-  meta_url="https://crates.io/api/v1/crates/${name}/${version}"
-
-  http_code=""
+  # Determine whether this exact version is published.
+  #
+  # Avoid the crates.io HTTP API here; it can 403 in CI due to data-access policy.
+  # `cargo info` uses Cargo's registry access and a compliant User-Agent.
+  info_stdout="$TMP_DIR/${name}-${version}.cargo-info.stdout"
+  info_stderr="$TMP_DIR/${name}-${version}.cargo-info.stderr"
+  published=0
+  info_ok=0
   for attempt in 1 2 3; do
-    http_code="$(crates_io_get "$meta_url" "$meta_body" "$meta_headers" "$meta_stderr")"
-    if [ "$http_code" != "000" ] && [ "$http_code" -lt 500 ]; then
+    if cargo info "${name}@${version}" --registry crates-io >"$info_stdout" 2>"$info_stderr"; then
+      info_ok=1
+      published=1
       break
     fi
     sleep 1
   done
 
-  if [ "$http_code" = "404" ]; then
-    echo "✅ ${name}@${version}: not published yet (version appears bumped)"
+  if [ "$published" -eq 0 ]; then
+    # Cargo can fail either because the crate/version does not exist, or because
+    # registry access failed (network / rate-limit / outage). Only treat the
+    # former as "not published yet".
+    if grep -Eiq 'could not find|not found|no matching package|failed to find' "$info_stderr"; then
+      echo "✅ ${name}@${version}: not published yet (version appears bumped)"
+      echo "::endgroup::"
+      continue
+    fi
+
+    echo "❌ ${name}@${version}: failed to query crates.io via cargo"
+    echo
+    echo "--- cargo info stderr ---"
+    cat "$info_stderr" || true
+    echo
+    echo "--- cargo info stdout ---"
+    head -n 100 "$info_stdout" || true
+    FAILED=1
     echo "::endgroup::"
     continue
   fi
 
-  if [ "$http_code" = "000" ] || [ "$http_code" -ge 500 ] || [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-    echo "❌ ${name}@${version}: failed to query crates.io (${http_code})"
-    echo
-    echo "URL: $meta_url"
-    echo
-    echo "--- curl stderr ---"
-    cat "$meta_stderr" || true
-    echo "--- headers ---"
-    cat "$meta_headers" || true
-    echo "--- body (first 200 lines) ---"
-    head -n 200 "$meta_body" || true
-    FAILED=1
+  if [ "$info_ok" -ne 1 ]; then
+    echo "✅ ${name}@${version}: not published yet (version appears bumped)"
     echo "::endgroup::"
     continue
   fi
