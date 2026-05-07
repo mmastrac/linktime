@@ -18,7 +18,13 @@ $ rustc -vV
 $ cargo build --quiet --target $TARGET
 *
 $ cargo run --quiet --target $TARGET
-! +crt-static
+if TARGET_OS == "openbsd" {
+    # Appears to be a legit Rust/OpenBSD bug?
+    ! -crt-static
+}
+if TARGET_OS != "openbsd" {
+    ! +crt-static
+}
 ! main
 "#
 );

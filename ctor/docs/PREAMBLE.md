@@ -37,9 +37,9 @@ Contributions to support other platforms or improve testing are welcome.
 | Windows      | ✅        | ✅        |
 | WASM         | ✅        | ✅        |
 | FreeBSD      | ✅        | 💨        |
-| NetBSD       | ✅        | -         |
-| OpenBSD      | ✅        | -         |
-| DragonFlyBSD | ✅        | -         |
+| NetBSD       | ✅        | 💨         |
+| OpenBSD      | ✅        | 💨         |
+| DragonFlyBSD | ✅        | 💨         |
 | Illumos      | ✅        | -         |
 | Android      | ✅        | -         |
 | iOS          | ✅        | -         |
