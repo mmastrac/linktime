@@ -1,6 +1,6 @@
 [package]
 name = "dtor"
-version = "1.0.0"
+version = "1.0.1"
 authors.workspace = true
 edition = "2021"
 description = "Global, no_std-compatible destructors for all platforms that run after main (like C/C++ __attribute__((destructor)))"

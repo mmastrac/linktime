@@ -242,7 +242,7 @@ __declare_features!(
             // WASI/Emscripten support atexit only
             // For wasm-unknown-unknown, you'll need to provide one
             (target_family = "wasm") => at_binary_exit,
-            // .fini_array works in dylibs, but does not appear to work in binaries
+            // OpenBSD's linker support is inconsistent
             (target_os = "openbsd") => at_module_exit,
             _ => linker,
         }
