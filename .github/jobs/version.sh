@@ -122,7 +122,7 @@ while IFS=$'\t' read -r name version; do
     if cargo download "$name"="$version" -o "$PUBLISHED_CRATE" >"$download_out" 2>"$download_err"; then
       downloaded=1
     else
-      echo "⚠️  ${name}@${version}: cargo-download failed; falling back to cargo fetch"
+      echo "⚠️  ${name}@${version}: cargo-download failed"
       echo "--- cargo-download stderr (first 50 lines) ---"
       head -n 50 "$download_err" || true
     fi
