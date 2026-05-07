@@ -12,7 +12,7 @@ unsafe fn foo() {
     }
     const _: () = {
         #[allow(unsafe_code)]
-        #[link_section = ".init_array.000"]
+        #[link_section = ".init_array.500"]
         #[used]
         static __CTOR_PRIVATE_REF: unsafe extern "C" fn() = {
             #[allow(unused_unsafe)]
