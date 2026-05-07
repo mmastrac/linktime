@@ -65,5 +65,8 @@ if TARGET_OS == "freebsd" {
 if TARGET_OS == "windows" {
     ! dtor-link-section:dtor
 }
+if TARGET_OS == "openbsd" {
+    ! dtor-link-section:dtor
+}
 "#
 );

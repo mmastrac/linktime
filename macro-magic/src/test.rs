@@ -69,7 +69,7 @@ pub const fn const_str_slice_concat<'a>(s: &[&str], out: &'a mut [u8]) -> &'a st
         }
         i += 1;
     }
-    match str::from_utf8(out) {
+    match core::str::from_utf8(out) {
         Ok(s) => s,
         Err(_) => panic!("Invalid UTF-8"),
     }
