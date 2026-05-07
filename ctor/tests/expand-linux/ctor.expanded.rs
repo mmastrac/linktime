@@ -1,9 +1,9 @@
 use ctor::ctor;
 #[allow(dead_code)]
-unsafe fn foo() {
+fn foo() {
     #[allow(unsafe_code)]
     #[link_section = ".text.startup"]
-    unsafe fn __ctor_private_inner() {
+    fn __ctor_private_inner() {
         {
             ::std::io::_print(format_args!("foo\n"));
         };
@@ -17,10 +17,10 @@ unsafe fn foo() {
             #[allow(unsafe_code)]
             #[link_section = ".text.startup"]
             extern "C" fn __ctor_private() {
-                { unsafe { __ctor_private_inner() } }
+                { { __ctor_private_inner() } }
             }
             __ctor_private
         };
     };
-    unsafe { __ctor_private_inner() }
+    { __ctor_private_inner() }
 }
