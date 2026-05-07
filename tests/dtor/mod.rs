@@ -37,6 +37,9 @@ if TARGET_OS == "linux" {
 if TARGET_OS == "freebsd" {
     ! dtor-link-section:dtor
 }
+if TARGET_OS == "openbsd" {
+    ! dtor-link-section:dtor
+}
 "#
 );
 
