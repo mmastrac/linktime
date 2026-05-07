@@ -56,14 +56,56 @@ done <"$CRATES_TSV"
 echo
 FAILED=0
 
+crates_io_get() {
+  # Usage: crates_io_get <url> <out_body_file> <out_headers_file> <out_stderr_file>
+  # Prints HTTP status code to stdout (000 for transport error).
+  local url="$1"
+  local out_body="$2"
+  local out_headers="$3"
+  local out_stderr="$4"
+
+  # -L: follow redirects (crates.io download endpoint returns 302 to static.crates.io)
+  curl -sS -L -D "$out_headers" -o "$out_body" -w "%{http_code}" "$url" 2>"$out_stderr" || echo "000"
+}
+
 while IFS=$'\t' read -r name version; do
   [ -n "${name:-}" ] || continue
 
   echo "::group::${name}@${version}"
 
   # If this exact version is not published, we consider it "bumped" and OK.
-  if ! curl -fsS "https://crates.io/api/v1/crates/${name}/${version}" >/dev/null 2>&1; then
+  meta_body="$TMP_DIR/${name}-${version}.meta.body"
+  meta_headers="$TMP_DIR/${name}-${version}.meta.headers"
+  meta_stderr="$TMP_DIR/${name}-${version}.meta.stderr"
+  meta_url="https://crates.io/api/v1/crates/${name}/${version}"
+
+  http_code=""
+  for attempt in 1 2 3; do
+    http_code="$(crates_io_get "$meta_url" "$meta_body" "$meta_headers" "$meta_stderr")"
+    if [ "$http_code" != "000" ] && [ "$http_code" -lt 500 ]; then
+      break
+    fi
+    sleep 1
+  done
+
+  if [ "$http_code" = "404" ]; then
     echo "✅ ${name}@${version}: not published yet (version appears bumped)"
+    echo "::endgroup::"
+    continue
+  fi
+
+  if [ "$http_code" = "000" ] || [ "$http_code" -ge 500 ] || [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+    echo "❌ ${name}@${version}: failed to query crates.io (${http_code})"
+    echo
+    echo "URL: $meta_url"
+    echo
+    echo "--- curl stderr ---"
+    cat "$meta_stderr" || true
+    echo "--- headers ---"
+    cat "$meta_headers" || true
+    echo "--- body (first 200 lines) ---"
+    head -n 200 "$meta_body" || true
+    FAILED=1
     echo "::endgroup::"
     continue
   fi
@@ -77,7 +119,37 @@ while IFS=$'\t' read -r name version; do
 
   mkdir -p "$PUBLISHED_DIR" "$LOCAL_DIR"
 
-  curl -fsSL -o "$PUBLISHED_CRATE" "https://crates.io/api/v1/crates/${name}/${version}/download"
+  download_body="$TMP_DIR/${name}-${version}.download.body"
+  download_headers="$TMP_DIR/${name}-${version}.download.headers"
+  download_stderr="$TMP_DIR/${name}-${version}.download.stderr"
+  download_url="https://crates.io/api/v1/crates/${name}/${version}/download"
+
+  dl_code=""
+  for attempt in 1 2 3; do
+    dl_code="$(crates_io_get "$download_url" "$download_body" "$download_headers" "$download_stderr")"
+    if [ "$dl_code" != "000" ] && [ "$dl_code" -lt 500 ]; then
+      break
+    fi
+    sleep 1
+  done
+
+  if [ "$dl_code" != "200" ]; then
+    echo "❌ ${name}@${version}: failed to download published crate (${dl_code})"
+    echo
+    echo "URL: $download_url"
+    echo
+    echo "--- curl stderr ---"
+    cat "$download_stderr" || true
+    echo "--- headers ---"
+    cat "$download_headers" || true
+    echo "--- body (first 50 lines) ---"
+    head -n 50 "$download_body" || true
+    FAILED=1
+    echo "::endgroup::"
+    continue
+  fi
+
+  mv "$download_body" "$PUBLISHED_CRATE"
   tar --strip-components=1 -xzf "$PUBLISHED_CRATE" -C "$PUBLISHED_DIR"
 
   # Build the crate tarball Cargo would publish.
