@@ -106,11 +106,11 @@ jobs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-          target/**/*.rlib
+          ${{ matrix.rust-toolchain == 'stable' && 'target/**/*.rlib' || '' }}
         key: ${{ env.CACHE_KEY }}-${{ runner.os }}-cargo-${{ matrix.rust-toolchain }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ env.CACHE_KEY }}-${{ runner.os }}-cargo-${{ matrix.rust-toolchain }}-
-
+     
     - name: Run ${{ matrix.job }}
       shell: bash
       env:

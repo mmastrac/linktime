@@ -4,7 +4,6 @@ set -xeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 cd "$ROOT/tests/wasm/rust"
-cargo clean
 RUSTFLAGS='--cfg wasmtime' cargo build --target wasm32-wasip1
 RUSTFLAGS='--cfg wasmtime' cargo build --target wasm32-wasip2
 
