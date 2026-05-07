@@ -49,7 +49,7 @@ jobs:
                     job: [test, test-used-linker, miri, wasm]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
-                    job: [build, build-minimal, lint, sanitize]
+                    job: [build, build-minimal, lint, sanitize, version]
                     target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
