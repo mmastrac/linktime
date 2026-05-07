@@ -76,8 +76,6 @@ pub fn pass_windows() {
 #[test]
 pub fn trybuild() {
     let t = trybuild::TestCases::new();
-    // TODO: whitespace issue in error tests
-    #[cfg(not(target_os = "openbsd"))]
     t.compile_fail("tests/errors/*.rs");
     t.pass("tests/pass/*.rs");
 }
