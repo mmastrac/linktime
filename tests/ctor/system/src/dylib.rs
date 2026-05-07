@@ -6,20 +6,21 @@ use ctor::ctor;
 use dtor::dtor;
 use libc_print::*;
 
-#[cfg(never)]
+// Always-false.
+#[cfg(any())]
 #[ctor(unsafe)]
 fn never() {
     libc_ewriteln!("+++ ctor never run");
 }
 
-#[cfg(never)]
+#[cfg(any())]
 #[ctor(unsafe)]
 static NEVER_STATIC: u8 = unsafe {
     libc_ewriteln!("+++ ctor static never run");
     42
 };
 
-#[cfg(never)]
+#[cfg(any())]
 #[dtor(unsafe)]
 fn never() {
     libc_ewriteln!("+++ dtor never run");

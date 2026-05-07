@@ -142,16 +142,46 @@ jobs:
         run: |
           echo "Success"
 
-  vmactions:
+  # Tier-*BSD smoke tests (QEMU); see https://github.com/vmactions
+
+  vmactions-freebsd:
     runs-on: ubuntu-latest
     name: FreeBSD / test (stable)
     steps:
       - uses: actions/checkout@v6
-      - name: Start VM
+      # macrotest needs `cargo expand`. Cache `CARGO_HOME` under the workspace (registry/git/bin)
+      # so vmactions copyback + actions/cache reuse downloads and the installed `cargo-expand`.
+      # `cargo clean` after tests drops `target/` so copyback stays small.
+      - uses: actions/cache@v5
+        with:
+          path: .cache/ci/vmactions/freebsd
+          key: vmactions-freebsd-14.4-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            vmactions-freebsd-14.4-
+      # Build must run in the same vmactions step as host→VM sync: copyback only runs when this
+      # action finishes. A later `shell: freebsd` step updates the VM only — the runner workspace
+      # never gets the new binary, so actions/cache would save an empty/stale path.
+      - name: Build and test
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.4"
           usesh: true
+          run: |
+            set -xe
+            # Only install rust if missing. Do not use `pkg install -U`: fresh images have no
+            # repo catalog yet and fail with "Repository FreeBSD cannot be opened. pkg update required".
+            if ! command -v cargo >/dev/null 2>&1; then
+              pkg install -y rust
+            fi
+            export CARGO_HOME="${GITHUB_WORKSPACE}/.cache/ci/vmactions/freebsd/cargo-home"
+            mkdir -p "${CARGO_HOME}/bin"
+            export PATH="${CARGO_HOME}/bin:${PATH}"
+            if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
+              cargo install cargo-expand --locked
+            fi
+            cargo build
+            cargo test
+            cargo clean
       - name: Install dependencies
         shell: freebsd {0}
         run: |

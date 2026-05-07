@@ -46,8 +46,8 @@ Contributions to support other platforms or improve testing are welcome.
 | Linux        | ✅        | ✅        |
 | macOS        | ✅        | ✅        |
 | Windows      | ✅        | ✅        |
-| FreeBSD      | ✅        | ✅        |
-| WASM 🕸️      | ✅        | ✅        |
+| WASM         | ✅        | ✅        |
+| FreeBSD      | ✅        | 💨        |
 | NetBSD       | ✅        | -         |
 | OpenBSD      | ✅        | -         |
 | DragonFlyBSD | ✅        | -         |
@@ -59,6 +59,9 @@ Contributions to support other platforms or improve testing are welcome.
 | VxWorks      | ✅        | -         |
 | Xtensa       | ✅        | -         |
 | NTO          | ✅        | -         |
+
+ - ✅ Full CI (miri, address sanitizer, etc.)
+ - 💨 Smoke tests (varying levels)
 
 🕸️ = WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
 

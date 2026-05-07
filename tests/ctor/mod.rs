@@ -1,6 +1,6 @@
 use clitest_lib::clitest;
 
-// Does not work on apple platforms
+// Apple: dylibs + crt-static unsupported here.
 #[cfg(not(target_vendor = "apple"))]
 clitest!(
     crt_static,
@@ -230,7 +230,6 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
 
        #[ctor]
        ^^^^^^^------- replace this with #[ctor(unsafe)]
-
 """
 ? ^\s*--> .*main\.rs:%{NUMBER}:1
 """
@@ -245,7 +244,6 @@ error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This e
 
        #[ctor]
        ^^^^^^^------- replace this with #[ctor(unsafe)]
-
 """
 ? ^\s*--> .*main\.rs:%{NUMBER}:1
 """

@@ -340,7 +340,7 @@ macro_rules! __ctor_parse_impl {
         `config.toml` file.\n\n\
         \n\
         #[ctor]\n\
-        ^^^^^^^------- replace this with #[ctor(unsafe)]\n"));
+        ^^^^^^^------- replace this with #[ctor(unsafe)]"));
     };
 
     ( @entry next=$next:path[$next_args:tt], input=(
