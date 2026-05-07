@@ -1098,7 +1098,7 @@ macro_rules! __map_priority {
         $next!($next_args, naked);
     };
 
-    // Priority unspecified, link options not, priority enabled => early (0)
+    // Priority unspecified, link options not, priority enabled => default (500)
     ( @entry next=$next:path[$next_args:tt], input=(
         export_name_prefix = ($enp:tt: default),
         link_section = ($ls:tt: default),
@@ -1106,7 +1106,7 @@ macro_rules! __map_priority {
         priority = ($priority:tt: default),
         priority_enabled = (priority_enabled: $pe_spec:ident),
     ) ) => {
-        $next!($next_args, 0);
+        $next!($next_args, 500);
     };
 
     // Priority specified (or default) = early, link options not, priority enabled
@@ -1117,7 +1117,18 @@ macro_rules! __map_priority {
         priority = (early: $p_spec:ident),
         priority_enabled = $pe:tt,
     ) ) => {
-        $next!($next_args, 0);
+        $next!($next_args, 101);
+    };
+
+    // Priority specified (or default) = default, link options not, priority enabled
+    ( @entry next=$next:path[$next_args:tt], input=(
+        export_name_prefix = ($enp:tt: default),
+        link_section = ($ls:tt: default),
+        naked = ($naked:tt: default),
+        priority = (default: $p_spec:ident),
+        priority_enabled = $pe:tt,
+    ) ) => {
+        $next!($next_args, 500);
     };
 
     // Priority specified = late, link options not, priority enabled

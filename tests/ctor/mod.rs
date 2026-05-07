@@ -120,13 +120,7 @@ defer {
 $ cargo build --quiet
 *
 $ cargo run --quiet
-unordered {
-    ! no priority
-    ! no priority
-    ! early
-    ! early
-    ! 0
-}
+! 0
 ! 1
 ! 2
 ! 3
@@ -137,6 +131,16 @@ unordered {
 ! 8
 ! 9
 ! 10
+unordered {
+    ! early
+    ! early
+}
+unordered {
+    ! no priority
+    ! no priority
+    ! default
+    ! default
+}
 ! late
 ! late
 ! main

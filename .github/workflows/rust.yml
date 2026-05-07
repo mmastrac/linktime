@@ -247,7 +247,7 @@ jobs:
             /usr/sbin/pkg_add rust
           fi
           cargo build --examples -p ctor -p dtor -p link-section
-          for example in ctor-basic ctor-example ctor-advanced; do
+          for example in ctor-basic ctor-example ctor-advanced ctor-priority; do
             cargo run -p ctor --example "$example"
           done
           cargo run -p dtor --example dtor-example
@@ -271,7 +271,7 @@ jobs:
           set -xe
           pkg install -y rust
           cargo build --examples -p ctor -p dtor -p link-section
-          for example in ctor-basic ctor-example ctor-advanced; do
+          for example in ctor-basic ctor-example ctor-advanced ctor-priority; do
             cargo run -p ctor --example "$example"
           done
           cargo run -p dtor --example dtor-example

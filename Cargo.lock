@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "libc-print",
  "link-section",

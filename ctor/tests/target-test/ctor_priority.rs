@@ -21,6 +21,16 @@ ctor!(
 );
 
 ctor!(
+    #[ctor(unsafe, priority = default)]
+    fn priority_default() {}
+);
+
+ctor!(
+    #[ctor(unsafe)]
+    fn priority_unspecified() {}
+);
+
+ctor!(
     #[ctor(unsafe, naked)]
     fn naked() {}
 );
