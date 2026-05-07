@@ -6,8 +6,6 @@ export RUSTFLAGS="-Z extra-const-ub-checks"
 # https://doc.rust-lang.org/nightly/std/ptr/index.html#strict-provenance
 export MIRIFLAGS="-Zmiri-permissive-provenance"
 
-cargo clean
-
 cargo miri test
 
 cargo miri run --example "link-section-const"
