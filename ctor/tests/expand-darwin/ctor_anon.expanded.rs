@@ -20,7 +20,7 @@ const _: () = {
                 #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
                 pub static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = ::ctor::collect::Constructor {
-                    priority: 0,
+                    priority: 500,
                     ctor: __ctor_private,
                 };
             };
@@ -49,7 +49,7 @@ const _: () = {
                 #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
                 pub static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = ::ctor::collect::Constructor {
-                    priority: 0,
+                    priority: 500,
                     ctor: __ctor_private,
                 };
             };

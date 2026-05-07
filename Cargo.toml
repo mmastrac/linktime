@@ -29,7 +29,7 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/mmastrac/linktime"
 
 [workspace.dependencies]
-ctor = { path = "ctor", version = "1.0.2", default-features = false }
+ctor = { path = "ctor", version = "1.0.3", default-features = false }
 dtor = { path = "dtor", version = "1.0.1", default-features = false }
 link-section = { path = "link-section", version = "0.15.0", default-features = false }
 

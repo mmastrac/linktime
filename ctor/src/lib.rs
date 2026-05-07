@@ -513,30 +513,37 @@ __declare_features!(
     /// run last. `N` must be between 0 and 999 inclusive for ordering
     /// guarantees (`N` >= 1000 ordering is platform-defined).
     ///
-    /// Priority is specified as an isize, string literal, or the identifiers
-    /// `early` or `late`. The integer value will be clamped to a
-    /// platform-defined range (typically 0-65535), while string priorities are
-    /// passed through unprocessed.
+    /// Priority is specified as numeric value, string literal, or the
+    /// identifiers `early`, `default`, or `late`. The integer value will be
+    /// clamped to a platform-defined range (typically 0-65535), while string
+    /// priorities are passed through unprocessed.
+    ///
+    /// Most platforms reserve the numeric values range of 0..100 for their own
+    /// internal use and it may not be safe to access platform services (`libc`
+    /// or other) in constructors with those priorities.
     ///
     /// Priority is applied as follows:
     ///
-    ///  - `early` is the default, and is run first (constructors annotated with
-    ///    `early` and those with no priority attribute are run in the same
-    ///    phase).
-    ///  - `N` is run in increasing order, from 0 <= N <= 999.
+    ///  - `N` is run in increasing order, from `0 <= N <= 999`.
+    ///  - `early` is run at a priority level where it is safe to access the C
+    ///    runtime. This is equivalent to a priority of 101 on most platforms.
+    ///  - `default` is the default, and is run after `early`. This is
+    ///    equivalent to a priority of 500.
     ///  - `late` is run last, and will be positioned to run after most
-    ///    constructors, even outside the range 0 <= N <= 999.
+    ///    constructors, even outside the range `0 <= N <= 999`. The equivalent
+    ///    priority is platform-defined.
     ///  - `main` is run, for binary targets.
     ///
-    /// Ordering outside of `0 <= N <= 999` is platform-defined with respect to
-    /// the list above, however platforms will order constructors within a given
-    /// length range in ascending order (ie: 10000 will run before 20000).
+    /// Ordering with explicit priority values outside of `0 <= N <= 999` is
+    /// platform-defined with respect to the list above, however platforms will
+    /// order constructors within a given priority range in ascending order
+    /// (i.e.: 10000 will run before 20000).
     priority {
         attr: [(priority = $priority_value:tt) => ($priority_value)];
         example: "priority = N | early | late";
-        validate: [($priority:literal), (early), (late)];
+        validate: [($priority:literal), (early), (late), (default)];
         default {
-            (feature = "priority") => early,
+            (feature = "priority") => default,
             _ => ()
         }
     };

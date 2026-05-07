@@ -70,6 +70,11 @@ unsafe fn priority_none() {
     libc_println!("no priority");
 }
 
+#[ctor(unsafe, priority = default, anonymous)]
+unsafe fn priority_default() {
+    libc_println!("default");
+}
+
 #[ctor(unsafe, priority = 8)]
 unsafe fn priority_eight() {
     libc_println!("8");
@@ -83,6 +88,11 @@ unsafe fn priority_nine() {
 #[ctor(unsafe, anonymous)]
 unsafe fn priority_none() {
     libc_println!("no priority");
+}
+
+#[ctor(unsafe, priority = default, anonymous)]
+unsafe fn priority_default() {
+    libc_println!("default");
 }
 
 #[ctor(unsafe, priority = early, anonymous)]

@@ -5,6 +5,15 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-05-07
+
+### Fixed
+
+- A `default` priority value is now supported and is the default. This is
+  equivalent to a priority of 500 on most platforms. The previous `priority`
+  default of 0 was unsafe for C library access on some platforms.
+- The `early` priority value is now equivalent to a priority of 101 on most platforms.
+
 ## [1.0.2] - 2026-05-06
 
 ### Changed
