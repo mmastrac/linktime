@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-if ! command -v curl >/dev/null 2>&1; then
-  echo "ERROR: curl is required"
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "ERROR: cargo is required"
   exit 1
 fi
 if ! command -v jq >/dev/null 2>&1; then
@@ -55,18 +55,6 @@ done <"$CRATES_TSV"
 
 echo
 FAILED=0
-
-crates_io_get() {
-  # Usage: crates_io_get <url> <out_body_file> <out_headers_file> <out_stderr_file>
-  # Prints HTTP status code to stdout (000 for transport error).
-  local url="$1"
-  local out_body="$2"
-  local out_headers="$3"
-  local out_stderr="$4"
-
-  # -L: follow redirects (crates.io download endpoint returns 302 to static.crates.io)
-  curl -sS -L -D "$out_headers" -o "$out_body" -w "%{http_code}" "$url" 2>"$out_stderr" || echo "000"
-}
 
 while IFS=$'\t' read -r name version; do
   [ -n "${name:-}" ] || continue
@@ -127,37 +115,19 @@ while IFS=$'\t' read -r name version; do
 
   mkdir -p "$PUBLISHED_DIR" "$LOCAL_DIR"
 
-  download_body="$TMP_DIR/${name}-${version}.download.body"
-  download_headers="$TMP_DIR/${name}-${version}.download.headers"
-  download_stderr="$TMP_DIR/${name}-${version}.download.stderr"
-  download_url="https://crates.io/api/v1/crates/${name}/${version}/download"
-
-  dl_code=""
-  for attempt in 1 2 3; do
-    dl_code="$(crates_io_get "$download_url" "$download_body" "$download_headers" "$download_stderr")"
-    if [ "$dl_code" != "000" ] && [ "$dl_code" -lt 500 ]; then
-      break
+  downloaded=0
+  if command -v cargo-download >/dev/null 2>&1; then
+    download_out="$TMP_DIR/${name}-${version}.cargo-download.out"
+    download_err="$TMP_DIR/${name}-${version}.cargo-download.err"
+    if cargo download "$name"="$version" -o "$PUBLISHED_CRATE" >"$download_out" 2>"$download_err"; then
+      downloaded=1
+    else
+      echo "⚠️  ${name}@${version}: cargo-download failed; falling back to cargo fetch"
+      echo "--- cargo-download stderr (first 50 lines) ---"
+      head -n 50 "$download_err" || true
     fi
-    sleep 1
-  done
-
-  if [ "$dl_code" != "200" ]; then
-    echo "❌ ${name}@${version}: failed to download published crate (${dl_code})"
-    echo
-    echo "URL: $download_url"
-    echo
-    echo "--- curl stderr ---"
-    cat "$download_stderr" || true
-    echo "--- headers ---"
-    cat "$download_headers" || true
-    echo "--- body (first 50 lines) ---"
-    head -n 50 "$download_body" || true
-    FAILED=1
-    echo "::endgroup::"
-    continue
   fi
 
-  mv "$download_body" "$PUBLISHED_CRATE"
   tar --strip-components=1 -xzf "$PUBLISHED_CRATE" -C "$PUBLISHED_DIR"
 
   # Build the crate tarball Cargo would publish.

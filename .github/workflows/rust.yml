@@ -25,6 +25,7 @@ jobs:
                 "this.job == 'wasm'": "wasmtime-cli"
                 "this.job == 'test'": "cargo-expand"
                 "this.job == 'zigbuild'": "cargo-zigbuild"
+                "this.job == 'version'": "cargo-download"
             rust-toolchain:
               $match:
                 "this.job == 'miri'": nightly
