@@ -182,21 +182,3 @@ jobs:
             cargo build
             cargo test
             cargo clean
-      - name: Install dependencies
-        shell: freebsd {0}
-        run: |
-          pkg install -y curl
-          fetch https://sh.rustup.rs -o rustup.sh
-          sh rustup.sh -y --profile=minimal
-          . $HOME/.cargo/env
-          cargo install cargo-expand
-      - name: Build
-        shell: freebsd {0}
-        run: |
-          . $HOME/.cargo/env
-          cargo build
-      - name: Test
-        shell: freebsd {0}
-        run: |
-          . $HOME/.cargo/env
-          RUST_TEST_THREADS=1 cargo test
