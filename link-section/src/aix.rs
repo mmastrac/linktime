@@ -119,7 +119,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                 let magic = *(base as *const u16);
                 libc_println!("magic: {:x}", magic);
                 let strtab = get_string_table(base, magic)?;   // returns Option<&[u8]>
-                libc_println!("strtab: {:?}", strtab);
+                libc_println!("strtab: {:?}", strtab.len());
                 match magic {
                     0x01DF | 0x01EF => {
                         let fhdr = &*(base as *const Filehdr32);
