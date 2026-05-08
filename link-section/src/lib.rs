@@ -571,11 +571,25 @@ pub mod __support {
                 start as _
             }
             pub fn end_ptr(&self) -> *const () {
+                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+
                 libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
+                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
+                libc_print::libc_println!("res: {:p}", res);
+
                 libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 size
