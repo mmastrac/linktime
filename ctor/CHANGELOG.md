@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for win7, uwp and other windows targets
+- Support for UEFI targets (`.init_array` matching gnu-efi)
+
+### Changed
+
+- `target_vendor = "pc"` is now `target_os = "windows"`. This should be a
+strictly increasing set of support for windows targets.
 
 ## [1.0.3] - 2026-05-07
 
