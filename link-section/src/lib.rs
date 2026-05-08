@@ -254,12 +254,12 @@ pub mod __support {
         {
             data bare =>    ("_data", "_") __ ();
             data section => ("_data", "_") __ ("_2");
-            data start =>   ("__start_", "_data", "_") __ ("_1");
-            data end =>     ("__stop_", "_data", "_") __ ("_3");
+            data start =>   ("__start_", "_data", "_") __ ();
+            data end =>     ("__stop_", "_data", "_") __ ();
             code bare =>    ("_text", "_") __ ();
             code section => ("_text", "_") __ ("_2");
-            code start =>   ("__start_", "_text", "_") __ ("_1");
-            code end =>     ("__stop_", "_text", "_") __ ("_3");
+            code start =>   ("__start_", "_text", "_") __ ();
+            code end =>     ("__stop_", "_text", "_") __ ();
         }
         AUXILIARY = "_d_";
         MAX_LENGTH = 64;
