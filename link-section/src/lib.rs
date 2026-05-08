@@ -579,7 +579,7 @@ pub mod __support {
                 libc_print::libc_println!("res: {:p}", res);
 
                 libc_print::libc_println!("raw: {:p}", self.raw);
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| libc_print!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
@@ -802,6 +802,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
+                    #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                     $(#[$meta])*
                     $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
