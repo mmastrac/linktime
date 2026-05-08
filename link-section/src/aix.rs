@@ -154,7 +154,9 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             }
                         }
                     }
-                    _ => {} // unknown magic – skip
+                    _ => {
+                        panic!("unknown magic: {}", magic);
+                    } // unknown magic – skip
                 }
             }
 
