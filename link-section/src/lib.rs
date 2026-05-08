@@ -559,11 +559,11 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT, self.name.as_ptr() as _) };
+                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
                 libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL, self.name.as_ptr() as _) };
+                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
                 libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL, self.name.as_ptr() as _) };
+                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
                 libc_print::libc_println!("res: {:p}", res);
 
                 libc_print::libc_println!("raw: {:p}", self.raw);
