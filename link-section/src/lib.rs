@@ -529,16 +529,27 @@ pub mod __support {
                         static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
                     );
 
-                    $crate::__support::PtrBounds::new(
-                        // TODO: black_box when hint is stable
-                        unsafe { ::core::ptr::null_mut() },
-                        unsafe { ::core::ptr::null_mut() },
-                    )
+                    $crate::__support::Bounds::new()
                 }
             }
         }
 
-        pub type Bounds = crate::__support::PtrBounds;
+        pub struct Bounds {
+        }
+
+        impl Bounds {
+            pub fn start_ptr(&self) -> *const () {
+                ::core::ptr::null_mut()
+            }
+            pub fn end_ptr(&self) -> *const () {
+                ::core::ptr::null_mut()
+            }
+            #[inline(always)]
+            pub fn byte_len(&self) -> usize {
+                0
+            }
+    
+        }
     }
 
     /// On LLVM/GCC platforms we can use orphan sections with _start and _end
