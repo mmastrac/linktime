@@ -511,98 +511,98 @@ pub mod __support {
     ///
     /// On Apple platforms, the linker provides a pointer to the start and end
     /// of the section regardless of the section's name.
-    #[cfg(all(not(miri), target_os = "aix"))]
-    mod section {
-        #[doc(hidden)]
-        #[macro_export]
-        macro_rules! __get_section {
-            (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
-                {
-                    // Keep the section alive
-                    $crate::__support::add_section_link_attribute!(
-                        data section $ident $($aux)?
-                        #[link_section = __]
-                        #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
-                        #[no_mangle]
-                        #[used]
-                        static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
-                    );
+    // #[cfg(all(not(miri), target_os = "aix"))]
+    // mod section {
+    //     #[doc(hidden)]
+    //     #[macro_export]
+    //     macro_rules! __get_section {
+    //         (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
+    //             {
+    //                 // Keep the section alive
+    //                 $crate::__support::add_section_link_attribute!(
+    //                     data section $ident $($aux)?
+    //                     #[link_section = __]
+    //                     #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
+    //                     #[no_mangle]
+    //                     #[used]
+    //                     static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
+    //                 );
 
-                    // This doesn't work - not a symbol
-                    $crate::__support::add_section_link_attribute!(
-                        data start $ident $($aux)?
-                        #[link_name = __]
-                        extern "C" {
-                            static SECTION: ::core::mem::MaybeUninit<[$generic_ty; 0]>;
-                        }
-                    );
+    //                 // This doesn't work - not a symbol
+    //                 $crate::__support::add_section_link_attribute!(
+    //                     data start $ident $($aux)?
+    //                     #[link_name = __]
+    //                     extern "C" {
+    //                         static SECTION: ::core::mem::MaybeUninit<[$generic_ty; 0]>;
+    //                     }
+    //                 );
 
-                    let name = $crate::__section_name!(
-                        raw data section $ident $($aux)?
-                    );
+    //                 let name = $crate::__section_name!(
+    //                     raw data section $ident $($aux)?
+    //                 );
 
-                    $crate::__support::Bounds::new(name, unsafe { &raw const SECTION } as *const ())
-                }
-            }
-        }
+    //                 $crate::__support::Bounds::new(name, unsafe { &raw const SECTION } as *const ())
+    //             }
+    //         }
+    //     }
 
-        pub struct Bounds {
-            name: &'static str,
-            raw: *const (),
-        }
+    //     pub struct Bounds {
+    //         name: &'static str,
+    //         raw: *const (),
+    //     }
 
-        impl Bounds {
-            pub const fn new(name: &'static str, raw: *const ()) -> Self {
-                Self {
-                    name,
-                    raw,
-                }
-            }
-            pub fn start_ptr(&self) -> *const () {
-                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
+    //     impl Bounds {
+    //         pub const fn new(name: &'static str, raw: *const ()) -> Self {
+    //             Self {
+    //                 name,
+    //                 raw,
+    //             }
+    //         }
+    //         pub fn start_ptr(&self) -> *const () {
+    //             let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
 
-                libc_print::libc_println!("raw: {:p}", self.raw);
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
-                start as _
-            }
-            pub fn end_ptr(&self) -> *const () {
-                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
+    //             libc_print::libc_println!("raw: {:p}", self.raw);
+    //             let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
+    //             start as _
+    //         }
+    //         pub fn end_ptr(&self) -> *const () {
+    //             let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
 
-                libc_print::libc_println!("raw: {:p}", self.raw);
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
-                unsafe { (start as *const u8).add(size) as _ }
-            }
-            pub fn byte_len(&self) -> usize {
-                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
-                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
-                libc_print::libc_println!("res: {:p}", res);
+    //             libc_print::libc_println!("raw: {:p}", self.raw);
+    //             let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
+    //             unsafe { (start as *const u8).add(size) as _ }
+    //         }
+    //         pub fn byte_len(&self) -> usize {
+    //             let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
+    //             let res = unsafe { libc::dlsym(libc::RTLD_LOCAL as _, self.name.as_ptr() as _) };
+    //             libc_print::libc_println!("res: {:p}", res);
 
-                libc_print::libc_println!("raw: {:p}", self.raw);
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
-                size
-            }
-        }
-    }
+    //             libc_print::libc_println!("raw: {:p}", self.raw);
+    //             let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
+    //             size
+    //         }
+    //     }
+    // }
 
     /// On LLVM/GCC platforms we can use orphan sections with _start and _end
     /// symbols.
     ///
     /// On Apple platforms, the linker provides a pointer to the start and end
     /// of the section regardless of the section's name.
-    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_os = "windows"), not(target_os = "aix")))]
+    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_os = "windows")))]
     mod section {
         #[doc(hidden)]
         #[macro_export]
