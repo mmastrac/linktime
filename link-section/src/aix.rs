@@ -118,50 +118,37 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                 // ---------- detect XCOFF bitness from magic ----------
                 let magic = *(base as *const u16);
                 libc_println!("magic: {:x}", magic);
+                let strtab = get_string_table(base, magic)?;   // returns Option<&[u8]>
+                libc_println!("strtab: {:?}", strtab);
                 match magic {
                     0x01DF | 0x01EF => {
-                        // 32‑bit
                         let fhdr = &*(base as *const Filehdr32);
-                        let scn_start = base.add(
-                            mem::size_of::<Filehdr32>() + fhdr.f_opthdr as usize,
-                        );
+                        let scn_start = base.add(mem::size_of::<Filehdr32>() + fhdr.f_opthdr as usize);
                         let sections = core::slice::from_raw_parts(
                             scn_start as *const Scnhdr32,
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            let scn_name = CStr::from_bytes_until_nul(&scn.s_name)
-                                .unwrap_or_default()
-                                .to_string_lossy();
-                            libc_println!("scn_name: {}", scn_name);
-                            if scn_name == name {
+                            if section_name32(scn, strtab) == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
                     }
                     0x01F7 => {
-                        // 64‑bit
                         let fhdr = &*(base as *const Filehdr64);
-                        let scn_start = base.add(
-                            mem::size_of::<Filehdr64>() + fhdr.f_opthdr as usize,
-                        );
+                        let scn_start = base.add(mem::size_of::<Filehdr64>() + fhdr.f_opthdr as usize);
                         let sections = core::slice::from_raw_parts(
                             scn_start as *const Scnhdr64,
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            let scn_name = CStr::from_bytes_until_nul(&scn.s_name)
-                                .unwrap_or_default()
-                                .to_string_lossy();
-                            libc_println!("scn_name: {}", scn_name);
-                            if scn_name == name {
+                            if section_name64(scn, strtab) == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
                     }
                     _ => {
-                        panic!("unknown magic: {}", magic);
-                    } // unknown magic – skip
+                    }
                 }
             }
 
@@ -170,5 +157,72 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
             }
             current = current.add(info.ldinfo_next as usize);
         }
+    }
+}
+
+// 64-bit symbol entry size
+const SYMENT64: usize = 24;   // 8 + 8 + 4 + 2 + 2
+// 32-bit symbol entry size
+const SYMENT32: usize = 18;   // 8 + 4 + 2 + 2 + ...
+
+/// Returns the file‑backed string table that belongs to a loaded XCOFF image.
+/// The base address and magic number must already be verified.
+unsafe fn get_string_table(base: *const u8, magic: u16) -> Option<&'static [u8]> {
+    match magic {
+        0x01DF | 0x01EF => {
+            // 32-bit
+            let fhdr = &*(base as *const Filehdr32);
+            let sym_size = fhdr.f_nsyms as usize * SYMENT32;
+            let str_start = (fhdr.f_symptr as usize) + sym_size;
+            if str_start < 4 { return None; }
+            let size_bytes = &*(base.add(str_start) as *const [u8; 4]);
+            let size = u32::from_be_bytes(*size_bytes) as usize;
+            Some(core::slice::from_raw_parts(base.add(str_start), size))
+        }
+        0x01F7 => {
+            // 64-bit
+            let fhdr = &*(base as *const Filehdr64);
+            let sym_size = fhdr.f_nsyms as usize * SYMENT64;
+            let str_start = fhdr.f_symptr as usize + sym_size;
+            if str_start < 4 { return None; }
+            let size_bytes = &*(base.add(str_start) as *const [u8; 4]);
+            let size = u32::from_be_bytes(*size_bytes) as usize;
+            Some(core::slice::from_raw_parts(base.add(str_start), size))
+        }
+        _ => None,
+    }
+}
+
+/// Extracts the section name from a Scnhdr64, given the string table.
+unsafe fn section_name64(s: &Scnhdr64, strtab: &[u8]) -> String {
+    // If first 4 bytes are zero → offset in last 4 bytes
+    let first4 = u32::from_be_bytes([s.s_name[0], s.s_name[1], s.s_name[2], s.s_name[3]]);
+    if first4 == 0 {
+        let offset = u32::from_be_bytes([s.s_name[4], s.s_name[5], s.s_name[6], s.s_name[7]]) as usize;
+        if offset >= strtab.len() { return String::new(); }
+        CStr::from_bytes_until_nul(&strtab[offset..])
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        // Inline name (≤ 8 chars)
+        let end = s.s_name.iter().position(|&b| b == 0).unwrap_or(8);
+        String::from_utf8_lossy(&s.s_name[..end]).into_owned()
+    }
+}
+
+/// Same for Scnhdr32.
+unsafe fn section_name32(s: &Scnhdr32, strtab: &[u8]) -> String {
+    let first4 = u32::from_be_bytes([s.s_name[0], s.s_name[1], s.s_name[2], s.s_name[3]]);
+    if first4 == 0 {
+        let offset = u32::from_be_bytes([s.s_name[4], s.s_name[5], s.s_name[6], s.s_name[7]]) as usize;
+        if offset >= strtab.len() { return String::new(); }
+        CStr::from_bytes_until_nul(&strtab[offset..])
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        let end = s.s_name.iter().position(|&b| b == 0).unwrap_or(8);
+        String::from_utf8_lossy(&s.s_name[..end]).into_owned()
     }
 }
