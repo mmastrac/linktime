@@ -103,7 +103,8 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                 buf_size *= 2;
                 continue;
             }
-            return None;
+            panic!("failed to get xinfo");
+            // return None;
         }
 
         // Walk the linked list of ld_xinfo entries
