@@ -44,6 +44,7 @@ const _: () = {
 };
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct Scnhdr64 {
     pub s_name: [u8; 8],
     pub s_paddr: u64,
@@ -146,7 +147,6 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                         );
                         for scn in sections {
                             let scn_name = section_name32(scn, strtab);
-                            libc_println!("scn.s_vaddr/len: {:x}/{:x}", scn.s_vaddr, scn.s_size);
                             libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
@@ -162,7 +162,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            libc_println!("scn.s_vaddr/len: {:x}/{:x}", scn.s_vaddr, scn.s_size);
+                            libc_println!("scn: {:?}", scn);
                             let scn_name = section_name64(scn, strtab);
                             libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
