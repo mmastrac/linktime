@@ -35,9 +35,9 @@ pub struct Filehdr64 {
     pub f_nscns: u16,
     pub f_timdat: i32,
     pub f_symptr: u64,
-    pub f_nsyms: i32,
     pub f_opthdr: u16,              // size of auxiliary header
     pub f_flags: u16,
+    pub f_nsyms: i32,
 }
 
 const _: () = {
