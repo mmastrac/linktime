@@ -747,7 +747,6 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 code section $ident $($aux)?
                 #[link_section = __]
-                #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                 $(#[$meta])*
                 $vis fn $ident_fn($($args)*) $(-> $ret)? $body
             );
