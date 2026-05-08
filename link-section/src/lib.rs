@@ -549,7 +549,7 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                crate::aix::find_section_address(name);
+                crate::aix::find_section_address(self.name);
                 
                 ::core::ptr::null_mut()
             }
