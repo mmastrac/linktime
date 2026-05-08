@@ -47,7 +47,7 @@ const _: () = {
 #[derive(Debug)]
 pub struct Scnhdr64 {
     pub s_name: [u8; 8],
-    pub s_paddr: u64,
+    pub s_paddr: u64, 
     pub s_vaddr: u64,
     pub s_size: u64,
     pub s_scnptr: u64,
@@ -162,7 +162,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            libc_println!("scn: {:?}", scn);
+                            libc_println!("scn: {:x?}", scn);
                             let scn_name = section_name64(scn, strtab);
                             libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
