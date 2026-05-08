@@ -28,7 +28,7 @@ pub struct LdXinfo {
 // ===================================================================
 // XCOFF 64‑bit file header & section header
 // ===================================================================
-#[repr(C, packed)]
+#[repr(C)]
 pub struct Filehdr64 {
     pub f_magic: u16,               // 0x01F7 for 64‑bit XCOFF
     pub f_nscns: u16,
@@ -39,7 +39,11 @@ pub struct Filehdr64 {
     pub f_flags: u16,
 }
 
-#[repr(C)]
+const _: () = {
+    assert!(::core::mem::size_of::<Filehdr64>() == 24);
+};
+
+#[repr(C, align(4))]
 pub struct Scnhdr64 {
     pub s_name: [u8; 8],
     pub s_paddr: u64,
