@@ -130,7 +130,10 @@ export function readCustomSection(
 - Has start/end symbols: ✅
 - Supports linker sorting: ❌
 
-AIX maps Rust's `#[link_section]` to `csect`s, which act like subsections of the larger `.text` and `.data` sections.
+AIX maps Rust's `#[link_section]` to `csect`s (Control Sections), which act like
+subsections of the larger `.text` and `.data` sections
+<sup>[↳](https://www.ibm.com/docs/kk/aix/7.2.0?topic=program-understanding-programming-toc)</sup>.
+A `csect` is the smallest, indivisible unit of code or data.
 
 By default, AIX does not have section start/stop symbols, but the most recent
 versions of the linker added a new `-bdbg:namedsects:ss` flag which enables
