@@ -2,6 +2,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::{ffi::CStr, mem};
+use libc_print::libc_println;
 
 // ===================================================================
 // AIX loader constants
@@ -106,7 +107,8 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
             panic!("failed to get xinfo");
             // return None;
         }
-
+        libc_println!("xinfo: {:?}", buffer);
+        
         // Walk the linked list of ld_xinfo entries
         let mut current = buffer.as_ptr();
         loop {
