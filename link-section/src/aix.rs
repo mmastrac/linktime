@@ -120,6 +120,11 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                 libc_println!("magic: {:x}", magic);
                 let strtab = get_string_table(base, magic)?;   // returns Option<&[u8]>
                 libc_println!("strtab: {:?}", strtab.len());
+
+                if strtab.len() >= 4 {
+                    let expected_size = u32::from_be_bytes([strtab[0], strtab[1], strtab[2], strtab[3]]) as usize;
+                    assert_eq!(expected_size, strtab.len(), "string table size mismatch: {:x?}", &strtab[..16]);
+                }
                 match magic {
                     0x01DF | 0x01EF => {
                         let fhdr = &*(base as *const Filehdr32);
