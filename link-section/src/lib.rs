@@ -550,7 +550,7 @@ pub mod __support {
             }
             pub fn start_ptr(&self) -> *const () {
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.expect("failed");
-                start
+                start as _
             }
             pub fn end_ptr(&self) -> *const () {
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.expect("failed");;
