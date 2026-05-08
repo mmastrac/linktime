@@ -129,7 +129,9 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            if section_name32(scn, strtab) == name {
+                            let scn_name = section_name32(scn, strtab);
+                            libc_println!("scn_name: {}", scn_name);
+                            if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
@@ -142,7 +144,9 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            if section_name64(scn, strtab) == name {
+                            let scn_name = section_name64(scn, strtab);
+                            libc_println!("scn_name: {}", scn_name);
+                            if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
