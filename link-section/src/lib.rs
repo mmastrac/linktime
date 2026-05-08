@@ -550,17 +550,17 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                libc_println!("raw: {:p}", self.raw);
+                libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 start as _
             }
             pub fn end_ptr(&self) -> *const () {
-                libc_println!("raw: {:p}", self.raw);
+                libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
-                libc_println!("raw: {:p}", self.raw);
+                libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 size
             }
