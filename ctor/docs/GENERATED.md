@@ -233,6 +233,11 @@ link_section = ".CRT$XCU"
 link_section = ".ctors"
  # ; };
 
+#[cfg(target_os = "uefi")]
+ # const _: () = { let
+link_section = ".init_array"
+ # ; };
+
 #[cfg(all(target_os = "aix"))]
  # const _: () = { let
 link_section = ()

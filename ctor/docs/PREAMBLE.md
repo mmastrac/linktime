@@ -32,14 +32,14 @@ Contributions to support other platforms or improve testing are welcome.
 
 | OS           | Supported | CI Tested |
 | ------------ | --------- | --------- |
-| Linux        | ✅        | ✅        |
-| macOS        | ✅        | ✅        |
-| Windows      | ✅        | ✅        |
-| WASM         | ✅        | ✅        |
+| Linux        | ✅        | 🏅        |
+| macOS        | ✅        | 🏅        |
+| Windows      | ✅        | 🏅        |
+| WASM 🕸️      | ✅        | 🏅        |
 | FreeBSD      | ✅        | 💨        |
-| NetBSD       | ✅        | 💨         |
-| OpenBSD      | ✅        | 💨         |
-| DragonFlyBSD | ✅        | 💨         |
+| NetBSD       | ✅        | 💨        |
+| OpenBSD      | ✅        | 💨        |
+| DragonFlyBSD | ✅        | 💨        |
 | Illumos      | ✅        | -         |
 | Android      | ✅        | -         |
 | iOS          | ✅        | -         |
@@ -48,11 +48,12 @@ Contributions to support other platforms or improve testing are welcome.
 | VxWorks      | ✅        | -         |
 | Xtensa       | ✅        | -         |
 | NTO          | ✅        | -         |
+| UEFI         | ⚠️        | -         |
 
- - ✅ Full CI (miri, address sanitizer, etc.)
- - 💨 Smoke tests (varying levels)
-
-🕸️ = WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
+- 🏅 Full CI (miri, address sanitizer, etc.)
+- 💨 Smoke tests (varying levels)
+- ⚠️ Needs more feedback
+- 🕸️ WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
 
 - `wasm-unknown-unknown` requires host environment support for `atexit` if used
   with `dtor`.
