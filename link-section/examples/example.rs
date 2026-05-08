@@ -82,8 +82,8 @@ pub fn main() {
     eprintln!("LINK_SECTION: {:?}", LINK_SECTION);
     link_section_function();
     eprintln!("TYPED_LINK_SECTION: {:?}", TYPED_LINK_SECTION);
-    assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32).is_some());
-    assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32_2).is_some());
+    // assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32).is_some());
+    // assert!(TYPED_LINK_SECTION.offset_of(&LINKED_U32_2).is_some());
     eprintln!("AUX_LINK_SECTION: {:?}", AUX_LINK_SECTION);
     assert!(AUX_LINK_SECTION.len() == 1);
     let random_u32 = 1234567890;

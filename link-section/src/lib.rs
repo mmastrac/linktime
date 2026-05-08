@@ -757,7 +757,7 @@ pub mod __support {
                 data section $ident $($aux)?
                 #[link_section = __]
                 $(#[$meta])*
-                $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
+                $vis static mut $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
         };
         ($type_source:tt, $ident:ident, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const $name:ident: $ty:ty = $value:expr;)) => {
@@ -805,7 +805,7 @@ pub mod __support {
                     #[used]
                     #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                     $(#[$meta])*
-                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
+                    $vis static mut __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
 
                 __LINK_SECTION_CONST_ITEM_VALUE
@@ -819,7 +819,7 @@ pub mod __support {
                     data section $ident $($aux)?
                     #[link_section = __]
                     $(#[$meta])*
-                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
+                    $vis static mut __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
                 );
             };
         };
