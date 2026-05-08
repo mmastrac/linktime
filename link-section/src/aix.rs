@@ -43,7 +43,7 @@ const _: () = {
     assert!(::core::mem::size_of::<Filehdr64>() == 24);
 };
 
-#[repr(C, align(4))]
+#[repr(C)]
 pub struct Scnhdr64 {
     pub s_name: [u8; 8],
     pub s_paddr: u64,
@@ -55,6 +55,7 @@ pub struct Scnhdr64 {
     pub s_nreloc: u32,
     pub s_nlnno: u32,
     pub s_flags: i32,
+    pub s_padding: u32,
 }
 
 const _: () = {
