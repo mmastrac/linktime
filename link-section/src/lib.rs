@@ -519,46 +519,15 @@ pub mod __support {
         macro_rules! __get_section {
             (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
                 {
-                    #[allow(non_camel_case_types)]
-                    mod __aix_nlist {
-                        use core::ffi::{c_char, c_int, c_long, c_longlong, c_short, c_ushort};
-
-                        #[repr(C)]
-                        pub union nlist__n {
-                            pub _n_name: *mut c_char,
-                        }
-
-                        #[repr(C)]
-                        pub union nlist__n_tylc {
-                            pub _n_type: c_ushort,
-                        }
-
-                        #[repr(C)]
-                        pub struct nlist {
-                            pub _n: nlist__n,
-                            pub n_value: c_long,
-                            pub n_scnum: c_short,
-                            pub _n_tylc: nlist__n_tylc,
-                            pub n_sclass: c_char,
-                            pub n_numaux: c_char,
-                        }
-
-                        #[repr(C)]
-                        pub struct nlist64 {
-                            pub _n: nlist__n,
-                            pub n_value: c_longlong,
-                            pub n_scnum: c_short,
-                            pub _n_tylc: nlist__n_tylc,
-                            pub n_sclass: c_char,
-                            pub n_numaux: c_char,
-                        }
-
-                        extern "C" {
-                            pub fn nlist(filename: *const c_char, list: *mut nlist) -> c_int;
-                            pub fn nlist64(filename: *const c_char, list: *mut nlist64) -> c_int;
-                            pub fn knlist(list: *mut nlist, n: c_int, m: c_int) -> c_int;
-                        }
-                    }
+                    // Keep the section alive
+                    $crate::__support::add_section_link_attribute!(
+                        data section $ident $($aux)?
+                        #[link_section = __]
+                        #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
+                        #[no_mangle]
+                        #[used]
+                        static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
+                    );
 
                     $crate::__support::PtrBounds::new(
                         // TODO: black_box when hint is stable
