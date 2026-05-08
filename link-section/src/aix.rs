@@ -107,13 +107,13 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
             panic!("failed to get xinfo");
             // return None;
         }
-        libc_println!("xinfo: {:?}", buffer);
         
         // Walk the linked list of ld_xinfo entries
         let mut current = buffer.as_ptr();
         loop {
             let info = &*(current as *const LdXinfo);
             let base = info.ldinfo_textorg as *const u8;
+            libc_println!("base: {:p}", base);
             if !base.is_null() {
                 // ---------- detect XCOFF bitness from magic ----------
                 let magic = *(base as *const u16);
