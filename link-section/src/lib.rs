@@ -540,7 +540,7 @@ pub mod __support {
                         raw data section $ident $($aux)?
                     );
 
-                    $crate::__support::Bounds::new(name, unsafe { &raw const __REFERENCE } as *const ())
+                    $crate::__support::Bounds::new(name, unsafe { &raw const SECTION } as *const ())
                 }
             }
         }
