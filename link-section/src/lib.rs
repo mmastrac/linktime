@@ -530,7 +530,7 @@ pub mod __support {
                     );
 
                     let name = $crate::__section_name!(
-                        raw data bare $ident $($aux)?
+                        raw data section $ident $($aux)?
                     );
 
                     $crate::__support::Bounds::new(name)
@@ -549,15 +549,15 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.expect("failed");
                 start
             }
             pub fn end_ptr(&self) -> *const () {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.expect("failed");;
                 (start as *const u8).add(size) as _
             }
             pub fn byte_len(&self) -> usize {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.expect("failed");;
                 size
             }
         }
