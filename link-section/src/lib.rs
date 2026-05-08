@@ -529,16 +529,28 @@ pub mod __support {
                         static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
                     );
 
-                    $crate::__support::Bounds::new()
+                    let name = $crate::__section_name!(
+                        raw data bare $ident $($aux)?
+                    );
+
+                    $crate::__support::Bounds::new(name)
                 }
             }
         }
 
         pub struct Bounds {
+            name: &'static str,
         }
 
         impl Bounds {
+            pub const fn new(name: &'static str) -> Self {
+                Self {
+                    name,
+                }
+            }
             pub fn start_ptr(&self) -> *const () {
+                crate::aix::find_section_address(name);
+                
                 ::core::ptr::null_mut()
             }
             pub fn end_ptr(&self) -> *const () {
@@ -548,7 +560,6 @@ pub mod __support {
             pub fn byte_len(&self) -> usize {
                 0
             }
-    
         }
     }
 
