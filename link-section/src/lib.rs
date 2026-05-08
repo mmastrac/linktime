@@ -532,30 +532,35 @@ pub mod __support {
                         raw data section $ident $($aux)?
                     );
 
-                    $crate::__support::Bounds::new(name)
+                    $crate::__support::Bounds::new(name, unsafe { &raw const __REFERENCE } as *const ())
                 }
             }
         }
 
         pub struct Bounds {
             name: &'static str,
+            raw: *const (),
         }
 
         impl Bounds {
-            pub const fn new(name: &'static str) -> Self {
+            pub const fn new(name: &'static str, raw: *const ()) -> Self {
                 Self {
                     name,
+                    raw,
                 }
             }
             pub fn start_ptr(&self) -> *const () {
+                libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 start as _
             }
             pub fn end_ptr(&self) -> *const () {
+                libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
+                libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 size
             }
