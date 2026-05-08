@@ -747,6 +747,7 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 code section $ident $($aux)?
                 #[link_section = __]
+                #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                 $(#[$meta])*
                 $vis fn $ident_fn($($args)*) $(-> $ret)? $body
             );
@@ -765,6 +766,7 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
+                #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                 $(#[$meta])*
                 $vis static $ident_static: $crate::__in_section_crate!(@type_select $type_source $path, $ty) = $value;
             );
@@ -827,6 +829,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
+                    #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                     $(#[$meta])*
                     $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
                 );
@@ -836,6 +839,7 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $ident $($aux)?
                 #[link_section = __]
+                #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                 $(#[$meta])*
                 $item
             );
