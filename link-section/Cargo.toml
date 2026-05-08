@@ -17,6 +17,7 @@ std = []
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["link_section"] }
 libc-print = "0.3"
+libc = "0.2.186"
 
 [dev-dependencies]
 

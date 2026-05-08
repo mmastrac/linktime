@@ -559,6 +559,13 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
+                let res = unsafe { libc::dlsym(libc::RTLD_DEFAULT, self.name.as_ptr() as *const i8) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_GLOBAL, self.name.as_ptr() as *const i8) };
+                libc_print::libc_println!("res: {:p}", res);
+                let res = unsafe { libc::dlsym(libc::RTLD_LOCAL, self.name.as_ptr() as *const i8) };
+                libc_print::libc_println!("res: {:p}", res);
+
                 libc_print::libc_println!("raw: {:p}", self.raw);
                 let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 start as _
