@@ -528,6 +528,7 @@ pub mod __support {
                         static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
                     );
 
+                    // This doesn't work - not a symbol
                     $crate::__support::add_section_link_attribute!(
                         data section $ident $($aux)?
                         #[link_name = __]
@@ -540,7 +541,7 @@ pub mod __support {
                         raw data section $ident $($aux)?
                     );
 
-                    $crate::__support::Bounds::new(name, unsafe { &raw const SECTION } as *const ())
+                    $crate::__support::Bounds::new(name, unsafe { &raw const __REFERENCE } as *const ())
                 }
             }
         }
