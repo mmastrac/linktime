@@ -92,7 +92,7 @@ extern "C" {
 // ===================================================================
 /// Returns a pointer into the loaded image of the current process
 /// where the section `name` begins, or `None` if not found.
-pub unsafe fn find_section_address(name: &str) -> Option<*const u8> {
+pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
     // The buffer may need to grow – start with 64 KiB and retry if full.
     let mut buf_size = 64 * 1024;
     loop {
@@ -130,7 +130,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<*const u8> {
                                 .unwrap_or_default()
                                 .to_string_lossy();
                             if scn_name == name {
-                                return Some(base.add(scn.s_vaddr as usize));
+                                return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
                     }
@@ -149,7 +149,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<*const u8> {
                                 .unwrap_or_default()
                                 .to_string_lossy();
                             if scn_name == name {
-                                return Some(base.add(scn.s_vaddr as usize));
+                                return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
                         }
                     }

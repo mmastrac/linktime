@@ -549,16 +549,16 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                unsafe { crate::aix::find_section_address(self.name); }
-                
-                ::core::ptr::null_mut()
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                start
             }
             pub fn end_ptr(&self) -> *const () {
-                ::core::ptr::null_mut()
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                (start as *const u8).add(size) as _
             }
-            #[inline(always)]
             pub fn byte_len(&self) -> usize {
-                0
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) };
+                size
             }
         }
     }
