@@ -117,6 +117,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
             if !base.is_null() {
                 // ---------- detect XCOFF bitness from magic ----------
                 let magic = *(base as *const u16);
+                libc_println!("magic: {:x}", magic);
                 match magic {
                     0x01DF | 0x01EF => {
                         // 32‑bit
@@ -132,6 +133,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             let scn_name = CStr::from_bytes_until_nul(&scn.s_name)
                                 .unwrap_or_default()
                                 .to_string_lossy();
+                            libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
@@ -151,6 +153,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             let scn_name = CStr::from_bytes_until_nul(&scn.s_name)
                                 .unwrap_or_default()
                                 .to_string_lossy();
+                            libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
                             }
