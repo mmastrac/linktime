@@ -465,6 +465,9 @@ __declare_features!(
     link_section {
         attr: [(link_section = $section:literal) => ($section)];
         example: "link_section = \".ctors\"";
+        // Historical note: GCC 4.7 stopped providing .ctors/.dtors compatible
+        // crt files. Modern compilers, with the exception of Apple, MSVC, and
+        // AIX, will use `.init_array`.
         default {
             (target_vendor = "apple") => "__DATA,__mod_init_func,mod_init_funcs",
             // Most LLVM/GCC targets can use .init_array
@@ -487,8 +490,12 @@ __declare_features!(
             (target_arch = "xtensa") => ".ctors",
             // Windows targets: .CRT$XCU
             (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
-            // ... except GNU
+            // ... except mingw32 (https://llvm.googlesource.com/clang/+/1a209b667f83588866326a0384fa943ea2287b6c)
             (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
+            // Research suggests that MSVC will use .CRT$XCU for UEFI targets, but won't actually
+            // run them. The gnu-efi project _does_ at least document .init_array support:
+            // https://github.com/vathpela/gnu-efi/blob/master/gnuefi/elf_x86_64_efi.lds
+            (target_os = "uefi") => ".init_array",
             (all(target_os = "aix")) => (), // AIX uses export_name_prefix
             _ => (compile_error!("Unsupported target for #[ctor]"))
         }
