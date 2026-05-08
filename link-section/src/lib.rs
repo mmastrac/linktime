@@ -253,11 +253,11 @@ pub mod __support {
     def_section_name! {
         {
             data bare =>    ("_data", "_") __ ();
-            data section => ("_data", "_") __ ("_2");
+            data section => ("_data", "_") __ ();
             data start =>   ("__start_", "_data", "_") __ ();
             data end =>     ("__stop_", "_data", "_") __ ();
             code bare =>    ("_text", "_") __ ();
-            code section => ("_text", "_") __ ("_2");
+            code section => ("_text", "_") __ ();
             code start =>   ("__start_", "_text", "_") __ ();
             code end =>     ("__stop_", "_text", "_") __ ();
         }
