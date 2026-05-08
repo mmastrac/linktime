@@ -8,6 +8,8 @@
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]
 pub mod life_before_main {}
 
+mod aix;
+
 #[cfg(target_family = "wasm")]
 mod wasm;
 
@@ -510,7 +512,72 @@ pub mod __support {
     ///
     /// On Apple platforms, the linker provides a pointer to the start and end
     /// of the section regardless of the section's name.
-    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_os = "windows")))]
+    #[cfg(all(not(miri), target_os = "aix"))]
+    mod section {
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __get_section {
+            (name=$ident:ident, type=$generic_ty:ty, aux=$($aux:ident)?) => {
+                {
+                    #[allow(non_camel_case_types)]
+                    mod __aix_nlist {
+                        use core::ffi::{c_char, c_int, c_long, c_longlong, c_short, c_ushort};
+
+                        #[repr(C)]
+                        pub union nlist__n {
+                            pub _n_name: *mut c_char,
+                        }
+
+                        #[repr(C)]
+                        pub union nlist__n_tylc {
+                            pub _n_type: c_ushort,
+                        }
+
+                        #[repr(C)]
+                        pub struct nlist {
+                            pub _n: nlist__n,
+                            pub n_value: c_long,
+                            pub n_scnum: c_short,
+                            pub _n_tylc: nlist__n_tylc,
+                            pub n_sclass: c_char,
+                            pub n_numaux: c_char,
+                        }
+
+                        #[repr(C)]
+                        pub struct nlist64 {
+                            pub _n: nlist__n,
+                            pub n_value: c_longlong,
+                            pub n_scnum: c_short,
+                            pub _n_tylc: nlist__n_tylc,
+                            pub n_sclass: c_char,
+                            pub n_numaux: c_char,
+                        }
+
+                        extern "C" {
+                            pub fn nlist(filename: *const c_char, list: *mut nlist) -> c_int;
+                            pub fn nlist64(filename: *const c_char, list: *mut nlist64) -> c_int;
+                            pub fn knlist(list: *mut nlist, n: c_int, m: c_int) -> c_int;
+                        }
+                    }
+
+                    $crate::__support::PtrBounds::new(
+                        // TODO: black_box when hint is stable
+                        unsafe { ::core::ptr::null_mut() },
+                        unsafe { ::core::ptr::null_mut() },
+                    )
+                }
+            }
+        }
+
+        pub type Bounds = crate::__support::PtrBounds;
+    }
+
+    /// On LLVM/GCC platforms we can use orphan sections with _start and _end
+    /// symbols.
+    ///
+    /// On Apple platforms, the linker provides a pointer to the start and end
+    /// of the section regardless of the section's name.
+    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_os = "windows"), not(target_os = "aix")))]
     mod section {
         #[doc(hidden)]
         #[macro_export]
