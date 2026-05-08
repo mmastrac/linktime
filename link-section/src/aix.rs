@@ -129,6 +129,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                     0x01DF | 0x01EF => {
                         let fhdr = &*(base as *const Filehdr32);
                         let scn_start = base.add(mem::size_of::<Filehdr32>() + fhdr.f_opthdr as usize);
+                        libc_println!("scn_start: {:p}", scn_start);
                         let sections = core::slice::from_raw_parts(
                             scn_start as *const Scnhdr32,
                             fhdr.f_nscns as usize,
@@ -144,6 +145,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                     0x01F7 => {
                         let fhdr = &*(base as *const Filehdr64);
                         let scn_start = base.add(mem::size_of::<Filehdr64>() + fhdr.f_opthdr as usize);
+                        libc_println!("scn_start: {:p}", scn_start);
                         let sections = core::slice::from_raw_parts(
                             scn_start as *const Scnhdr64,
                             fhdr.f_nscns as usize,
