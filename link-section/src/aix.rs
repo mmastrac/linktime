@@ -137,7 +137,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                     assert_eq!(expected_size, strtab.len(), "string table size mismatch: {:x?}", &strtab[..16]);
                 }
                 match magic {
-                    0x01DF | 0x01EF => {
+                    0x01DF => {
                         let fhdr = &*(base as *const Filehdr32);
                         let scn_start = base.add(mem::size_of::<Filehdr32>() + fhdr.f_opthdr as usize);
                         libc_println!("scn_start: {:p}", scn_start);
