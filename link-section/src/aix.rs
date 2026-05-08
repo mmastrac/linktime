@@ -53,6 +53,11 @@ pub struct Scnhdr64 {
     pub s_flags: i32,
 }
 
+const _: () = {
+    assert!(::core::mem::size_of::<Scnhdr32>() == 40);
+    assert!(::core::mem::size_of::<Scnhdr64>() == 72);
+};
+
 // ===================================================================
 // XCOFF 32‑bit file header & section header
 // ===================================================================
@@ -67,7 +72,7 @@ pub struct Filehdr32 {
     pub f_flags: u16,
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 pub struct Scnhdr32 {
     pub s_name: [u8; 8],
     pub s_paddr: i32,
@@ -136,6 +141,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                         );
                         for scn in sections {
                             let scn_name = section_name32(scn, strtab);
+                            libc_println!("scn.s_vaddr/len: {:x}/{:x}", scn.s_vaddr, scn.s_size);
                             libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
                                 return Some((base.add(scn.s_vaddr as usize), scn.s_size as usize));
@@ -151,7 +157,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                             fhdr.f_nscns as usize,
                         );
                         for scn in sections {
-                            libc_println!("scn.s_vaddr: {:x}", scn.s_vaddr);
+                            libc_println!("scn.s_vaddr/len: {:x}/{:x}", scn.s_vaddr, scn.s_size);
                             let scn_name = section_name64(scn, strtab);
                             libc_println!("scn_name: {}", scn_name);
                             if scn_name == name {
