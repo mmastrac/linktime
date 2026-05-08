@@ -579,7 +579,7 @@ pub mod __support {
                 libc_print::libc_println!("res: {:p}", res);
 
                 libc_print::libc_println!("raw: {:p}", self.raw);
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| libc_print!("failed to find section address for {}", self.name));
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
