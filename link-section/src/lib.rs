@@ -252,14 +252,14 @@ pub mod __support {
     #[cfg(target_os = "aix")]
     def_section_name! {
         {
-            data bare =>    (".data", ".") __ ();
-            data section => (".data", ".") __ (".2");
-            data start =>   (".data", ".") __ (".1");
-            data end =>     (".data", ".") __ (".3");
-            code bare =>    (".text", ".") __ ();
-            code section => (".text", ".") __ (".2");
-            code start =>   (".text", ".") __ (".1");
-            code end =>     (".text", ".") __ (".3");
+            data bare =>    ("_data", "_") __ ();
+            data section => ("_data", "_") __ ("_2");
+            data start =>   ("_data", "_") __ ("_1");
+            data end =>     ("_data", "_") __ ("_3");
+            code bare =>    ("_text", "_") __ ();
+            code section => ("_text", "_") __ ("_2");
+            code start =>   ("_text", "_") __ ("_1");
+            code end =>     ("_text", "_") __ ("_3");
         }
         AUXILIARY = ".d.";
         MAX_LENGTH = 64;
@@ -530,7 +530,7 @@ pub mod __support {
 
                     // This doesn't work - not a symbol
                     $crate::__support::add_section_link_attribute!(
-                        data section $ident $($aux)?
+                        data start $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
                             static SECTION: ::core::mem::MaybeUninit<[$generic_ty; 0]>;
@@ -541,7 +541,7 @@ pub mod __support {
                         raw data section $ident $($aux)?
                     );
 
-                    $crate::__support::Bounds::new(name, unsafe { &raw const __REFERENCE } as *const ())
+                    $crate::__support::Bounds::new(name, unsafe { &raw const SECTION } as *const ())
                 }
             }
         }
