@@ -29,6 +29,7 @@ pub struct LdXinfo {
 // XCOFF 64‑bit file header & section header
 // ===================================================================
 #[repr(C)]
+#[derive(Debug)]
 pub struct Filehdr64 {
     pub f_magic: u16,               // 0x01F7 for 64‑bit XCOFF
     pub f_nscns: u16,
@@ -67,7 +68,8 @@ const _: () = {
 // ===================================================================
 // XCOFF 32‑bit file header & section header
 // ===================================================================
-#[repr(C, packed)]
+#[repr(C)]
+#[derive(Debug)]
 pub struct Filehdr32 {
     pub f_magic: u16,               // 0x01DF for 32‑bit XCOFF
     pub f_nscns: u16,
@@ -139,6 +141,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                 match magic {
                     0x01DF => {
                         let fhdr = &*(base as *const Filehdr32);
+                        libc_println!("fhdr: {:x?}", fhdr);
                         let scn_start = base.add(mem::size_of::<Filehdr32>() + fhdr.f_opthdr as usize);
                         libc_println!("scn_start: {:p}", scn_start);
                         let sections = core::slice::from_raw_parts(
@@ -155,6 +158,7 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
                     }
                     0x01F7 => {
                         let fhdr = &*(base as *const Filehdr64);
+                        libc_println!("fhdr: {:x?}", fhdr);
                         let scn_start = base.add(mem::size_of::<Filehdr64>() + fhdr.f_opthdr as usize);
                         libc_println!("scn_start: {:p}", scn_start);
                         let sections = core::slice::from_raw_parts(
