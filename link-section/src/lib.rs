@@ -802,6 +802,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $ident $($aux)?
                     #[link_section = __]
+                    #[used]
                     #[cfg_attr(target_os = "aix", export_name = concat!(stringify!($name), file!(), "_", line!()))]
                     $(#[$meta])*
                     $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
