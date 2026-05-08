@@ -228,7 +228,8 @@ pub mod __support {
     #[cfg(all(
         not(target_vendor = "apple"),
         not(target_os = "windows"),
-        not(target_family = "wasm")
+        not(target_family = "wasm"),
+        not(target_os = "aix")
     ))]
     def_section_name! {
         {
@@ -242,6 +243,24 @@ pub mod __support {
             code end =>     ("__stop_", "_text", "_link_section_") __ ();
         }
         AUXILIARY = "_";
+        MAX_LENGTH = 64;
+        HASH_LENGTH = 10;
+        VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    }
+
+    #[cfg(target_os = "aix")]
+    def_section_name! {
+        {
+            data bare =>    (".data", ".") __ ();
+            data section => (".data", ".") __ (".2");
+            data start =>   (".data", ".") __ (".1");
+            data end =>     (".data", ".") __ (".3");
+            code bare =>    (".text", ".") __ ();
+            code section => (".text", ".") __ (".2");
+            code start =>   (".text", ".") __ (".1");
+            code end =>     (".text", ".") __ (".3");
+        }
+        AUXILIARY = ".d.";
         MAX_LENGTH = 64;
         HASH_LENGTH = 10;
         VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
