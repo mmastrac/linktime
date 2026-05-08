@@ -549,15 +549,15 @@ pub mod __support {
                 }
             }
             pub fn start_ptr(&self) -> *const () {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.or_else(|| panic!("failed to find section address for {}", self.name));
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 start as _
             }
             pub fn end_ptr(&self) -> *const () {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.or_else(|| panic!("failed to find section address for {}", self.name));
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 unsafe { (start as *const u8).add(size) as _ }
             }
             pub fn byte_len(&self) -> usize {
-                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.or_else(|| panic!("failed to find section address for {}", self.name));
+                let (start, size) = unsafe { crate::aix::find_section_address(self.name) }.unwrap_or_else(|| panic!("failed to find section address for {}", self.name));
                 size
             }
         }
