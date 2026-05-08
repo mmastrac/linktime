@@ -163,35 +163,28 @@ pub unsafe fn find_section_address(name: &str) -> Option<(*const u8, usize)> {
         }
     }
 }
+const SYMENT32: usize = 18;  // 8+4+2+2+1+1
+const SYMENT64: usize = 22;  // 8+8+2+2+1+1
 
-// 64-bit symbol entry size
-const SYMENT64: usize = 24;   // 8 + 8 + 4 + 2 + 2
-// 32-bit symbol entry size
-const SYMENT32: usize = 18;   // 8 + 4 + 2 + 2 + ...
-
-/// Returns the file‑backed string table that belongs to a loaded XCOFF image.
-/// The base address and magic number must already be verified.
 unsafe fn get_string_table(base: *const u8, magic: u16) -> Option<&'static [u8]> {
     match magic {
         0x01DF | 0x01EF => {
-            // 32-bit
             let fhdr = &*(base as *const Filehdr32);
             let sym_size = fhdr.f_nsyms as usize * SYMENT32;
-            let str_start = (fhdr.f_symptr as usize) + sym_size;
+            let str_start = fhdr.f_symptr as usize + sym_size;
             if str_start < 4 { return None; }
             let size_bytes = &*(base.add(str_start) as *const [u8; 4]);
             let size = u32::from_be_bytes(*size_bytes) as usize;
-            Some(core::slice::from_raw_parts(base.add(str_start), size))
+            Some(std::slice::from_raw_parts(base.add(str_start), size))
         }
         0x01F7 => {
-            // 64-bit
             let fhdr = &*(base as *const Filehdr64);
             let sym_size = fhdr.f_nsyms as usize * SYMENT64;
             let str_start = fhdr.f_symptr as usize + sym_size;
             if str_start < 4 { return None; }
             let size_bytes = &*(base.add(str_start) as *const [u8; 4]);
             let size = u32::from_be_bytes(*size_bytes) as usize;
-            Some(core::slice::from_raw_parts(base.add(str_start), size))
+            Some(std::slice::from_raw_parts(base.add(str_start), size))
         }
         _ => None,
     }
