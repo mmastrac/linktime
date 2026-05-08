@@ -284,11 +284,14 @@ ctor_link_section = ".CRT$XCU"
 #[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 ctor_link_section = ".ctors"
 
-#[cfg(all(target_os = "aix"))]
+#[cfg(target_os = "uefi")]
+ctor_link_section = ".init_array"
+
+#[cfg(target_os = "aix")]
 ctor_link_section = ()
 
  // default
-ctor_link_section = (compile_error! ("Unsupported target for #[ctor]"))
+ctor_link_section = ".init_array"
  ```
 
 ## `default_term_method`
@@ -345,11 +348,14 @@ link_section = ".CRT$XPU"
 #[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 link_section = ".dtors"
 
-#[cfg(all(target_os = "aix"))]
+#[cfg(target_os = "uefi")]
+link_section = ".fini_array"
+
+#[cfg(target_os = "aix")]
 link_section = ()
 
  // default
-link_section = (compile_error! ("Unsupported target for #[dtor]"))
+link_section = ".fini_array"
  ```
 
 ## `method`

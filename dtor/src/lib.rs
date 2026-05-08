@@ -113,10 +113,12 @@ __declare_features!(
     ctor_link_section {
         attr: [(ctor(link_section = $ctor_link_section_name:literal)) => ($ctor_link_section_name)];
         example: "ctor(link_section = \".ctors\")";
+        // Historical note: GCC 4.7 stopped providing .ctors/.dtors compatible
+        // crt files. Modern compilers, with the exception of Apple, MSVC, and
+        // AIX, will use `.init_array`.
         default {
-            // This is no longer supported by Apple
             (target_vendor = "apple") => "__DATA,__mod_init_func,mod_init_funcs",
-            // Most LLVM/GCC targets can use .fini_array
+            // Most LLVM/GCC targets can use .init_array
             (any(
                 target_os = "linux",
                 target_os = "android",
@@ -132,14 +134,20 @@ __declare_features!(
             )) => ".init_array",
             // No OS
             (target_os = "none") => ".init_array",
-            // xtensa targets: .dtors
+            // xtensa targets: .ctors
             (target_arch = "xtensa") => ".ctors",
             // Windows targets: .CRT$XCU
             (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
-            // ... except GNU
+            // ... except mingw32 (https://llvm.googlesource.com/clang/+/1a209b667f83588866326a0384fa943ea2287b6c)
             (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
-            (all(target_os = "aix")) => (), // AIX uses export_name_prefix
-            _ => (compile_error!("Unsupported target for #[ctor]"))
+            // Research suggests that MSVC will use .CRT$XCU for UEFI targets, but won't actually
+            // run them. The gnu-efi project _does_ at least document .init_array support:
+            // https://github.com/vathpela/gnu-efi/blob/master/gnuefi/elf_x86_64_efi.lds
+            (target_os = "uefi") => ".init_array",
+            (target_os = "aix") => (), // AIX uses export_name_prefix
+            // Fall back to .init_array which is effectively the gold standard
+            // for LLVM/GCC targets moving forward
+            _ => ".init_array",
         }
     };
     /// The default method used for running a `dtor` on termination. This is
@@ -208,8 +216,13 @@ __declare_features!(
             (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XPU",
             // ... except GNU
             (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".dtors",
-            (all(target_os = "aix")) => (), // AIX uses export_name_prefix
-            _ => (compile_error!("Unsupported target for #[dtor]"))
+            // The gnu-efi project documents .fini_array support:
+            // https://github.com/vathpela/gnu-efi/blob/master/gnuefi/elf_x86_64_efi.lds
+            (target_os = "uefi") => ".fini_array",
+            (target_os = "aix") => (), // AIX uses export_name_prefix
+            // Fall back to .fini_array which is effectively the gold standard
+            // for LLVM/GCC targets moving forward
+            _ => ".fini_array",
         }
     };
     /// Specify the dtor method.
