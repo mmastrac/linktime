@@ -60,9 +60,7 @@ __test!(__process_defaults:
             attr_docs = [];
             example = ();
             validate = [];
-            original_defaults =
-            {((a = "apple") => 1) ((b = "pc") => (compile_error!("2")))
-                ((c = "linux") => 3) (_ => (compile_error!("4")))};
+            original_defaults = {((a = "apple") => 1)((b = "pc") => (compile_error!("2")))((c = "linux") => 3)(_ => (compile_error!("4")))};
             default = [
                 ((all(a = "apple", not(any()))) => 1)
                 ((all(b = "pc", not(any(a = "apple",)))) => (compile_error!("2")))

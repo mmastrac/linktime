@@ -256,6 +256,7 @@ macro_rules! __parse_feature_input {
                 )?
                 $( default {
                     $( ($default_expr:meta) => $default_value:tt, )*
+                    $( #[warn($default_warn:literal)] )?
                     _ => $default_fallback:tt $(,)?
                 } )?
             };
@@ -287,6 +288,7 @@ macro_rules! __parse_feature_input {
                             [$dollar $feature:tt]
                         );
                         default = [
+                            $( $( #[warn($default_warn)] )? )?
                             $(
                                 ((feature = $feature_name) => $feature)
                             )?
@@ -442,13 +444,16 @@ macro_rules! __process_defaults {
                 example = $example:tt;
             )?
             validate = $validate:tt;
-            default = [$($default:tt)*]
+            default = [$( #[warn($default_warn:literal)] )? $(($($default:tt)*))*]
         )
     ) ) => {
         $crate::__process_defaults!( @process accum=(), negative=(), defaults=
             [
-                $($default)*
+                $(
+                    ($($default)*)
+                )*
             ],
+            warn=($($default_warn)?),
             next=[$next[$next_args]],
             rest=(
                 feature = $feature;
@@ -464,13 +469,24 @@ macro_rules! __process_defaults {
                     example = $example;
                 )?
                 validate = $validate;
-                original_defaults = {$($default)*};
+                original_defaults = {$(($($default)*))*};
             )
         );
     };
 
     // Stop when we hit the final default.
-    (@process accum=($($accum:tt)*), negative=$negative:tt, defaults=[(_ => $default_value:tt) $($ignored:tt)*], next=[$next:path[$next_args:tt]], rest=($($rest:tt)*)) => {
+    (@process accum=($($accum:tt)*), negative=$negative:tt, defaults=[(_ => $default_value:tt) $($ignored:tt)*], warn=($($default_warn:literal)?), next=[$next:path[$next_args:tt]], rest=($($rest:tt)*)) => {
+
+        $(
+            #[cfg(not(any $negative))]
+            const _: () = {
+                #[deprecated(note = $default_warn)]
+                const fn warn_unsupported_target() {}
+
+                warn_unsupported_target()
+            };
+        )?
+
         $next ! ( $next_args, (($($rest)* default = [
             $($accum)*
             ((not(any $negative)) => $default_value)

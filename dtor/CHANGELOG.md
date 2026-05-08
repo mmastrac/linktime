@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for UEFI targets (`.fini_array` matching gnu-efi)
-- Fallback to `.fini_array` for unsupported targets
+- Fallback to `.fini_array` for unsupported targets (with a warning)
 
 ### Changed
 

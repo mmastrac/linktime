@@ -499,6 +499,9 @@ __declare_features!(
             (target_os = "aix") => (), // AIX uses export_name_prefix
             // Fall back to .init_array which is effectively the gold standard
             // for LLVM/GCC targets moving forward
+            #[warn("Falling back to .init_array for unsupported target. If this \
+            works for you, please file an issue to add support for your target \
+            at https://github.com/mmastrac/linktime/issues")]
             _ => ".init_array",
         }
     };
