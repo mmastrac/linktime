@@ -158,12 +158,12 @@ ctor_link_section = ".init_array"
 ctor_link_section = ".ctors"
  # ; };
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
  # const _: () = { let
 ctor_link_section = ".CRT$XCU"
  # ; };
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
  # const _: () = { let
 ctor_link_section = ".ctors"
  # ; };
@@ -182,7 +182,7 @@ ctor_link_section = (compile_error! ("Unsupported target for #[ctor]"))
 
  ```rust
  # #[cfg(false)] {
-#[cfg(target_vendor = "pc")]
+#[cfg(target_os = "windows")]
  # const _: () = { let
 default_term_method = at_module_exit
  # ; };
@@ -247,12 +247,12 @@ link_section = ".fini_array"
 link_section = ".dtors"
  # ; };
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
  # const _: () = { let
 link_section = ".CRT$XPU"
  # ; };
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
  # const _: () = { let
 link_section = ".dtors"
  # ; };
@@ -276,7 +276,7 @@ link_section = (compile_error! ("Unsupported target for #[dtor]"))
 method = at_module_exit
  # ; };
 
-#[cfg(target_vendor = "pc")]
+#[cfg(target_os = "windows")]
  # const _: () = { let
 method = at_module_exit
  # ; };

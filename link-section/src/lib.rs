@@ -53,7 +53,7 @@ pub mod __support {
     #[cfg(target_family = "wasm")]
     pub use crate::wasm::{register_wasm_link_section_item, LinkSectionRawInfo};
 
-    #[cfg(all(not(miri), target_vendor = "pc"))]
+    #[cfg(all(not(miri), target_os = "windows"))]
     pub use section::Alignment;
 
     /// Declares the section_name macro.
@@ -227,7 +227,7 @@ pub mod __support {
 
     #[cfg(all(
         not(target_vendor = "apple"),
-        not(target_vendor = "pc"),
+        not(target_os = "windows"),
         not(target_family = "wasm")
     ))]
     def_section_name! {
@@ -247,7 +247,7 @@ pub mod __support {
         VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     }
 
-    #[cfg(target_vendor = "pc")]
+    #[cfg(target_os = "windows")]
     def_section_name! {
         {
             data bare =>    (".data", "$") __ ();
@@ -431,7 +431,7 @@ pub mod __support {
     /// On Windows platforms we don't have start/end symbols, but we do have
     /// section sorting so we drop a minimum-sized type with the same alignment
     /// as T at the start and end of the section.
-    #[cfg(all(not(miri), target_vendor = "pc"))]
+    #[cfg(all(not(miri), target_os = "windows"))]
     mod section {
         #[doc(hidden)]
         #[macro_export]
@@ -491,7 +491,7 @@ pub mod __support {
     ///
     /// On Apple platforms, the linker provides a pointer to the start and end
     /// of the section regardless of the section's name.
-    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_vendor = "pc")))]
+    #[cfg(all(not(miri), not(target_family = "wasm"), not(target_os = "windows")))]
     mod section {
         #[doc(hidden)]
         #[macro_export]
