@@ -18,7 +18,7 @@ fn dtor_at_module_exit() {
 }
 
 /// This one is unsafe.
-#[cfg(not(target_vendor = "pc"))] // unsupported on Windows
+#[cfg(not(target_os = "windows"))] // unsupported on Windows
 #[dtor(method = at_binary_exit)]
 #[allow(unsafe_code)]
 unsafe fn dtor_at_binary_exit() {

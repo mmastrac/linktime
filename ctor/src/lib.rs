@@ -427,9 +427,9 @@ __declare_features!(
             (target_os = "android") => ".text.startup",
             (target_os = "freebsd") => ".text.startup",
             // Windows MSVC: sort startup functions near the start of the binary
-            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".text$A",
+            (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".text$A",
             // Windows non-MSVC: .text.startup
-            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".text.startup",
+            (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".text.startup",
             (target_vendor = "apple") => "__TEXT,__text_startup,regular,pure_instructions",
             _ => ()
         }
@@ -486,9 +486,9 @@ __declare_features!(
             // xtensa targets: .ctors
             (target_arch = "xtensa") => ".ctors",
             // Windows targets: .CRT$XCU
-            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
+            (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
             // ... except GNU
-            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
+            (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
             (all(target_os = "aix")) => (), // AIX uses export_name_prefix
             _ => (compile_error!("Unsupported target for #[ctor]"))
         }

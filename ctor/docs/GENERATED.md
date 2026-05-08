@@ -162,12 +162,12 @@ body_link_section = ".text.startup"
 body_link_section = ".text.startup"
  # ; };
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
  # const _: () = { let
 body_link_section = ".text$A"
  # ; };
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
  # const _: () = { let
 body_link_section = ".text.startup"
  # ; };
@@ -223,12 +223,12 @@ link_section = ".init_array"
 link_section = ".ctors"
  # ; };
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
  # const _: () = { let
 link_section = ".CRT$XCU"
  # ; };
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
  # const _: () = { let
 link_section = ".ctors"
  # ; };

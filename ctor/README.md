@@ -370,10 +370,10 @@ body_link_section = ".text.startup"
 #[cfg(target_os = "freebsd")]
 body_link_section = ".text.startup"
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
 body_link_section = ".text$A"
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 body_link_section = ".text.startup"
 
 #[cfg(target_vendor = "apple")]
@@ -411,10 +411,10 @@ link_section = ".init_array"
 #[cfg(target_arch = "xtensa")]
 link_section = ".ctors"
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
 link_section = ".CRT$XCU"
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 link_section = ".ctors"
 
 #[cfg(all(target_os = "aix"))]

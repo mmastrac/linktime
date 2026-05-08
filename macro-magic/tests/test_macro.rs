@@ -11,7 +11,7 @@ __test!(__parse_feature_input[$]:
             attr: [(link_section($section:literal)) => ($section)];
             default {
                 (target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs",
-                (target_vendor = "pc") => ".CRT$SOMETHING",
+                (target_os = "windows") => ".CRT$SOMETHING",
                 (target_os = "linux") => ".dtors",
                 // Fallback for tier-3.
                 _ => ".dtors"
@@ -28,7 +28,7 @@ __test!(__parse_feature_input[$]:
             validate = ([$link_section : tt]);
             default = [
                 ((target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs")
-                ((target_vendor = "pc") => ".CRT$SOMETHING")
+                ((target_os = "windows") => ".CRT$SOMETHING")
                 ((target_os = "linux") => ".dtors")
                 (_ => ".dtors")
                 (_ => ())
@@ -127,7 +127,7 @@ __declare_features!(
         attr: [(link_section($section:literal)) => ($section)];
         default {
             (target_vendor = "apple") => "__DATA,__mod_term_func,mod_term_funcs",
-            (target_vendor = "pc") => ".fini_array",
+            (target_os = "windows") => ".fini_array",
             (target_os = "linux") => ".dtors",
             (target_os = "freebsd") => ".fini",
             _ => ".dtors"

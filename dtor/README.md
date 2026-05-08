@@ -278,10 +278,10 @@ ctor_link_section = ".init_array"
 #[cfg(target_arch = "xtensa")]
 ctor_link_section = ".ctors"
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
 ctor_link_section = ".CRT$XCU"
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 ctor_link_section = ".ctors"
 
 #[cfg(all(target_os = "aix"))]
@@ -294,7 +294,7 @@ ctor_link_section = (compile_error! ("Unsupported target for #[ctor]"))
 ## `default_term_method`
 
  ```rust
-#[cfg(target_vendor = "pc")]
+#[cfg(target_os = "windows")]
 default_term_method = at_module_exit
 
  // default
@@ -339,10 +339,10 @@ link_section = ".fini_array"
 #[cfg(target_arch = "xtensa")]
 link_section = ".dtors"
 
-#[cfg(all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc")))]
+#[cfg(all(target_os = "windows", any(target_env = "gnu", target_env = "msvc")))]
 link_section = ".CRT$XPU"
 
-#[cfg(all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc"))))]
+#[cfg(all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc"))))]
 link_section = ".dtors"
 
 #[cfg(all(target_os = "aix"))]
@@ -358,7 +358,7 @@ link_section = (compile_error! ("Unsupported target for #[dtor]"))
 #[cfg(target_vendor = "apple")]
 method = at_module_exit
 
-#[cfg(target_vendor = "pc")]
+#[cfg(target_os = "windows")]
 method = at_module_exit
 
 #[cfg(target_family = "wasm")]

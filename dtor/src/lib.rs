@@ -135,9 +135,9 @@ __declare_features!(
             // xtensa targets: .dtors
             (target_arch = "xtensa") => ".ctors",
             // Windows targets: .CRT$XCU
-            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
+            (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XCU",
             // ... except GNU
-            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
+            (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".ctors",
             (all(target_os = "aix")) => (), // AIX uses export_name_prefix
             _ => (compile_error!("Unsupported target for #[ctor]"))
         }
@@ -152,7 +152,7 @@ __declare_features!(
     /// `at_module_exit`.
     default_term_method {
         default {
-            (target_vendor = "pc") => at_module_exit,
+            (target_os = "windows") => at_module_exit,
             _ => at_binary_exit,
         }
     };
@@ -205,9 +205,9 @@ __declare_features!(
             // xtensa targets: .dtors
             (target_arch = "xtensa") => ".dtors",
             // Windows targets: .CRT$XPU (requires static CRT)
-            (all(target_vendor = "pc", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XPU",
+            (all(target_os = "windows", any(target_env = "gnu", target_env = "msvc"))) => ".CRT$XPU",
             // ... except GNU
-            (all(target_vendor = "pc", not(any(target_env = "gnu", target_env = "msvc")))) => ".dtors",
+            (all(target_os = "windows", not(any(target_env = "gnu", target_env = "msvc")))) => ".dtors",
             (all(target_os = "aix")) => (), // AIX uses export_name_prefix
             _ => (compile_error!("Unsupported target for #[dtor]"))
         }
@@ -238,7 +238,7 @@ __declare_features!(
         validate: [(term), (unload), (at_module_exit), (at_binary_exit), (linker)];
         default {
             (target_vendor = "apple") => at_module_exit,
-            (target_vendor = "pc") => at_module_exit,
+            (target_os = "windows") => at_module_exit,
             // WASI/Emscripten support atexit only
             // For wasm-unknown-unknown, you'll need to provide one
             (target_family = "wasm") => at_binary_exit,
