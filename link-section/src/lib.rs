@@ -615,15 +615,24 @@ pub mod __support {
                         data start $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static mut __START: u8;
+                            static __START: u8;
                         }
                     );
                     $crate::__support::add_section_link_attribute!(
                         data end $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static mut __END: u8;
+                            static __END: u8;
                         }
+                    );
+                    // Keep the section alive
+                    $crate::__support::add_section_link_attribute!(
+                        data section $ident $($aux)?
+                        #[link_section = __]
+                        #[export_name = concat!("__", stringify!($ident), $(stringify!($aux),)? "_ref")]
+                        #[no_mangle]
+                        #[used]
+                        static mut __REFERENCE:  ::core::mem::MaybeUninit<[$generic_ty; 0]> = ::core::mem::MaybeUninit::uninit();
                     );
 
                     $crate::__support::PtrBounds::new(
