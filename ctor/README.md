@@ -421,11 +421,11 @@ link_section = ".ctors"
 #[cfg(target_os = "uefi")]
 link_section = ".init_array"
 
-#[cfg(all(target_os = "aix"))]
+#[cfg(target_os = "aix")]
 link_section = ()
 
  // default
-link_section = (compile_error! ("Unsupported target for #[ctor]"))
+link_section = ".init_array"
  ```
 
 ## `priority`

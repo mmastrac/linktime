@@ -496,8 +496,13 @@ __declare_features!(
             // run them. The gnu-efi project _does_ at least document .init_array support:
             // https://github.com/vathpela/gnu-efi/blob/master/gnuefi/elf_x86_64_efi.lds
             (target_os = "uefi") => ".init_array",
-            (all(target_os = "aix")) => (), // AIX uses export_name_prefix
-            _ => (compile_error!("Unsupported target for #[ctor]"))
+            (target_os = "aix") => (), // AIX uses export_name_prefix
+            // Fall back to .init_array which is effectively the gold standard
+            // for LLVM/GCC targets moving forward
+            #[warn("Falling back to .init_array for unsupported target. If this \
+            works for you, please file an issue to add support for your target \
+            at https://github.com/mmastrac/linktime/issues")]
+            _ => ".init_array",
         }
     };
     /// Use the least-possibly mangled version of the linker invocation for this

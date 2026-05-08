@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for win7, uwp and other windows targets
 - Support for UEFI targets (`.init_array` matching gnu-efi)
+- Fallback to `.init_array` for unsupported targets (with a warning)
 
 ### Changed
 

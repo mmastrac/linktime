@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - Unreleased
+
+### Added
+
+- Support for UEFI targets (`.fini_array` matching gnu-efi)
+- Fallback to `.fini_array` for unsupported targets (with a warning)
+
+### Changed
+
+- `target_vendor = "pc"` is now `target_os = "windows"`. This should be a
+  strictly increasing set of support for windows targets.
+
 ## [1.0.1] - 2026-05-07
 
 ### Changed

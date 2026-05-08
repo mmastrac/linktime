@@ -238,13 +238,13 @@ link_section = ".ctors"
 link_section = ".init_array"
  # ; };
 
-#[cfg(all(target_os = "aix"))]
+#[cfg(target_os = "aix")]
  # const _: () = { let
 link_section = ()
  # ; };
 
  // default
-link_section = (compile_error! ("Unsupported target for #[ctor]"))
+link_section = ".init_array"
  # }
  ```
 
