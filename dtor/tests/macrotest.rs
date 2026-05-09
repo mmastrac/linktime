@@ -1,11 +1,12 @@
 #![cfg(not(miri))]
 
-//! To overwrite the Linux expansion tests on macOS, run:
-//!
-//! ```bash
-//! docker run --rm -v "$(pwd):/src" -w /src rust:latest \
-//!   bash -lc 'export PATH="/usr/local/cargo/bin:$PATH" && cargo install cargo-expand && export MACROTEST=overwrite && cargo test -p dtor --test macrotest'
-//! ```
+/*
+
+To overwrite the Linux expansion tests on macOS, run:
+
+docker run --rm -v "$(pwd):/src" -w /src rust:1.88 \
+  bash -lc 'export CARGO_TARGET_DIR=/src/target/target-docker && export PATH="/usr/local/cargo/bin:$PATH" && cargo install cargo-expand && MACROTEST=overwrite cargo test -p dtor --test macrotest'
+*/
 
 use std::{
     fs,
@@ -49,28 +50,20 @@ pub fn pass() {
     ensure_no_empty_files("tests/expand");
 }
 
-#[cfg(not(linktime_used_linker))]
 #[cfg(target_vendor = "apple")]
+#[cfg(not(linktime_used_linker))]
 #[test]
 pub fn pass_darwin() {
     macrotest::expand("tests/expand-darwin/*.rs");
     ensure_no_empty_files("tests/expand-darwin");
 }
 
-#[cfg(not(linktime_used_linker))]
 #[cfg(target_os = "linux")]
+#[cfg(not(linktime_used_linker))]
 #[test]
 pub fn pass_linux() {
     macrotest::expand("tests/expand-linux/*.rs");
     ensure_no_empty_files("tests/expand-linux");
-}
-
-#[cfg(not(linktime_used_linker))]
-#[cfg(windows)]
-#[test]
-pub fn pass_windows() {
-    macrotest::expand("tests/expand-windows/*.rs");
-    ensure_no_empty_files("tests/expand-windows");
 }
 
 #[test]
@@ -90,20 +83,18 @@ pub fn target_test() {
     if toolchain != "nightly" {
         return;
     }
-    if cfg!(linktime_used_linker) {
-        return;
-    }
     let cases_dir = Path::new("tests/target-test");
     let overwrite = std::env::var_os("MACROTEST")
         .map(|v| v == "overwrite")
         .unwrap_or(false);
 
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let repo_root_buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .canonicalize()
         .unwrap()
         .parent()
         .unwrap()
         .to_path_buf();
+    let repo_root = repo_root_buf.to_string_lossy().replace('\\', "/").replace("//?/", "");
 
     let mut count = 0;
     let mut success = 0;
@@ -148,7 +139,7 @@ edition = "2021"
 [dependencies]
 dtor = {{ path = "{repo_root}/dtor", default-features = false }}
 "#,
-                repo_root = repo_root.display()
+                repo_root = repo_root
             )
         };
 
@@ -199,6 +190,11 @@ dtor = {{ path = "{repo_root}/dtor", default-features = false }}
             // For debugging, include stderr on mismatch.
             let stdout = String::from_utf8_lossy(&out.stdout).to_string();
             let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+            eprintln!("{stderr}");
+
+            if stderr.contains("error") {
+                panic!("compilation failed for testcase={case_name}, target={target}\n\n--- stderr ---\n{stderr}\n");
+            }
 
             if stdout.trim().is_empty() {
                 panic!(

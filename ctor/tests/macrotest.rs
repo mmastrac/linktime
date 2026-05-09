@@ -88,12 +88,13 @@ pub fn target_test() {
         .map(|v| v == "overwrite")
         .unwrap_or(false);
 
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let repo_root_buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .canonicalize()
         .unwrap()
         .parent()
         .unwrap()
         .to_path_buf();
+    let repo_root = repo_root_buf.to_string_lossy().replace('\\', "/").replace("//?/", "");
 
     let mut count = 0;
     let mut success = 0;
@@ -138,7 +139,7 @@ edition = "2021"
 [dependencies]
 ctor = {{ path = "{repo_root}/ctor", default-features = false }}
 "#,
-                repo_root = repo_root.display()
+                repo_root = repo_root
             )
         };
 
