@@ -103,14 +103,28 @@ pub mod __support {
         (
             $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
-            $vis:vis static $($static:tt)*
+            $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
                 $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used]
-                $vis static $($static)*
+                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
+                    ::core::module_path!(), "_",
+                    stringify!($ident),
+                    "_L", line!(), "C", column!()))]
+                $vis static $ident : $($static)*
             );
+            #[cfg(target_os = "aix")]
+            const _: () = {
+                #[allow(unused_unsafe)]
+                extern "C" fn __aix_anchor() {
+                    unsafe { ::core::arch::asm!(concat!(".ref _", env!("CARGO_PKG_NAME"), "_",
+                        ::core::module_path!(), "_",
+                        stringify!($ident),
+                        "_L", line!(), "C", column!()), options(nostack, preserves_flags)); }
+                }
+            };
         };
     }
 
@@ -121,20 +135,34 @@ pub mod __support {
         (
             $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
-            $vis:vis static $($static:tt)*
+            $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
                 $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used(linker)]
-                $vis static $($static)*
+                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
+                    ::core::module_path!(), "_",
+                    stringify!($ident),
+                    "_L", line!(), "C", column!()))]
+                $vis static $ident : $($static)*
             );
+            #[cfg(target_os = "aix")]
+            const _: () = {
+                #[allow(unused_unsafe)]
+                extern "C" fn __aix_anchor() {
+                    unsafe { ::core::arch::asm!(concat!(".ref _", env!("CARGO_PKG_NAME"), "_",
+                        ::core::module_path!(), "_",
+                        stringify!($ident),
+                        "_L", line!(), "C", column!()), options(nostack, preserves_flags)); }
+                }
+            };
         };
     }
 
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __add_section_link_attribute(
+    macro_rules! __add_section_link_attribute {
         ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
             $vis:vis static $($static:tt)*
@@ -168,30 +196,30 @@ pub mod __support {
                 $($item)*
             );
         };
-    );
+    }
 
     #[cfg(feature = "proc_macro")]
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __add_section_link_attribute_impl(
+    macro_rules! __add_section_link_attribute_impl {
         ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
             $crate::__section_name!(
                 (#[$attr = __] #[allow(unsafe_code)] $($item)*)
                 $section $type $name $($aux)?
             );
         }
-    );
+    }
 
     #[cfg(not(feature = "proc_macro"))]
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __add_section_link_attribute_impl(
+    macro_rules! __add_section_link_attribute_impl {
         ($section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
             #[$attr = $crate::__section_name!(
                 raw $section $type $name
             )] $($item)*
         }
-    );
+    }
 
     // \x01: "do not mangle" (ref https://github.com/rust-lang/rust-bindgen/issues/2935)
     #[cfg(target_vendor = "apple")]
@@ -417,10 +445,10 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[export_name = __]
                         #[used]
-                        static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo = $crate::__support::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
+                        static __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo = $crate::__support::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
                     );
 
-                    unsafe { $crate::__support::Bounds::new(&raw mut __LINK_SECTION_INFO) }
+                    unsafe { $crate::__support::Bounds::new(&raw const __LINK_SECTION_INFO) }
                 }
             }
         }
@@ -667,19 +695,19 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo;
+                            static __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo;
                         }
                     );
 
                     #[link_section = ".init_array.0"]
-                    static mut __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+                    static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
                         extern "C" fn __LINK_SECTION_ITEM_FN() {
                             static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
                             if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
                                 return;
                             }
                             unsafe {
-                                let ptr = $crate::__support::register_wasm_link_section_item(&raw mut __LINK_SECTION_INFO);
+                                let ptr = $crate::__support::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
                                 ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
                             }
                         }
@@ -770,212 +798,3 @@ pub mod __support {
 ///   name of the section.
 /// - `aux = <name>`: Specifies that this section is an auxiliary section, and
 ///   that the section is named `<name>+<aux>`.
-///
-/// # Example
-/// ```rust
-/// use link_section::{in_section, section};
-///
-/// #[section]
-/// pub static DATA_SECTION: link_section::Section;
-///
-/// #[in_section(DATA_SECTION)]
-/// pub fn data_function() {
-///     println!("data_function");
-/// }
-/// ```
-#[cfg(feature = "proc_macro")]
-pub use ::linktime_proc_macro::section;
-
-/// Place an item into a link section.
-///
-/// # Functions and typed sections
-///
-/// As a special case, since function declarations by themselves are not sized,
-/// functions in typed sections are split and stored as function pointers.
-#[cfg(feature = "proc_macro")]
-pub use ::linktime_proc_macro::in_section;
-
-/// An untyped link section that can be used to store any type. The underlying
-/// data is not enumerable.
-#[repr(C)]
-pub struct Section {
-    name: &'static str,
-    bounds: __support::Bounds,
-}
-
-impl Section {
-    #[doc(hidden)]
-    pub const unsafe fn new(name: &'static str, bounds: __support::Bounds) -> Self {
-        Self { name, bounds }
-    }
-
-    /// The byte length of the section.
-    #[inline]
-    pub fn byte_len(&self) -> usize {
-        self.bounds.byte_len()
-    }
-
-    /// The start address of the section.
-    #[inline]
-    pub fn start_ptr(&self) -> *const () {
-        self.bounds.start_ptr()
-    }
-    /// The end address of the section.
-    #[inline]
-    pub fn end_ptr(&self) -> *const () {
-        self.bounds.end_ptr()
-    }
-}
-
-impl ::core::fmt::Debug for Section {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("Section")
-            .field("name", &self.name)
-            .field("start", &self.start_ptr())
-            .field("end", &self.end_ptr())
-            .field("byte_len", &self.byte_len())
-            .finish()
-    }
-}
-
-unsafe impl Sync for Section {}
-unsafe impl Send for Section {}
-
-/// A typed link section that can be used to store any sized type. The
-/// underlying data is enumerable.
-#[repr(C)]
-pub struct TypedSection<T: 'static> {
-    name: &'static str,
-    bounds: __support::Bounds,
-    _phantom: ::core::marker::PhantomData<T>,
-}
-
-impl<T: 'static> TypedSection<T> {
-    #[doc(hidden)]
-    pub const unsafe fn new(name: &'static str, bounds: __support::Bounds) -> Self {
-        Self {
-            name,
-            bounds,
-            _phantom: ::core::marker::PhantomData,
-        }
-    }
-
-    /// The start address of the section.
-    #[inline(always)]
-    pub fn start_ptr(&self) -> *const T {
-        self.bounds.start_ptr() as *const T
-    }
-
-    /// The end address of the section.
-    #[inline(always)]
-    pub fn end_ptr(&self) -> *const T {
-        self.bounds.end_ptr() as *const T
-    }
-
-    /// The start address of the section.
-    #[inline]
-    pub fn start_ptr_mut(&self) -> *mut T {
-        self.bounds.start_ptr() as *mut T
-    }
-
-    /// The start address of the section.
-    #[inline]
-    pub fn end_ptr_mut(&self) -> *mut T {
-        self.bounds.end_ptr() as *mut T
-    }
-
-    /// The stride of the typed section.
-    #[inline(always)]
-    pub const fn stride(&self) -> usize {
-        assert!(
-            ::core::mem::size_of::<T>() > 0
-                && ::core::mem::size_of::<T>() * 2 == ::core::mem::size_of::<[T; 2]>()
-        );
-        ::core::mem::size_of::<T>()
-    }
-
-    /// The byte length of the section.
-    #[inline]
-    pub fn byte_len(&self) -> usize {
-        self.bounds.byte_len()
-    }
-
-    /// The number of elements in the section.
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.byte_len() / self.stride()
-    }
-
-    /// True if the section is empty.
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// The section as a slice.
-    #[inline]
-    pub fn as_slice(&self) -> &[T] {
-        if self.is_empty() {
-            &[]
-        } else {
-            unsafe { ::core::slice::from_raw_parts(self.start_ptr(), self.len()) }
-        }
-    }
-
-    /// The offset of the item in the section, if it is in the section.
-    #[inline]
-    pub fn offset_of(&self, item: &T) -> Option<usize> {
-        let ptr = item as *const T;
-        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
-            None
-        } else {
-            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
-        }
-    }
-
-    /// The section as a mutable slice.
-    ///
-    /// # Safety
-    ///
-    /// This cannot be safely used and is _absolutely unsound_ if any other
-    /// slices are live.
-    #[allow(clippy::mut_from_ref)]
-    #[inline]
-    pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        if self.is_empty() {
-            &mut []
-        } else {
-            unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
-        }
-    }
-}
-
-impl<'a, T> ::core::iter::IntoIterator for &'a TypedSection<T> {
-    type Item = &'a T;
-    type IntoIter = ::core::slice::Iter<'a, T>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.as_slice().iter()
-    }
-}
-
-impl<T> ::core::ops::Deref for TypedSection<T> {
-    type Target = [T];
-    fn deref(&self) -> &Self::Target {
-        self.as_slice()
-    }
-}
-
-impl<T> ::core::fmt::Debug for TypedSection<T> {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("TypedSection")
-            .field("name", &self.name)
-            .field("start", &self.start_ptr())
-            .field("end", &self.end_ptr())
-            .field("len", &self.len())
-            .field("stride", &self.stride())
-            .finish()
-    }
-}
-
-unsafe impl<T> Sync for TypedSection<T> where T: Sync {}
-unsafe impl<T> Send for TypedSection<T> where T: Send {}
