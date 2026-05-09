@@ -427,6 +427,17 @@ macro_rules! __dtor_parse_impl {
                 "C",
                 column!())]
             extern "C" fn __dtor_private() {
+                #[cfg(target_os = "aix")]
+                unsafe { ::core::arch::asm!(concat!(".ref ", $export_name_prefix, "_",
+                    env!("CARGO_PKG_NAME"),
+                    "_",
+                    module_path!(),
+                    "_",
+                    stringify!($name),
+                    "_L",
+                    line!(),
+                    "C",
+                    column!()), options(nostack, preserves_flags)); }
                 $($item)*
             }
         };
@@ -460,7 +471,7 @@ macro_rules! __dtor_parse_impl {
                 extern "C" fn __dtor_private() {
                     $($item)*
                 }
-                __ctor_private
+                __dtor_private
             };
         };
     };
@@ -489,6 +500,17 @@ macro_rules! __dtor_parse_impl {
                 "C",
                 column!())]
             unsafe extern "C" fn __ctor_private() {
+                #[cfg(target_os = "aix")]
+                ::core::arch::asm!(concat!(".ref ", $ctor_export_name_prefix, "_",
+                    env!("CARGO_PKG_NAME"),
+                    "_",
+                    module_path!(),
+                    "_",
+                    stringify!($name),
+                    "_L",
+                    line!(),
+                    "C",
+                    column!()), options(nostack, preserves_flags));
                 $crate::__support::$method(__dtor_private);
             }
 
