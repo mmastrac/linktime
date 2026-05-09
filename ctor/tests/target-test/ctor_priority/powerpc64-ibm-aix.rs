@@ -15,7 +15,13 @@ fn early() {
             #[no_mangle]
             #[export_name =
             "__sinit80000101_expand_probe_expand_probe_early_L5C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000101_expand_probe_expand_probe_early_L5C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -28,7 +34,13 @@ fn priority1() {
             #[no_mangle]
             #[export_name =
             "__sinit80000001_expand_probe_expand_probe_priority1_L10C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000001_expand_probe_expand_probe_priority1_L10C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -41,7 +53,13 @@ fn priority900() {
             #[no_mangle]
             #[export_name =
             "__sinit80000900_expand_probe_expand_probe_priority900_L15C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000900_expand_probe_expand_probe_priority900_L15C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -54,7 +72,13 @@ fn late() {
             #[no_mangle]
             #[export_name =
             "__sinit89999999_expand_probe_expand_probe_late_L20C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit89999999_expand_probe_expand_probe_late_L20C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -67,7 +91,13 @@ fn priority_default() {
             #[no_mangle]
             #[export_name =
             "__sinit80000500_expand_probe_expand_probe_priority_default_L25C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000500_expand_probe_expand_probe_priority_default_L25C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -80,7 +110,13 @@ fn priority_unspecified() {
             #[no_mangle]
             #[export_name =
             "__sinit80000000_expand_probe_expand_probe_priority_unspecified_L30C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000000_expand_probe_expand_probe_priority_unspecified_L30C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
@@ -93,7 +129,13 @@ fn naked() {
             #[no_mangle]
             #[export_name =
             "__sinit80000000_expand_probe_expand_probe_naked_L35C1"]
-            extern "C" fn __ctor_private() { { { __ctor_private_inner() } } }
+            extern "C" fn __ctor_private() {
+                unsafe {
+                    asm!(".ref __sinit80000000_expand_probe_expand_probe_naked_L35C1",
+                        options(preserves_flags, nostack));
+                }
+                { { __ctor_private_inner() } }
+            }
         };
     { __ctor_private_inner() }
 }
