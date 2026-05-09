@@ -1,6 +1,7 @@
 //! WASM-specific implementation of the link section.
 use alloc::alloc::alloc;
 use core::alloc::Layout;
+use core::cell::UnsafeCell;
 use core::ptr::{self, NonNull};
 use core::sync::atomic::{AtomicU8, Ordering};
 
@@ -78,7 +79,10 @@ impl LinkSection {
 
     #[inline(always)]
     unsafe fn as_mut(&self) -> &mut LinkSectionInfo {
-        unsafe { ptr::addr_of_mut!((*self.0.as_ptr()).info).as_mut_unchecked() }
+        unsafe {
+            let unsafe_cell = ptr::addr_of!((*self.0.as_ptr()).info);
+            UnsafeCell::raw_get(unsafe_cell).as_mut_unchecked()
+        }
     }
 }
 
@@ -105,8 +109,14 @@ impl<'a> Drop for LinkSectionLockGuard<'a> {
 #[repr(C)]
 pub struct LinkSectionRawInfo {
     lock: AtomicU8,
-    info: LinkSectionInfo,
+    info: UnsafeCell<LinkSectionInfo>,
 }
+
+// SAFETY:
+
+// Mutation of `LinkSectionInfo` is guarded by `LinkSection::lock`, which
+// synchronize via `AtomicU8`.
+unsafe impl Sync for LinkSectionRawInfo {}
 
 #[repr(C)]
 pub struct LinkSectionInfo {
@@ -124,7 +134,7 @@ impl LinkSectionRawInfo {
     pub const fn new<T>(name: &'static str) -> Self {
         Self {
             lock: AtomicU8::new(LockState::Uninitialized as _),
-            info: LinkSectionInfo {
+            info: UnsafeCell::new(LinkSectionInfo {
                 state: LinkSectionState::Uninitialized as _,
                 name_length: name.len() as _,
                 name: name.as_ptr(),
@@ -133,7 +143,7 @@ impl LinkSectionRawInfo {
                 current: ptr::null_mut(),
                 size_of: ::core::mem::size_of::<T>(),
                 align_of: ::core::mem::align_of::<T>(),
-            },
+            }),
         }
     }
 }
@@ -179,8 +189,8 @@ impl LinkSectionInfo {
     }
 }
 
-pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *mut LinkSectionRawInfo) -> *mut T {
-    let link_section = LinkSection::new(NonNull::new_unchecked(info_ptr));
+pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRawInfo) -> *mut T {
+    let link_section = LinkSection::new(NonNull::new_unchecked(info_ptr as _));
     let mut info = link_section.lock();
 
     unsafe {
@@ -208,9 +218,9 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *mut LinkSectionRawIn
 pub struct Bounds(LinkSection);
 
 impl Bounds {
-    pub const unsafe fn new(info_ptr: *mut LinkSectionRawInfo) -> Self {
+    pub const unsafe fn new(info_ptr: *const LinkSectionRawInfo) -> Self {
         Self(LinkSection::new(unsafe {
-            NonNull::new_unchecked(info_ptr)
+            NonNull::new_unchecked(info_ptr as _)
         }))
     }
 

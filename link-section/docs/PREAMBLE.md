@@ -6,24 +6,28 @@ are placed into the associated section.
 
 ## Platform Support
 
-| Platform                 | Support                                                                                       |
-| ------------------------ | --------------------------------------------------------------------------------------------- |
-| Linux                    | ✅ Supported, uses orphan section handling (§1)                                               |
-| \*BSD                    | ✅ Supported, uses orphan section handling (§1)                                               |
-| macOS                    | ✅ Fully supported                                                                            |
-| Windows                  | ✅ Fully supported                                                                            |
-| WASM                     | ✅ Fully supported (§2) (§3) |
-| Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1)                                               |
+| Platform                 | Support                                         |
+| ------------------------ | ----------------------------------------------- |
+| Linux                    | ✅ Supported, uses orphan section handling (§1) |
+| \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
+| macOS                    | ✅ Fully supported                              |
+| Windows                  | ✅ Fully supported                              |
+| WASM                     | ✅ Fully supported (§2) (§3)                    |
+| AIX                      | ✅ Supported (§4)                               |
+| Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
 (§1) Orphan section handling is a feature of the linker that allows sections to
 be defined without a pre-defined name.
 
 (§2) WASM requires `const` items, and uses `ctor`-like initialization to copy
-data to a contiguous section. To access link-section slices in WASM in
-`#[ctor]` functions, make sure to use at least `#[ctor(priority = 1)]`.
+data to a contiguous section. To access link-section slices in WASM in `#[ctor]`
+functions, make sure to use at least `#[ctor(priority = 1)]`.
 
 (§3) Host environment support (by calling the exported `register_link_section`
 function) is required to register each section with the runtime.
+
+(§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
+similar to LLVM/GCC's orphan section handling.
 
 ## Platform Details
 
@@ -31,8 +35,8 @@ Each platform has a slightly different implementation of section control.
 
 ### Linux and other LLVM/GCC platforms
 
- - Has start/end symbols: ✅ (C-compatible names only)
- - Supports linker sorting: ❌
+- Has start/end symbols: ✅ (C-compatible names only)
+- Supports linker sorting: ❌
 
 On Linux and other LLVM/GCC platforms, the linker supports orphan sections,
 which allow sections to be defined without a pre-defined name. These sections
@@ -44,8 +48,8 @@ Orphan sections are not sorted via numeric suffix (e.g.: `SECTION.1`,
 
 ### macOS
 
- - Has start/end symbols: ✅
- - Supports linker sorting: ❌
+- Has start/end symbols: ✅
+- Supports linker sorting: ❌
 
 On macOS, sections are configured via `__DATA` or `__TEXT` prefix and option
 suffixes (`regular`, `no_dead_strip`, etc.). The linker emits start and stop
@@ -54,23 +58,23 @@ the section name. macOS does not support ordering in the linker.
 
 ### Windows
 
- - Has start/end symbols: ❌
- - Supports linker sorting: ✅
- 
+- Has start/end symbols: ❌
+- Supports linker sorting: ✅
+
 On Windows, the linker does not emit start/end symbols, but all sections with a
 common prefix are automatically sorted by suffix, allowing us to use suffixes to
 control placement of start/stop symbols that we emit.
 
-See [this blog
-post](https://devblogs.microsoft.com/oldnewthing/20181107-00/?p=100155) and
-[this blog
-post](https://devblogs.microsoft.com/oldnewthing/20181108-00/?p=100165) for more
-details about the alphabetical sorting rule.
+See
+[this blog post](https://devblogs.microsoft.com/oldnewthing/20181107-00/?p=100155)
+and
+[this blog post](https://devblogs.microsoft.com/oldnewthing/20181108-00/?p=100165)
+for more details about the alphabetical sorting rule.
 
 ### WASM
 
- - Has start/end symbols: ❌
- - Supports linker sorting: ❌
+- Has start/end symbols: ❌
+- Supports linker sorting: ❌
 
 On WASM platforms, Rust emits data into custom sections which do not support
 ordering, and are stored out-of-band. The host environment is responsible for
@@ -119,6 +123,51 @@ export function readCustomSection(
     new Uint8Array(memory.buffer, targetPtr, need).set(new Uint8Array(section));
     return need;
 }
+```
+
+### AIX
+
+- Has start/end symbols: ✅
+- Supports linker sorting: ❌
+
+AIX maps Rust's `#[link_section]` to `csect`s (Control Sections), which act like
+subsections of the larger `.text` and `.data` sections
+<sup>[↳](https://www.ibm.com/docs/kk/aix/7.2.0?topic=program-understanding-programming-toc)</sup>.
+A `csect` is the smallest, indivisible unit of code or data.
+
+By default, AIX does not have section start/stop symbols, but the most recent
+versions of the linker added a new `-bdbg:namedsects:ss` flag which enables
+section start/stop symbols
+<sup>[↳](https://reviews.llvm.org/D124857?id=427067)</sup>.
+
+This flag can be set with `-C link-arg=-bdbg:namedsects:ss` (or by upgrading to
+a recent Rust version that sets this automatically
+<sup>[↳](https://rust.googlesource.com/rust/+/ad582a586550bf2c72e963939f61a71df1af7c0c%5E%21/#F0)</sup>
+to support link sections.
+
+The linker will report an error like this if the start/stop symbols are not
+found:
+
+```text
+  = note: ld: 0711-317 ERROR: Undefined symbol: __start__data_link_section_DATABASES
+          ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
+          ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
+```
+
+For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out`
+and `-C link-arg=-bnoquiet` may also be useful. 
+
+AIX supports a special mode to strip (`strip -r`) that preserves structural
+symbols like `csect`s and exports. A future version of `link-section` may add
+support for loading `csect` bounds from the binary's symbol table.
+
+```toml
+[target.powerpc64-ibm-aix]
+rustflags = [
+    "-C", "link-arg=-bdbg:namedsects:ss",   # required
+    "-C", "link-arg=-bmap:linker.out",      # for debugging
+    "-C", "link-arg=-bnoquiet",             # for debugging
+]
 ```
 
 ## Typed Sections

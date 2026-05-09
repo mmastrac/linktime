@@ -1,3 +1,10 @@
 [alias]
 # Generate docs/GENERATED.md and README.md for crates.
 generate-docs = "run --package macro-magic --bin generate-docs --"
+
+[target.powerpc64-ibm-aix]
+rustflags = [
+    "-C", "link-arg=-bdbg:namedsects:ss",   # required
+#    "-C", "link-arg=-bmap:linker.out",     # for debugging
+#    "-C", "link-arg=-bnoquiet",            # for debugging
+]

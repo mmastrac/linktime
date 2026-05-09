@@ -103,13 +103,17 @@ pub mod __support {
         (
             $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
-            $vis:vis static $($static:tt)*
+            $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
                 $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used]
-                $vis static $($static)*
+                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
+                    ::core::module_path!(), "_",
+                    stringify!($ident),
+                    "_L", line!(), "C", column!()))]
+                $vis static $ident : $($static)*
             );
         };
     }
@@ -121,13 +125,17 @@ pub mod __support {
         (
             $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
-            $vis:vis static $($static:tt)*
+            $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
                 $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used(linker)]
-                $vis static $($static)*
+                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
+                    ::core::module_path!(), "_",
+                    stringify!($ident),
+                    "_L", line!(), "C", column!()))]
+                $vis static $ident : $($static)*
             );
         };
     }
@@ -417,10 +425,10 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[export_name = __]
                         #[used]
-                        static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo = $crate::__support::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
+                        static __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo = $crate::__support::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
                     );
 
-                    unsafe { $crate::__support::Bounds::new(&raw mut __LINK_SECTION_INFO) }
+                    unsafe { $crate::__support::Bounds::new(&raw const __LINK_SECTION_INFO) }
                 }
             }
         }
@@ -667,19 +675,19 @@ pub mod __support {
                         data bounds $ident $($aux)?
                         #[link_name = __]
                         extern "C" {
-                            static mut __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo;
+                            static __LINK_SECTION_INFO: $crate::__support::LinkSectionRawInfo;
                         }
                     );
 
                     #[link_section = ".init_array.0"]
-                    static mut __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+                    static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
                         extern "C" fn __LINK_SECTION_ITEM_FN() {
                             static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
                             if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
                                 return;
                             }
                             unsafe {
-                                let ptr = $crate::__support::register_wasm_link_section_item(&raw mut __LINK_SECTION_INFO);
+                                let ptr = $crate::__support::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
                                 ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
                             }
                         }
