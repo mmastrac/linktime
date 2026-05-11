@@ -74,14 +74,20 @@ impl LinkSection {
 
     #[inline(always)]
     unsafe fn lock_ref(&self) -> &AtomicU8 {
-        unsafe { ptr::addr_of!((*self.0.as_ptr()).lock).as_ref_unchecked() }
+        // as_ref_unchecked when we bump MSRV
+        unsafe {
+            ptr::addr_of!((*self.0.as_ptr()).lock)
+                .as_ref()
+                .unwrap_unchecked()
+        }
     }
 
     #[inline(always)]
     unsafe fn as_mut(&self) -> &mut LinkSectionInfo {
         unsafe {
             let unsafe_cell = ptr::addr_of!((*self.0.as_ptr()).info);
-            UnsafeCell::raw_get(unsafe_cell).as_mut_unchecked()
+            // as_mut_unchecked when we bump MSRV
+            UnsafeCell::raw_get(unsafe_cell).as_mut().unwrap_unchecked()
         }
     }
 }
