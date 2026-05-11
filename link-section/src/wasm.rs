@@ -75,7 +75,11 @@ impl LinkSection {
     #[inline(always)]
     unsafe fn lock_ref(&self) -> &AtomicU8 {
         // as_ref_unchecked when we bump MSRV
-        unsafe { ptr::addr_of!((*self.0.as_ptr()).lock).as_ref().unwrap_unchecked() }
+        unsafe {
+            ptr::addr_of!((*self.0.as_ptr()).lock)
+                .as_ref()
+                .unwrap_unchecked()
+        }
     }
 
     #[inline(always)]
