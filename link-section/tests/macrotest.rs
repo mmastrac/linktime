@@ -139,7 +139,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-ctor = {{ path = "{repo_root}/ctor", default-features = false }}
+link-section = {{ path = "{repo_root}/link-section", default-features = false }}
 "#,
                 repo_root = repo_root.display()
             )
