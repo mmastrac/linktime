@@ -1,5 +1,5 @@
-/// Declarative **feature** tables for `__declare_features!`.
-///
+//! Declarative feature macros.
+
 /// Note: pattern matches inside this macro must be unique.
 ///
 /// ## Shape
