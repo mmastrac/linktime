@@ -18,6 +18,10 @@ std = []
 linktime-proc-macro = { workspace = true, optional = true, features = ["link_section"] }
 
 [dev-dependencies]
+macrotest = "1"
+trybuild = "1"
+walkdir = "2"
+tempfile = "3"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

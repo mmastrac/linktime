@@ -1,6 +1,31 @@
-//! A set of macros to declare features for another macro.
-
-/// A macro that generates the appropriate feature extraction macros.
+/// Declarative **feature** tables for `__declare_features!`.
+///
+/// Note: pattern matches inside this macro must be unique.
+///
+/// ## Shape
+///
+/// ```text
+/// __declare_features!(
+///     MACRO_NAME: parse_macro_ident;
+///     /// Docs for this feature…
+///     feature_ident {
+///         /// crate Optional docs for the crate feature.
+///         // Ties the Rust symbol to a **Cargo feature** name.
+///         feature: "…";
+///
+///         /// attr Optional docs for the attribute fragment.
+///         // Attribute pattern. $feature_ident can be used in VALUE to take the first token.
+///         attr: [(PATTERN) => (VALUE)];
+///         // Literal string used in generated **attribute** docs as a sample.
+///         example: "…";
+///         // Comma-separated patterns this value must match.
+///         validate: [(…), …];
+///         // Target- or cfg-specific defaults (`cfg` meta on each arm), optional
+///         // `#[warn("…")]` on the `_` arm, always end with `_ => …`.
+///         default { (cfg meta) => tokens, … _ => fallback };
+///     };
+/// );
+/// ```
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __declare_features {
@@ -230,7 +255,65 @@ macro_rules! __extract_unsafe {
     };
 }
 
-/// Parses a "pretty" feature specification into something easier to work with.
+/// Parse a type, optionally followed with a semicolon.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __parse_type {
+    (@entry next=$next:path[$next_args:tt], input=($final:ident $(< $($generic:ty),* >)? $(;)?)) => {
+        $next!($next_args, (
+            type = ($final$(<$($generic),*>)?)
+            prefix = ()
+            final = $final
+            generics = ($($($generic),*)?)
+        ));
+    };
+    (@entry next=$next:path[$next_args:tt], input=(:: $final:ident $(< $($generic:ty),* >)? $(;)?)) => {
+        $next!($next_args, (
+            type = (:: $final$(<$($generic),*>)?)
+            prefix = (::)
+            final = $final
+            generics = ($($($generic),*)?)
+        ));
+    };
+    (@entry next=$next:path[$next_args:tt], input=($prefix:ident :: $final:ident $(< $($generic:ty),* >)? $(;)?)) => {
+        $next!($next_args, (
+            type = ($prefix:: $final$(<$($generic),*>)?)
+            prefix = ($prefix::)
+            final = $final
+            generics = ($($($generic),*)?)
+        ));
+    };
+    (@entry next=$next:path[$next_args:tt], input=(:: $prefix:ident :: $final:ident $(< $($generic:ty),* >)? $(;)?)) => {
+        $next!($next_args, (
+            type = (:: $prefix:: $final$(<$($generic),*>)?)
+            prefix = (::$prefix::)
+            final = $final
+            generics = ($($($generic),*)?)
+        ));
+    };
+
+    // Longer, needs a munch
+    (@entry next=$next:path[$next_args:tt], input=($prefix:tt :: $($rest:tt)*)) => {
+        $crate::__parse_type!(@accum prefix=( $prefix ), rest=( :: $( $rest )* ), next=[$next[$next_args]], input=($prefix::$($rest)*));
+    };
+    (@entry next=$next:path[$next_args:tt], input=(:: $prefix:tt :: $($rest:tt)*)) => {
+        $crate::__parse_type!(@accum prefix=( :: $prefix ), rest=( :: $( $rest )* ), next=[$next[$next_args]], input=(::$prefix::$($rest)*));
+    };
+
+    (@accum prefix=($( $prefix:tt )*), rest=(:: $more_prefix:ident :: $( $rest:tt )*), next=$next:tt, input=$input:tt) => {
+        $crate::__parse_type!(@accum prefix=( $( $prefix )* :: $more_prefix ), rest=( :: $( $rest )* ), next=$next, input=$input);
+    };
+    (@accum prefix=($($prefix:tt)*), rest=(:: $final:ident $(< $($generic:ty),* >)? $(;)?), next=[$next:path[$next_args:tt]], input=$input:tt) => {
+        $next!($next_args, (
+            type = ( $( $prefix )* :: $final$(<$($generic),*>)?)
+            prefix = ( $( $prefix )* :: )
+            final = $final
+            generics = ($($($generic),*)?)
+        ));
+    };
+}
+
+/// Normalizes `__declare_features!` input into tuples for later passes (grammar: module `//!`).
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __parse_feature_input {
@@ -622,9 +705,9 @@ macro_rules! __extract_meta {
     ), args=[$macro_path:path]) => {
         // This will return to us after the generated macro has finished processing.
         $macro_path!(@meta macro=$macro_path, next=$crate::__extract_meta[[@finish $macro_path, next=$next[$next_args]]] $(
-            // Pass each of the attributes down, but we separate with a `, , ;`
+            // Pass each of the attributes down, but we separate with a `, $name ;`
             // sequence to help the downstream macro split things up.
-            $name $( ($( $args )*) )? $( = $value $( $value_ident )? $( :: $value_path )* )? , , ;
+            $name $( ($( $args )*) )? $( = $value $( $value_ident )? $( :: $value_path )* )? , $name ;
         )*);
     };
     // If we couldn't parse one of those forms above, this path gets hit.
@@ -651,7 +734,7 @@ macro_rules! __extract_meta {
     // us with @error.
     ( [@finish $macro_path:path, next=$next:path[$next_args:tt]],
         ($(
-            ( $name:ident = $value:tt $value_what:ident $( , $def_value:tt $def_value_what:ident )? )
+            ( $name:ident = $value:tt $value_what:ident $ignored:tt $( , $def_value:tt $def_value_what:ident $ignored2:tt )? )
         )*)
     ) => {
         // Pass the calculated feature back to @validate, which will continue on if all
@@ -663,7 +746,7 @@ macro_rules! __extract_meta {
     // Catch duplicate items.
     ( [@finish $macro_path:path, next=$next:path[$next_args:tt]],
         (
-            $(( $name:ident = $value:tt $value_what:ident $( , $def_value:tt $def_value_what:ident $( $comma:tt $($rest:tt)* )? )? ))*
+            $(( $name:ident = $value:tt $value_what:ident $ignore:tt $( , $def_value:tt $def_value_what:ident $ignore2:tt $( $comma:tt $($rest:tt)* )? )? ))*
         )
     ) => {
         // TODO: This should show the underlying attribute rather than the internal name.
@@ -673,13 +756,13 @@ macro_rules! __extract_meta {
     };
     // Unknown items (valid form, unrecognized pattern).
     ( @error rest=(
-        $name:ident $( ($( $args:tt)*) )? $( = $value:tt )? , , ; $($rest:tt)*
-    ) attrs=($($attr:tt)*)) => {
+        $name:ident $( ($( $args:tt)*) )? $( = $value:tt )? , $ignore:tt ; $($rest:tt)*
+    ) attrs=( $( ( $($example:tt)* ) )* )) => {
         const _: () = { compile_error!(concat!("Unexpected meta attribute: '", stringify!(
             $name $( ($( $args )*) )? $( = $value )?
         ),
-        "'\n...expected one of:\n",
-        stringify!($($attr)*))); };
+        "'\n...expected one of:\n  ",
+        $($($example)*, "\n  ",)*)); };
     };
     ( $($input:tt)* ) => {
         const _: () = { compile_error!(concat!("Unexpected input in __extract_meta: ", stringify!($($input)*))); };
@@ -778,15 +861,15 @@ macro_rules! __make_macros {
                         $dollar(
                             $($attr)*
                             ,
-                            $dollar $feature:tt // comma
+                            $dollar $feature:tt // first token
                         )?
                     )?)*
                     ;
                 )*
             ) => {
                 $next_macro ! ( $next_macro_args, ( $(($feature = $(
-                    $dollar ( $dollar( $($attr_output)* value $dollar $feature )? )*
-                )? $default_value default))* ) );
+                    $dollar ( $dollar( $($attr_output)* value $dollar $feature, )? )*
+                )? $default_value default _))* ) );
             };
 
             // Unrecognized, munch until end of recognized input.
@@ -801,7 +884,7 @@ macro_rules! __make_macros {
                     $dollar(
                         $($attr)*
                         ,
-                        $dollar $feature:tt // comma
+                        $dollar $feature:tt // first token
                     )?
                 )?)*
                 ;
@@ -812,7 +895,7 @@ macro_rules! __make_macros {
             // Found the error!
             (@metaerror macro=$macro_path:path, next=$next_macro:path[$next_macro_args:tt]
                 $dollar ($dollar rest:tt)*) => {
-                $crate::__extract_meta!(@error rest=($dollar($dollar rest)*) attrs=($($($($attr)* ;)?)*));
+                $crate::__extract_meta!(@error rest=($dollar($dollar rest)*) attrs=($($($example)?)*));
             };
 
             // @validate ensures that all features match the validate expressions. If this doesn't

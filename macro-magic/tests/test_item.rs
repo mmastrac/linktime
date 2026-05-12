@@ -76,3 +76,106 @@ __test!(__parse_item[my_macro_parse]:
     meta = (#[other] #[doc]),
     item = (fn foo() { /* ... */ })
 ));
+
+__declare_features!(
+    section: section_type_parse;
+    other {
+        attr: [(other = $value:tt) => ($value)];
+        example: "other = N";
+        validate: [($numeric:literal)];
+    };
+    /// One of `untyped`, `typed`, `reference`, or `moveable` (same choices as `#[section(...)]`).
+    section_type {
+        attr: [
+            ($(untyped)? $(typed)? $(reference)? $(moveable)?) => ($section_type)
+        ];
+        example: "untyped | typed | reference | moveable";
+        validate: [(untyped), (typed), (reference), (moveable)];
+    };
+);
+
+__test!(__parse_item[section_type_parse]:
+(
+    #[section(typed)]
+    fn foo() { /* ... */ }
+) =>
+(
+    features = (other = (): default, section_type = typed : value,),
+    self = (typed),
+    meta = (),
+    item = (fn foo() { /* ... */ })
+));
+
+__test!(__parse_item[section_type_parse]:
+(
+    #[section(typed, other = 1)]
+    fn foo() { /* ... */ }
+) =>
+(
+    features = (other = 1: value, section_type = typed : value,),
+    self = (typed, other = 1),
+    meta = (),
+    item = (fn foo() { /* ... */ })
+));
+
+__test!(__parse_type: (SomeType) =>
+(
+    type = (SomeType)
+    prefix = ()
+    final = SomeType
+    generics = ()
+));
+__test!(__parse_type: (::SomeType) =>
+(
+    type = (:: SomeType)
+    prefix = (::)
+    final = SomeType
+    generics = ()
+));
+__test!(__parse_type: (::root::SomeType) =>
+(
+    type = (:: root :: SomeType)
+    prefix = (:: root ::)
+    final = SomeType
+    generics = ()
+));
+
+__test!(__parse_type: (root::SomeType) =>
+(
+    type = (root :: SomeType)
+    prefix = (root ::)
+    final = SomeType
+    generics = ()
+));
+
+__test!(__parse_type: (::root::more::SomeType) =>
+(
+    type = (:: root:: more :: SomeType)
+    prefix = (:: root:: more ::)
+    final = SomeType
+    generics = ()
+));
+
+__test!(__parse_type: (root::more::SomeType) =>
+(
+    type = (root:: more :: SomeType)
+    prefix = (root:: more ::)
+    final = SomeType
+    generics = ()
+));
+
+__test!(__parse_type: (SomeType<T, U>) =>
+(
+    type = (SomeType < T, U >)
+    prefix = ()
+    final = SomeType
+    generics = (T, U)
+));
+
+__test!(__parse_type: (::crazy::long::path_to_type::with::generics::SomeType<T, U>) =>
+(
+    type = (:: crazy:: long :: path_to_type :: with :: generics :: SomeType < T, U >)
+    prefix = (:: crazy:: long :: path_to_type :: with :: generics ::)
+    final = SomeType
+    generics = (T, U)
+));

@@ -376,6 +376,10 @@ name = "link-section"
 version = "0.16.1"
 dependencies = [
  "linktime-proc-macro",
+ "macrotest",
+ "tempfile",
+ "trybuild",
+ "walkdir",
 ]
 
 [[package]]
