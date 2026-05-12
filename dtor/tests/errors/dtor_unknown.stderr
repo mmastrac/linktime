@@ -1,10 +1,15 @@
 error: Unexpected meta attribute: 'unknown'
        ...expected one of:
-       anonymous; crate_path = $path : pat;
-       ctor(export_name_prefix = $ctor_export_name_prefix_str : literal);
-       ctor(link_section = $ctor_link_section_name : literal); export_name_prefix =
-       $export_name_prefix_str : literal; link_section = $section : literal; method =
-       $method_id : ident; unsafe; used(linker);
+         anonymous
+         crate_path = ::path::to::dtor::crate
+         ctor(export_name_prefix = "ctor_")
+         ctor(link_section = ".ctors")
+         export_name_prefix = "ctor_"
+         link_section = ".dtors"
+         method = term|unload|at_module_exit|at_binary_exit|linker
+         unsafe
+         used(linker)
+
  --> tests/errors/dtor_unknown.rs:3:1
   |
 3 | #[dtor(unknown)]
@@ -14,11 +19,16 @@ error: Unexpected meta attribute: 'unknown'
 
 error: Unexpected meta attribute: 'unknown'
        ...expected one of:
-       anonymous; crate_path = $path : pat;
-       ctor(export_name_prefix = $ctor_export_name_prefix_str : literal);
-       ctor(link_section = $ctor_link_section_name : literal); export_name_prefix =
-       $export_name_prefix_str : literal; link_section = $section : literal; method =
-       $method_id : ident; unsafe; used(linker);
+         anonymous
+         crate_path = ::path::to::dtor::crate
+         ctor(export_name_prefix = "ctor_")
+         ctor(link_section = ".ctors")
+         export_name_prefix = "ctor_"
+         link_section = ".dtors"
+         method = term|unload|at_module_exit|at_binary_exit|linker
+         unsafe
+         used(linker)
+
  --> tests/errors/dtor_unknown.rs:7:1
   |
 7 | #[dtor(unsafe, unknown, unknown2)]
