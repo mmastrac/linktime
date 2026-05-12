@@ -172,6 +172,7 @@ link-section = {{ path = "{repo_root}/link-section", default-features = false }}
                 .current_dir(dir.path())
                 .env("CARGO_TERM_COLOR", "never")
                 .env("CARGO_TARGET_DIR", target_dir.join(&target))
+                .env_remove("RUSTFLAGS")
                 .args([
                     "+nightly",
                     "rustc",
