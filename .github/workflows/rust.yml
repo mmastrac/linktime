@@ -93,6 +93,7 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: ${{ matrix.rust-components }}
         target: ${{ matrix.rust-extra-target }}
+        cache: false
 
     - name: Install Zig
       if: ${{ matrix.job == 'zigbuild' }}
