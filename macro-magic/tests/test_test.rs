@@ -1,3 +1,4 @@
+//! macro-magic integration tests.
 use macro_magic::test::const_str_eq_test;
 
 #[test]

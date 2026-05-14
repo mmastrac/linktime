@@ -1,3 +1,5 @@
+#![doc = "Scattered collection helpers (scatter / gather)."]
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __scatter_parse {
@@ -45,6 +47,7 @@ pub mod __support {
     pub use scattered_collect_proc_macro::ident_concat;
 }
 
+/// Declarative `scatter!` / `gather!` entry points.
 pub mod declarative {
     pub use crate::__gather_brace as gather;
     pub use crate::__scatter_brace as scatter;

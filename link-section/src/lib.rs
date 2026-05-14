@@ -267,54 +267,56 @@ pub mod __support {
     #[doc(hidden)]
     #[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
     macro_rules! __in_section_crate {
-        ((@v=0 ; (source=$source:ident) ; (type = untyped) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (item = $item:tt))) => {
-            $crate::__in_section_crate!(@untyped $section, $($aux)?, $($path)?, $item);
+        ((@v=0 ; (source=$source:ident) ; (type = untyped) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@untyped $section, $($aux)?, $($path)?, $meta $item);
         };
-        ((@v=0 ; (source=$source:ident) ; (type = $section_type:ident) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (item = $item:tt))) => {
-            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, $item);
+        ((@v=0 ; (source=$source:ident) ; (type = $section_type:ident) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, $meta $item);
         };
 
         // Untyped items are placed in the data or code section as-is.
-        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($(#[$meta:meta])* $vis:vis fn $($rest:tt)*)) => {
-            $(
-                const _: () = {
-                    $crate::Section::__validate(&$path);
-                };
-            )?
+        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($vis:vis fn $($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
                 code section $section $($aux)?
                 #[link_section = __]
-                $(#[$meta])*
+                $($meta)*
                 $vis fn $($rest)*
             );
-        };
-        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($rest:tt)*)) => {
             $(
                 const _: () = {
                     $crate::Section::__validate(&$path);
                 };
             )?
+        };
+        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
                 data section $section $($aux)?
                 #[link_section = __]
+                $($meta)*
                 $($rest)*
             );
+            $(
+                const _: () = {
+                    $crate::Section::__validate(&$path);
+                };
+            )?
         };
 
         // Convert fn() with a body to a const item and a function pointer item.
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $($path:path)?, ($(#[$meta:meta])* $vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? $body:block)) => {
-            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, (
-                const _: fn($($args)*) $(-> $ret)? = $ident_fn;
-            ));
+        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? { $($body:tt)* })) => {
+            $($meta)*
+            $vis fn $ident_fn($($args)*) $(-> $ret)? {
+                $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, () (
+                    const _: fn($($args)*) $(-> $ret)? = $ident_fn;
+                ));
 
-            $(#[$meta])*
-            $vis fn $ident_fn($($args)*) $(-> $ret)? $body
+                $($body)*
+            }
         };
 
         // If no path is provided, use the item type.
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, , ($(#[$meta:meta])* $vis:vis $const_or_static:ident $name:tt : $ty:ty = $($rest:tt)*)) => {
-            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $crate::TypedSection::<$ty>, (
-                $(#[$meta])*
+        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, , $meta:tt ($vis:vis $const_or_static:ident $name:tt : $ty:ty = $($rest:tt)*)) => {
+            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $crate::TypedSection::<$ty>, $meta (
                 $vis $const_or_static $name: $ty = $($rest)*
             ));
         };
@@ -324,26 +326,29 @@ pub mod __support {
         };
 
         // static items
-        (@typed[typed] $section:tt, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static $ident:ident : $ty:ty = $value:expr;)) => {
-            #[cfg(target_family = "wasm")]
-            compile_error!("static items are not supported on WASM: use const items instead");
-
-            const _: () = {
-                let _: *const <$path as $crate::__support::SectionItemTyped<$ty>>::Item = ::core::ptr::null();
-            };
-
+        (@typed[typed] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident : $ty:ty = $value:expr;)) => {
             #[cfg(not(target_family = "wasm"))]
             $crate::__add_section_link_attribute!(
                 data section $section $($aux)?
                 #[link_section = __]
-                $(#[$meta])*
-                $vis static $ident: $crate::__in_section_crate!(@type_select $path) = $value;
+                $($meta)*
+                $vis static $ident: $crate::__in_section_crate!(@type_select $path) = const{
+                    const _: () = {
+                        let _: *const <$path as $crate::__support::SectionItemTyped<$ty>>::Item = ::core::ptr::null();
+                    };
+
+                    $value
+                };
             );
+
+            #[cfg(target_family = "wasm")]
+            compile_error!("static items are not supported on WASM: use const items instead");
         };
 
         // const items with a name are the same across all types
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const $ident:ident: $ty:ty = $value:expr;)) => {
-            $(#[$meta])* $vis const $ident: $ty = {
+        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:ident: $ty:ty = $value:expr;)) => {
+            $($meta)*
+            $vis const $ident: $ty = {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
@@ -353,7 +358,7 @@ pub mod __support {
                     $crate::__add_section_link_attribute!(
                         data section $section $($aux)?
                         #[link_section = __]
-                        $vis static __LINK_SECTION_CONST_ITEM: u8 = 0;
+                        static __LINK_SECTION_CONST_ITEM: u8 = 0;
                     );
 
                     $crate::__add_section_link_attribute!(
@@ -384,8 +389,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $section $($aux)?
                     #[link_section = __]
-                    $(#[$meta])*
-                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
+                    static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
 
                 __LINK_SECTION_CONST_ITEM_VALUE
@@ -393,20 +397,20 @@ pub mod __support {
         };
 
         // anonymous const items are the same across all types
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis const _: $ty:ty = $value:expr;)) => {
-            $(#[$meta])* $vis const _: () = {
+        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const _: $ty:ty = $value:expr;)) => {
+            $($meta)* const _: () = {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 $crate::__add_section_link_attribute!(
                     data section $section $($aux)?
                     #[link_section = __]
-                    $(#[$meta])*
                     $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
                 );
             };
         };
 
-        (@typed[reference] $section:tt, $($aux:ident)?, $path:path, ($(#[$meta:meta])* $vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
+        (@typed[reference] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             #[cfg(target_family="wasm")]
+            $($meta)*
             $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
 
@@ -450,7 +454,7 @@ pub mod __support {
             $crate::__add_section_link_attribute!(
                 data section $section $($aux)?
                 #[link_section = __]
-                $(#[$meta])*
+                $($meta)*
                 $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = $crate::reference::Ref::new($value);
             );
         };

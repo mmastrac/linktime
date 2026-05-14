@@ -212,6 +212,10 @@ macro_rules! __section_parse_impl {
         ),
         item = ($(#[$meta:meta])* $vis:vis static $ident:ident: $collection:ty),
     ) => {
+        $(#[$meta])*
+        #[allow(non_camel_case_types)]
+        $vis struct $name;
+
         $crate::__section_declare_submission_macro!(
             [$]
             macro=$macro
@@ -219,10 +223,6 @@ macro_rules! __section_parse_impl {
             vis=$vis
             name=$name
         );
-
-        $(#[$meta])*
-        #[allow(non_camel_case_types)]
-        $vis struct $name;
 
         impl $name {
             /// Get a `const` reference to the underlying section. In
@@ -276,6 +276,7 @@ macro_rules! __section_parse_impl {
             type Item = $generic_ty;
         }
         impl $ident {
+            /// Get the section as a slice.
             pub fn as_slice(&self) -> &[$generic_ty] {
                 self.const_deref().as_slice()
             }
@@ -406,33 +407,33 @@ macro_rules! __in_section_parse_impl {
             unsafe = $unsafe:tt: $unsafe_spec:ident,
         ),
         self = ( $($inner:tt)* ),
-        meta = ($(#[$meta:meta])*),
+        meta = $meta:tt,
         item = $item:tt
         $type:ty
     )) => {
         $crate::__in_section_parse_impl!(@dispatch features=(
             section = $section,
             raw = ($aux $name $section_type $unsafe)
-        ) item=$item);
+        ) meta=$meta item=$item);
     };
 
     (@dispatch features=(
         section = (),
         raw = (($($aux:ident)?) $name:tt $section_type:tt $unsafe:tt)
-    ) item=$item:tt) => {
+    ) meta=$meta:tt item=$item:tt) => {
         // Raw, feed directly to __in_section_crate!
-        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) $(; (aux=$aux) )? ; (section=$name) ; (item=$item)));
+        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) $(; (aux=$aux) )? ; (section=$name) ; (meta=$meta) ; (item=$item)));
     };
 
     (@dispatch features=(
         section = $section:tt,
         raw = $raw:tt
-    ) item=$item:tt) => {
-        $crate::__parse_type!(@entry next=$crate::__in_section_parse_impl[[@dispatch item=$item]], input=$section);
+    ) meta=$meta:tt item=$item:tt) => {
+        $crate::__parse_type!(@entry next=$crate::__in_section_parse_impl[[@dispatch meta=$meta item=$item]], input=$section);
     };
 
-    ([@dispatch item=$item:tt], (type=($section:path) prefix=$prefix:tt final=$final:ident generics=$generics:tt)) => {
-        $section!(((section=$final) ; (path=$section) ; (item=$item)));
+    ([@dispatch meta=$meta:tt item=$item:tt], (type=($section:path) prefix=$prefix:tt final=$final:ident generics=$generics:tt)) => {
+        $section!(((section=$final) ; (path=$section) ; (meta=$meta) ; (item=$item)));
     };
 
     ($($input:tt)*) => {

@@ -35,3 +35,11 @@ path = "examples/example.rs"
 [[example]]
 name = "link-section-const"
 path = "examples/const.rs"
+
+[[example]]
+name = "link-section-dyn"
+path = "examples/dyn.rs"
+
+[[example]]
+name = "link-section-ref"
+path = "examples/ref.rs"

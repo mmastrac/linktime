@@ -1,3 +1,7 @@
+//! Reference-section example for `link-section`.
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
+#![warn(missing_docs)]
+
 mod operations {
     use link_section::{in_section, section};
 
