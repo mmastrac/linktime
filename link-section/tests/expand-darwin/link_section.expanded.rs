@@ -1,26 +1,12 @@
 use link_section::{section, in_section, TypedSection};
 #[doc(hidden)]
-pub use __FOO__link_section_private_macro__ as FOO;
+use ::link_section::__in_section_helper_macro_generic as FOO;
 #[allow(non_camel_case_types)]
 struct FOO;
-impl ::link_section::__support::SectionItemType for FOO {
-    type Item = fn();
-}
-impl ::core::fmt::Debug for FOO {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        ::core::ops::Deref::deref(self).fmt(f)
-    }
-}
-impl ::core::ops::Deref for FOO {
-    type Target = TypedSection<fn()>;
-    fn deref(&self) -> &Self::Target {
-        self.const_deref()
-    }
-}
 impl FOO {
     /// Get a `const` reference to the underlying section. In
     /// non-const contexts, `deref` is sufficient.
-    pub const fn const_deref(&self) -> &TypedSection<fn()> {
+    pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
                 extern "C" {
@@ -46,11 +32,33 @@ impl FOO {
         &SECTION
     }
 }
+impl ::core::fmt::Debug for FOO {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        ::core::ops::Deref::deref(self).fmt(f)
+    }
+}
+impl ::core::ops::Deref for FOO {
+    type Target = TypedSection<fn()>;
+    fn deref(&self) -> &Self::Target {
+        self.const_deref()
+    }
+}
+impl ::link_section::__support::SectionItemType for FOO {
+    type Item = (fn());
+}
+impl ::link_section::__support::SectionItemTyped<(fn())> for FOO {
+    type Item = (fn());
+}
+impl FOO {
+    pub fn as_slice(&self) -> &[(fn())] {
+        self.const_deref().as_slice()
+    }
+}
 impl ::core::iter::IntoIterator for FOO {
-    type Item = &'static fn();
-    type IntoIter = ::core::slice::Iter<'static, fn()>;
+    type Item = &'static (fn());
+    type IntoIter = ::core::slice::Iter<'static, (fn())>;
     fn into_iter(self) -> Self::IntoIter {
-        FOO.as_slice().iter()
+        self.const_deref().as_slice().iter()
     }
 }
 const _: () = {
@@ -60,9 +68,6 @@ const _: () = {
     #[used]
     static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
 };
-#[link_section = "__TEXT,FOO,regular,pure_instructions"]
-#[allow(unsafe_code)]
-#[allow(unsafe_code)]
 fn foo() {
     {
         ::std::io::_print(format_args!("foo\n"));

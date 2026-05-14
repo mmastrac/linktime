@@ -1,8 +1,17 @@
 A crate for defining link sections in Rust.
 
-Sections are defined using the `#[section]` macro. This creates an associated
-`data` and `text` section, and items decorated with the `#[in_section]` macro
-are placed into the associated section.
+Sections are defined using the `#[section(...)]` macro. This creates an
+associated `data` and `text` section, and items decorated with the
+`#[in_section(SECTION)]` macro are placed into the associated section.
+
+There are five section types:
+
+ - `untyped`: An untyped section purely used for collection and co-location of
+   data in the binary.
+ - `typed`: An immutable section that can store a given type.
+ - `mutable`: A mutable section that can store a given type.
+ - `reference`: An immutable section that can support access both as a slice
+   and as a reference at the submission site.
 
 ## Platform Support
 
@@ -194,7 +203,7 @@ in close proximity:
 ```rust
 use link_section::{in_section, section};
 
-#[section]
+#[section(untyped)]
 pub static CODE_SECTION: link_section::Section;
 
 #[in_section(CODE_SECTION)]
@@ -214,7 +223,7 @@ mod my_registry {
         name: &'static str,
     }
 
-    #[section]
+    #[section(typed)]
     pub static MY_REGISTRY: link_section::TypedSection<MyStruct>;
 
     // Registers a `const` item.

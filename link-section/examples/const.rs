@@ -16,39 +16,45 @@ impl Driver {
 }
 
 /// Drivers.
-#[section]
+#[section(typed)]
 static DATA_SECTION: link_section::TypedSection<Driver>;
 
-/// A driver for PostgreSQL.
-#[in_section(DATA_SECTION)]
-pub const POSTGRES_DRIVER: Driver = Driver::new("postgres", || println!("connected to postgres!"));
+mod drivers {
+    use crate::Driver;
+    use link_section::in_section;
 
-/// A driver for MySQL.
-#[in_section(DATA_SECTION)]
-pub const MYSQL_DRIVER: Driver = Driver::new("mysql", || println!("connected to mysql!"));
+    /// A driver for PostgreSQL.
+    #[in_section(super::DATA_SECTION)]
+    pub const POSTGRES_DRIVER: Driver =
+        Driver::new("postgres", || println!("connected to postgres!"));
 
-/// A driver for SQLite.
-#[in_section(DATA_SECTION)]
-pub const SQLITE_DRIVER: Driver = Driver::new("sqlite", || println!("connected to sqlite!"));
+    /// A driver for MySQL.
+    #[in_section(super::DATA_SECTION)]
+    pub const MYSQL_DRIVER: Driver = Driver::new("mysql", || println!("connected to mysql!"));
+
+    /// A driver for SQLite.
+    #[in_section(super::DATA_SECTION)]
+    pub const SQLITE_DRIVER: Driver = Driver::new("sqlite", || println!("connected to sqlite!"));
+}
 
 /// Databases.
-#[section]
+#[section(typed)]
 static DATABASES: link_section::TypedSection<(&'static str, &'static Driver)>;
 
 /// A database for PostgreSQL.
 #[in_section(DATABASES)]
 pub const POSTGRES_DATABASE: (&'static str, &'static Driver) =
-    ("postgres://localhost:5432", &POSTGRES_DRIVER);
+    ("postgres://localhost:5432", &drivers::POSTGRES_DRIVER);
 
 /// A database for MySQL.
 #[in_section(DATABASES)]
 pub const MYSQL_DATABASE: (&'static str, &'static Driver) =
-    ("mysql://localhost:3306", &MYSQL_DRIVER);
+    ("mysql://localhost:3306", &drivers::MYSQL_DRIVER);
 
 /// A database for SQLite.
 #[in_section(DATABASES)]
 pub const SQLITE_DATABASE: (&'static str, &'static Driver) =
-    ("sqlite://localhost:1433", &SQLITE_DRIVER);
+    ("sqlite://localhost:1433", &drivers::SQLITE_DRIVER);
 
 fn main() {
     for (url, driver) in DATABASES {

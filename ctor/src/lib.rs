@@ -141,8 +141,8 @@ pub mod collect {
 
     #[doc(hidden)]
     link_section::declarative::section!(
-        #[section(no_macro)]
-        pub static _CTOR0_ISIZE_FN: link_section::TypedSection<Constructor>;
+        #[section(mutable, no_macro)]
+        pub static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
     );
 
     #[macro_export]
@@ -159,7 +159,7 @@ pub mod collect {
         };
         (priority = $priority:tt, fn = $fn:ident) => {
             $crate::__support::in_section!(
-                #[in_section(unsafe, type = $crate::collect::Constructor, name = _CTOR0_ISIZE_FN)]
+                #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
                 pub const _: $crate::collect::Constructor = $crate::collect::Constructor {
                     priority: $priority,
                     ctor: $fn,
@@ -168,7 +168,7 @@ pub mod collect {
         };
         (priority = $priority:tt, fn = (array $array:ident)) => {
             $crate::__support::in_section!(
-                #[in_section(unsafe, type = [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }], name = _CTOR0_ISIZE_FN)]
+                #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
                 pub const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {
                     use core::mem::MaybeUninit;
 
@@ -204,12 +204,12 @@ pub mod collect {
 
     #[doc(hidden)]
     link_section::declarative::section!(
-        #[section(no_macro)]
+        #[section(typed)]
         pub static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
     );
 
     link_section::declarative::in_section!(
-        #[in_section(unsafe, type = AtomicU8, name = _CTR0GR_ISIZE_FN)]
+        #[in_section(unsafe, type = typed, name = _CTR0GR_ISIZE_FN)]
         pub static GUARD_ATOMIC: AtomicU8 = AtomicU8::new(GUARD_NOT_RUN);
     );
 }

@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - Unreleased
+
+### Added
+
+- `reference` sections support access both as a slice and as a reference at the
+  submission site on all platforms (including WASM).
+- `typed` and `mutable` sections have been split: `typed` allows for `const` and
+  `static` items, while `mutable` allows for `const` items and `as_mut_slice`
+  access.
+
+### Changed
+
+- Significant rewrite to link-section's internal implementation.
+- Sections require a type: `#[section(typed)]`, `#[section(untyped)]`,
+  `#[section(mutable)]`, or `#[section(reference)]`.
+- When submitting a fn() with a body to a typed link section, the function's
+body is not placed in any specific section. To restore the previous behavior,
+manually split function pointers and bodies:
+
+```rust
+#[section(untyped, aux(main = FN_ARRAY))]
+pub static FN_BODIES: link_section::Section;
+
+#[section(typed)]
+pub static FN_ARRAY: link_section::TypedSection<fn()>;
+
+#[in_section(FN_ARRAY)]
+pub const _: fn() = linked_function;
+
+#[in_section(FN_BODIES)]
+pub fn linked_function() {
+    eprintln!("linked_function");
+}
+```
+
 ## [0.16.1] - 2026-05-11
 
 ### Changed

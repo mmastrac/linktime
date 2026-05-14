@@ -24,7 +24,9 @@ pub mod link_section {
     pub use linktime_proc_macro::in_section_linktime as in_section;
 
     #[doc(inline)]
-    pub use link_section::{Section, TypedSection};
+    pub use link_section::{
+        reference, Section, TypedMutableSection, TypedReferenceSection, TypedSection,
+    };
 
     pub mod declarative {
         #[doc(inline)]

@@ -1,0 +1,11 @@
+error: Unexpected macro: #[dtor], expected #[ctor]
+ --> tests/errors/ctor_wrong_attr.rs:1:1
+  |
+1 | / ctor::declarative::ctor! {
+2 | |     #[dtor]
+3 | |     fn foo() {
+4 | |     }
+5 | | }
+  | |_^
+  |
+  = note: this error originates in the macro `$crate::__ctor_features` which comes from the expansion of the macro `ctor::declarative::ctor` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -5,6 +5,50 @@ use core::cell::UnsafeCell;
 use core::ptr::{self, NonNull};
 use core::sync::atomic::{AtomicU8, Ordering};
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __get_section {
+    (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+        {
+            static __LINK_SECTION_NAME: &'static str = $crate::__section_name!(
+                raw data bare $ident $($aux)?
+            );
+            $crate::__support::add_section_link_attribute!(
+                data bounds $ident $($aux)?
+                #[export_name = __]
+                #[used]
+                static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo = $crate::__support::wasm::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
+            );
+
+            unsafe { $crate::__support::Bounds::new(&raw const __LINK_SECTION_INFO) }
+        }
+    }
+}
+
+crate::__def_section_name! {
+    {
+        data bare =>    (".data", ".link_section.") __ ();
+        data section => (".data", ".link_section.") __ ();
+        code bare =>    (".text", ".link_section.") __ ();
+        code section => (".text", ".link_section.") __ ();
+        data bounds =>  (".data", ".link_section.") __ (".bounds");
+    }
+    AUXILIARY = ".";
+    MAX_LENGTH = 16;
+    HASH_LENGTH = 6;
+    VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+}
+
+extern "C" {
+    /// Read custom section with name/name_length as a UTF8 string
+    pub(crate) fn read_custom_section(
+        name: *const u8,
+        name_length: usize,
+        target_address: *mut u8,
+        target_address_length: usize,
+    ) -> usize;
+}
+
 #[repr(u8)]
 enum LinkSectionState {
     Uninitialized = 0,
@@ -156,14 +200,8 @@ impl LinkSectionRawInfo {
 
 impl LinkSectionInfo {
     pub fn initialize(&mut self) {
-        let size = unsafe {
-            crate::__support::read_custom_section(
-                self.name,
-                self.name_length as _,
-                ptr::null_mut(),
-                0,
-            )
-        };
+        let size =
+            unsafe { read_custom_section(self.name, self.name_length as _, ptr::null_mut(), 0) };
 
         // We can jump directly to initialized if the section is empty
         if size == 0 {

@@ -1,6 +1,11 @@
 use ::macro_magic::*;
 
 __test!(__parallel[
+    __brace[[]],
+    __brace[{}],
+]: (1) => ([1] { 1 }));
+
+__test!(__parallel[
     __brace[()],
     __brace[[]],
     __brace[{}],
