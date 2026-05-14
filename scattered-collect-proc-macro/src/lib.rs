@@ -1,12 +1,16 @@
+//! Proc-macro shims for `scattered-collect` (`scatter` / `gather` attributes).
+
 use std::iter::FromIterator;
 
 use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
 
+/// Registers one value into a scattered collection.
 #[proc_macro_attribute]
 pub fn scatter(attribute: TokenStream, item: TokenStream) -> TokenStream {
     generate("scatter", "scattered_collect", attribute, item)
 }
 
+/// Builds the sorted slice type over a scattered collection.
 #[proc_macro_attribute]
 pub fn gather(attribute: TokenStream, item: TokenStream) -> TokenStream {
     generate("gather", "scattered_collect", attribute, item)

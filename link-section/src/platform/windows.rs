@@ -1,3 +1,5 @@
+//! Windows: alignment markers at section bounds.
+
 /// On Windows platforms we don't have start/end symbols, but we do have
 /// section sorting so we drop a minimum-sized type with the same alignment
 /// as T at the start and end of the section.

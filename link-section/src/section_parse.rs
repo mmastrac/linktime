@@ -298,6 +298,7 @@ macro_rules! __section_parse_impl {
 /// `no_macro` was set on the attribute.
 #[macro_export]
 #[doc(hidden)]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! __section_declare_submission_macro {
     // No macro, so we do nothing.
     ([$dollar:tt] macro=(no_macro=no_macro, $($mrest:tt)*) $($rest:tt)*) => {};

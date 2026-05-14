@@ -1,3 +1,5 @@
+//! Miri: null section bounds (unsupported).
+
 /// Miri is not currently supported.
 #[doc(hidden)]
 #[macro_export]

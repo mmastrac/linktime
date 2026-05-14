@@ -51,6 +51,7 @@ unsafe impl Sync for Section {}
 unsafe impl Send for Section {}
 
 #[diagnostic::on_unimplemented(message = "This is not an untyped section")]
+/// Marker: untyped [`Section`] handle.
 pub trait IsUntypedSection {}
 
 macro_rules! impl_bounds_fns {
@@ -323,6 +324,7 @@ impl<T> Ref<T> {
         *self.ptr.get() = ptr;
     }
 
+    /// Raw pointer to the value (WASM: cell; otherwise `&T` as `*const T`).
     pub fn as_ptr(&self) -> *const T {
         #[cfg(target_family = "wasm")]
         {

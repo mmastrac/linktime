@@ -1,3 +1,4 @@
+//! macro-magic integration tests.
 use ::macro_magic::*;
 
 __test!(__separate[

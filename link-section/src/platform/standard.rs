@@ -1,3 +1,5 @@
+//! Non-WASM, non-Windows: orphan section start/end symbols.
+
 /// On LLVM/GCC platforms we can use orphan sections with _start and _end
 /// symbols.
 ///

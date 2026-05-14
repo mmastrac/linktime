@@ -1,3 +1,4 @@
+//! macro-magic integration tests.
 #![allow(unexpected_cfgs)]
 #![recursion_limit = "256"]
 

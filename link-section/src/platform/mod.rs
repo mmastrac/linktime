@@ -2,6 +2,7 @@
 pub mod miri;
 
 #[cfg(all(not(target_family = "wasm"), not(miri), not(target_os = "windows")))]
+/// LLVM/GCC (non-WASM, non-Windows): orphan section start/end symbols.
 pub mod standard;
 
 #[cfg(all(not(miri), target_family = "wasm"))]
@@ -18,24 +19,30 @@ pub use PtrBounds as Bounds;
 
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
+    /// Section start address.
     pub start: *const (),
+    /// One byte past the last section byte.
     pub end: *const (),
 }
 
 impl PtrBounds {
+    /// Bounds covering `[start, end)`.
     pub const fn new(start: *const (), end: *const ()) -> Self {
         Self { start, end }
     }
 
     #[inline(always)]
+    /// Start as an opaque pointer.
     pub const fn start_ptr(&self) -> *const () {
         self.start
     }
     #[inline(always)]
+    /// End as an opaque pointer.
     pub const fn end_ptr(&self) -> *const () {
         self.end
     }
     #[inline(always)]
+    /// Length in bytes (`end - start`).
     pub const fn byte_len(&self) -> usize {
         // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
         // so we manually implement it here.
@@ -53,6 +60,7 @@ pub struct Alignment<T> {
 
 #[allow(clippy::new_without_default)]
 impl<T> Alignment<T> {
+    /// Zero-sized alignment anchor.
     pub const fn new() -> Self {
         Self {
             _align: [],

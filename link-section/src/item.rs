@@ -1,11 +1,15 @@
 //! Item handling.
 
+/// Element type for this section handle ([`crate::TypedSection`], etc.).
 pub trait SectionItemType {
+    /// Item type stored or referenced in the section.
     type Item;
 }
 
 #[diagnostic::on_unimplemented(message = "Incorrect section type for item")]
+/// Typed section compatibility for item `T`.
 pub trait SectionItemTyped<T> {
+    /// Item representation for this `T`.
     type Item;
 }
 
