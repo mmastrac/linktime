@@ -252,14 +252,23 @@ macro_rules! __section_parse_impl {
             }
         }
 
-        $crate::__section_parse_impl!(@slice $section_type $ident: ($collection) ($generic_ty));
+        $crate::__section_parse_impl!(@slice $section_type $ident $(, $aux)?: ($collection) ($generic_ty));
     };
 
-    (@slice untyped $ident:ident $($rest:tt)*) => {
+    (@slice untyped $ident:ident $(, $aux:ident)? $($rest:tt)*) => {
         impl $crate::__support::IsUntypedSection for $ident {}
+
+        const _: () = {
+            // Ensure that untyped data sections are never empty.
+            $crate::__add_section_link_attribute!(
+                data section $ident $($aux)?
+                #[link_section = __]
+                static __LINK_SECTION_CONST_ITEM: u8 = 0;
+            );
+        };
     };
 
-    (@slice $section_type:ident $ident:ident : ($collection:ty) ($generic_ty:ty)) => {
+    (@slice $section_type:ident $ident:ident $(, $aux:ident)? : ($collection:ty) ($generic_ty:ty)) => {
         impl $crate::__support::SectionItemType for $ident {
             type Item = $generic_ty;
         }
