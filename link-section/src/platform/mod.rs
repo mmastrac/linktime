@@ -1,20 +1,20 @@
 #[cfg(miri)]
 pub mod miri;
 
-#[cfg(all(not(target_family = "wasm"), not(miri), not(target_os = "windows")))]
+#[cfg(all(not(target_family = "wasm"), not(target_os = "windows")))]
 /// LLVM/GCC (non-WASM, non-Windows): orphan section start/end symbols.
 pub mod standard;
 
-#[cfg(all(not(miri), target_family = "wasm"))]
+#[cfg(target_family = "wasm")]
 pub mod wasm;
 
-#[cfg(all(not(miri), target_os = "windows"))]
+#[cfg(target_os = "windows")]
 pub mod windows;
 
 // Select the appropriate bounds type for the platform.
-#[cfg(all(not(miri), target_family = "wasm"))]
+#[cfg(target_family = "wasm")]
 pub use wasm::Bounds;
-#[cfg(any(miri, not(target_family = "wasm")))]
+#[cfg(not(target_family = "wasm"))]
 pub use PtrBounds as Bounds;
 
 /// Constant bounds for a pointer-based section.

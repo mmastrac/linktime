@@ -7,6 +7,7 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 #[doc(hidden)]
 #[macro_export]
+#[cfg(not(miri))]
 macro_rules! __get_section {
     (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
