@@ -1,15 +1,14 @@
-use link_section::TypedSection;
+use link_section::TypedMutableSection;
 
-/// A collection of sized items that are available both via sorted slice and via
-/// reference at the declaration site.
+/// A collection of sized items that are available via sorted slice.
 ///
 /// The gathered items are accessed via `&'static` references; the main section
-/// is sorted by `T` before `main()` and ref slots are fixed up in place.
+/// is sorted by `T` before `main()`.
 ///
 /// If the reference to the individual items is required, a sorted referenced
 /// slice may be used instead.
 pub struct ScatteredSortedSlice<T: Ord + 'static> {
-    data: &'static TypedSection<T>,
+    data: &'static TypedMutableSection<T>,
     _marker: core::marker::PhantomData<T>,
 }
 
@@ -22,7 +21,7 @@ impl<T: Ord + 'static> ScatteredSortedSlice<T> {
         self.data.is_empty()
     }
 
-    pub const unsafe fn new(data: &'static TypedSection<T>) -> Self {
+    pub const unsafe fn new(data: &'static TypedMutableSection<T>) -> Self {
         Self {
             data,
             _marker: core::marker::PhantomData,
@@ -45,15 +44,6 @@ impl<T: Ord + 'static> ::core::iter::IntoIterator for &'static ScatteredSortedSl
     }
 }
 
-/// Run the four-phase algorithm (sort main, realign [`RefSlot`] pointers, restore
-/// ref row order). `main` and `refs` must have the same length; each ref must
-/// initially point at some `main` cell (one-to-one). No heap allocation.
-///
-/// # Safety
-///
-/// Caller must ensure `refs` and `main` describe the same collection, with
-/// unique target addresses, and that this runs exactly once before any
-/// concurrent read of `refs` through [`RefSlot::deref`].
 #[doc(hidden)]
 pub unsafe fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
     let n = main.len();
@@ -75,8 +65,8 @@ macro_rules! __sorted_slice {
         #[allow(non_snake_case)]
         $vis mod $name {
             $crate::__support::link_section::declarative::section!(
-                #[section(typed)]
-                pub static $name: $crate::__support::link_section::TypedSection<$ty>;
+                #[section(mutable)]
+                pub static $name: $crate::__support::link_section::TypedMutableSection<$ty>;
             );
         }
 
@@ -86,6 +76,14 @@ macro_rules! __sorted_slice {
                 self::$name::$name.const_deref()
             ) }
         };
+
+        $crate::__support::ctor::declarative::ctor!(
+            // Run as soon as possible, before any other constructors.
+            #[ctor(unsafe, anonymous, priority = 0)]
+            fn initialize_scattered_sorted_slice() {
+                unsafe { $crate::sorted_slice::initialize_scattered_sorted_slice(self::$name::$name.as_mut_slice()) };
+            }
+        );
     };
 
     (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
@@ -99,16 +97,19 @@ macro_rules! __sorted_slice {
 
 #[cfg(test)]
 mod tests {
-    __sorted_slice!(@gather pub static TEST_SLICE: ScatteredSortedSlice<u32>;);
-    __sorted_slice!(@scatter [TEST_SLICE] pub const _: u32 = 1;);
-    __sorted_slice!(@scatter [TEST_SLICE] pub const _: u32 = 3;);
-    __sorted_slice!(@scatter [TEST_SLICE] pub const _: u32 = 2;);
+    __sorted_slice!(@gather pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 6;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 3;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 2;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 4;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 5;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 1;);
 
     #[test]
     fn test_scattered_sorted_slice() {
-        assert_eq!(TEST_SLICE.len(), 3);
-        assert_eq!(&*TEST_SLICE, [1, 2, 3].as_slice());
-        for item in &TEST_SLICE {
+        assert_eq!(TEST_SORTED_SLICE.len(), 6);
+        assert_eq!(&*TEST_SORTED_SLICE, [1, 2, 3, 4, 5, 6].as_slice());
+        for item in &TEST_SORTED_SLICE {
             println!("item: {}", item);
         }
     }

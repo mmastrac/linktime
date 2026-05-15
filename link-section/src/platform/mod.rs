@@ -1,21 +1,34 @@
-#[cfg(miri)]
+pub mod apple;
 pub mod miri;
-
-#[cfg(all(not(target_family = "wasm"), not(target_os = "windows")))]
 /// LLVM/GCC (non-WASM, non-Windows): orphan section start/end symbols.
 pub mod standard;
-
-#[cfg(target_family = "wasm")]
 pub mod wasm;
-
-#[cfg(target_os = "windows")]
 pub mod windows;
+
+#[cfg(target_vendor = "apple")]
+pub use apple::{get_section, section_name};
+#[cfg(target_family = "wasm")]
+pub use wasm::{get_section, section_name};
+#[cfg(target_os = "windows")]
+pub use windows::{get_section, section_name};
+#[cfg(all(not(target_family = "wasm"), not(target_os = "windows"), not(target_vendor = "apple")))]
+pub use standard::{get_section, section_name};
 
 // Select the appropriate bounds type for the platform.
 #[cfg(target_family = "wasm")]
 pub use wasm::Bounds;
 #[cfg(not(target_family = "wasm"))]
 pub use PtrBounds as Bounds;
+
+/// Rejects section names that cannot be represented on the current target.
+pub const fn validate_section_name(name: &str) {
+    if cfg!(target_vendor = "apple") {
+        apple::validate_apple_section_name(name);
+    }
+    if cfg!(all(not(target_family = "wasm"), not(target_os = "windows"), not(target_vendor = "apple"))) {
+        standard::is_valid_section_name(name);
+    }
+}
 
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
@@ -74,6 +87,7 @@ impl<T> Alignment<T> {
 #[doc(hidden)]
 macro_rules! __def_section_name {
     (
+        $__name:ident,
         {$(
             $__section:ident $__type:ident => $__prefix:tt __ $__suffix:tt;
         )*}
@@ -85,7 +99,7 @@ macro_rules! __def_section_name {
         /// Internal macro for generating a section name.
         #[macro_export]
         #[doc(hidden)]
-        macro_rules! __section_name {
+        macro_rules! $__name {
             $(
                 (raw $__section $__type $name:ident) => {
                     concat!(concat! $__prefix, stringify!($name), concat! $__suffix);
@@ -105,6 +119,41 @@ macro_rules! __def_section_name {
                     compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                 };
             };
+        }
+
+        pub use $__name as section_name;
+
+        pub const MAX_LENGTH: usize = $__max_length;
+        pub const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();
+
+        pub const fn is_valid_section_char(b: u8) -> bool {
+            let mut i = 0;
+            while i < VALID_SECTION_CHARS.len() {
+                if VALID_SECTION_CHARS[i] == b {
+                    return true;
+                }
+                i += 1;
+            }
+            false
+        }
+
+        pub const fn is_valid_section_name(name: &str) -> bool {
+            if !name.is_ascii() {
+                return false;
+            }
+            let bytes = name.as_bytes();
+            if bytes.is_empty() || bytes.len() > MAX_LENGTH {
+                return false;
+            }
+            let mut i = 0;
+            while i < bytes.len() {
+                let b = bytes[i];
+                if !is_valid_section_char(b) {
+                    return false;
+                }
+                i += 1;
+            }
+            true
         }
     };
 }

@@ -5,8 +5,7 @@
 /// as T at the start and end of the section.
 #[doc(hidden)]
 #[macro_export]
-#[cfg(not(miri))]
-macro_rules! __get_section {
+macro_rules! __get_section_windows {
     (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             use $crate::__support::Alignment;
@@ -36,7 +35,10 @@ macro_rules! __get_section {
     }
 }
 
+pub use crate::__get_section_windows as get_section;
+
 crate::__def_section_name! {
+    __section_name_windows,
     {
         data bare =>    (".data", "$") __ ();
         data section => (".data", "$") __ ("$b");

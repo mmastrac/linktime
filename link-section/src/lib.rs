@@ -167,6 +167,37 @@ pub mod __support {
         };
     }
 
+    #[cfg(miri)]
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __address_of_symbol {
+        ($section:ident $type:ident $name:ident $($aux:ident)?) => {
+            // Miri does not support the symbols we use
+            ::core::ptr::null() as *const ()
+        };
+    }
+
+    #[cfg(not(miri))]
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __address_of_symbol {
+        ($section:ident $type:ident $name:ident $($aux:ident)?) => {
+            {
+                // These are not valid items, but they are valid pointers.
+                // We cannot safely use them - only take pointers to them.
+                $crate::__support::add_section_link_attribute!(
+                    data start $name $($aux)?
+                    #[link_name = __]
+                    extern "C" {
+                        static __SYMBOL: u8;
+                    }
+                );
+                // TODO: black_box when hint is stable
+                unsafe { &raw const __SYMBOL as *const () }
+            }
+        };
+    }
+
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute(
@@ -210,7 +241,7 @@ pub mod __support {
     #[macro_export]
     macro_rules! __add_section_link_attribute_impl(
         ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
-            $crate::__section_name!(
+            $crate::__support::section_name!(
                 (#[$attr = __] #[allow(unsafe_code)] $($item)*)
                 $section $type $name $($aux)?
             );
@@ -222,7 +253,7 @@ pub mod __support {
     #[macro_export]
     macro_rules! __add_section_link_attribute_impl(
         ($section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
-            #[$attr = $crate::__section_name!(
+            #[$attr = $crate::__support::section_name!(
                 raw $section $type $name
             )] $($item)*
         }

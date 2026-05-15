@@ -26,6 +26,7 @@ tempfile = "3"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_used_linker)',
+    'cfg(target_vendor, values("apple"))',
 ] }
 
 [[example]]

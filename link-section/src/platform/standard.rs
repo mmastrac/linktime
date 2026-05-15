@@ -1,61 +1,24 @@
-//! Non-WASM, non-Windows: orphan section start/end symbols.
+//! Non-WASM, non-Windows, non-Apple: orphan section start/end symbols.
 
 /// On LLVM/GCC platforms we can use orphan sections with _start and _end
 /// symbols.
-///
-/// On Apple platforms, the linker provides a pointer to the start and end
-/// of the section regardless of the section's name.
 #[doc(hidden)]
 #[macro_export]
-#[cfg(not(miri))]
-macro_rules! __get_section {
+macro_rules! __get_section_standard {
     (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
-            // These are not valid items, but they are valid pointers.
-            // We cannot safely use them - only take pointers to them.
-            $crate::__support::add_section_link_attribute!(
-                data start $ident $($aux)?
-                #[link_name = __]
-                extern "C" {
-                    static __START: u8;
-                }
-            );
-            $crate::__support::add_section_link_attribute!(
-                data end $ident $($aux)?
-                #[link_name = __]
-                extern "C" {
-                    static __END: u8;
-                }
-            );
-
             $crate::__support::PtrBounds::new(
-                // TODO: black_box when hint is stable
-                unsafe { &raw const __START as *const () },
-                unsafe { &raw const __END as *const () },
+                $crate::__address_of_symbol!(data start $ident $($aux)?),
+                $crate::__address_of_symbol!(data end $ident $($aux)?),
             )
         }
     }
 }
 
-// \x01: "do not mangle" (ref https://github.com/rust-lang/rust-bindgen/issues/2935)
-#[cfg(target_vendor = "apple")]
-crate::__def_section_name! {
-    {
-        data bare =>    ("__DATA,") __ ();
-        code bare =>    ("__TEXT,") __ ();
-        data section => ("__DATA,") __ (",regular,no_dead_strip");
-        code section => ("__TEXT,") __ (",regular,pure_instructions");
-        data start =>   ("\x01section$start$__DATA$") __ ();
-        data end =>     ("\x01section$end$__DATA$") __ ();
-    }
-    AUXILIARY = "_";
-    MAX_LENGTH = 16;
-    HASH_LENGTH = 6;
-    VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-}
+pub use crate::__get_section_standard as get_section;
 
-#[cfg(not(target_vendor = "apple"))]
 crate::__def_section_name! {
+    __section_name_standard,
     {
         data bare =>    ("_data", "_link_section_") __ ();
         data section => ("_data", "_link_section_") __ ();

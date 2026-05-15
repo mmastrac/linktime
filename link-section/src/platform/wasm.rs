@@ -1,5 +1,4 @@
 //! WASM-specific implementation of the link section.
-use alloc::alloc::alloc;
 use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::ptr::{self, NonNull};
@@ -7,11 +6,10 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 #[doc(hidden)]
 #[macro_export]
-#[cfg(not(miri))]
-macro_rules! __get_section {
+macro_rules! __get_section_wasm {
     (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
-            static __LINK_SECTION_NAME: &'static str = $crate::__section_name!(
+            static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
                 raw data bare $ident $($aux)?
             );
             $crate::__support::add_section_link_attribute!(
@@ -26,7 +24,10 @@ macro_rules! __get_section {
     }
 }
 
+pub use crate::__get_section_wasm as get_section;
+
 crate::__def_section_name! {
+    __section_name_wasm,
     {
         data bare =>    (".data", ".link_section.") __ ();
         data section => (".data", ".link_section.") __ ();
@@ -100,7 +101,7 @@ impl LinkSection {
     #[inline(never)]
     fn maybe_lock_uninit<'a>(&'a self, old: u8) -> LinkSectionLockGuard<'a> {
         let lock_state = unsafe { self.lock_ref() };
-        if old == LockState::Uninitialized as _ {
+        if old == LockState::Uninitialized as u8 {
             if let Err(_) = lock_state.compare_exchange(
                 LockState::Uninitialized as _,
                 LockState::Locked as _,
@@ -221,8 +222,7 @@ impl LinkSectionInfo {
             .unwrap_or_else(|| panic!("Link section size overflow"));
         unsafe {
             // We got these from a type, so they are always valid
-            let ptr =
-                alloc(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
+            let ptr = allocate(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
             if ptr.is_null() {
                 panic!("Link section allocation failed");
             }
@@ -239,7 +239,7 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRaw
     let mut info = link_section.lock();
 
     unsafe {
-        if info.state == LinkSectionState::Initialized as _ {
+        if info.state == LinkSectionState::Initialized as u8 {
             panic!("Link section already initialized");
         }
 
@@ -251,10 +251,22 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRaw
 
         info.current = next;
         if next == info.end {
-            info.state = LinkSectionState::Initialized as _;
+            info.state = LinkSectionState::Initialized as u8;
         }
         slot as *mut T
     }
+}
+
+#[cfg(target_family = "wasm")]
+unsafe fn allocate(layout: Layout) -> *mut () {
+    use alloc::alloc::alloc;
+
+    alloc(layout) as _
+}
+
+#[cfg(not(target_family = "wasm"))]
+unsafe fn allocate(_layout: Layout) -> *mut () {
+    unreachable!("placeholder for non-WASM platforms")
 }
 
 /// On WASM, we use an atomic pointer to the start and end of the
@@ -271,7 +283,7 @@ impl Bounds {
 
     pub fn start_ptr(&self) -> *const () {
         let lock = self.0.lock();
-        if lock.state != LinkSectionState::Initialized as _ {
+        if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
         return lock.start;
@@ -279,7 +291,7 @@ impl Bounds {
 
     pub fn end_ptr(&self) -> *const () {
         let lock = self.0.lock();
-        if lock.state != LinkSectionState::Initialized as _ {
+        if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
         return lock.end;
