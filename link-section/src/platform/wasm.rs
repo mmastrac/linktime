@@ -259,7 +259,7 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRaw
         }
 
         let slot = info.current;
-        let next = slot.byte_add(info.size_of);
+        let next = slot.cast::<u8>().add(info.size_of) as *const ();
         if next > info.end {
             panic!("Link section overflow: too many registered items");
         }
@@ -323,6 +323,6 @@ impl Bounds {
     /// initialized.
     pub fn byte_len(&self) -> usize {
         let lock = self.0.lock();
-        unsafe { lock.end.byte_offset_from(lock.start) as usize }
+        unsafe { (lock.end.cast::<u8>()).offset_from(lock.start.cast::<u8>()) as usize }
     }
 }
