@@ -44,6 +44,7 @@ crate::__def_section_name! {
 #[cfg(not(target_family = "wasm"))]
 #[doc(hidden)]
 #[macro_export]
+#[allow(edition_2024_expr_fragment_specifier, unknown_lints)]
 macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {};
 }
@@ -51,14 +52,15 @@ macro_rules! __register_wasm_item {
 #[cfg(target_family = "wasm")]
 #[doc(hidden)]
 #[macro_export]
+#[allow(edition_2024_expr_fragment_specifier, unknown_lints)]
 macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
-        mod __register_wasm_item {
+        {
             // Register a counting item
             $crate::__add_section_link_attribute!(
                 data section $section $($aux)?
                 #[link_section = __]
-                static __LINK_SECTION_CONST_ITEM: u8 = 0;
+                static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
             );
 
             $crate::__add_section_link_attribute!(
