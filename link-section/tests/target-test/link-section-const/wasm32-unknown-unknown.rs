@@ -37,6 +37,7 @@ impl FOO {
                         }
                     };
                 let name = ".data.link_section.FOO";
+                ::link_section::__support::validate_section_name(name);
                 unsafe { <TypedSection<Driver>>::new(name, section) }
             };
         &SECTION
@@ -74,37 +75,36 @@ const DRIVER: Driver =
                 <FOO as ::link_section::__support::SectionItemType>::Item;
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
                 Driver::new("driver", || ());
-            {
-                #[link_section = ".data.link_section.FOO"]
-                #[used]
-                static __LINK_SECTION_CONST_ITEM: u8 = 0;
-                extern "C" {
-                    #[link_name = ".data.link_section.FOO.bounds"]
-                    #[allow(unsafe_code)]
-                    static __LINK_SECTION_INFO:
-                        ::link_section::__support::wasm::LinkSectionRawInfo;
-                }
-                #[used]
-                #[link_section = ".init_array.0"]
-                static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
-                    {
-                        extern "C" fn __LINK_SECTION_ITEM_FN() {
-                            static DISARMED: ::core::sync::atomic::AtomicBool =
-                                ::core::sync::atomic::AtomicBool::new(false);
-                            if DISARMED.swap(true,
-                                    ::core::sync::atomic::Ordering::Relaxed) {
-                                return;
-                            }
-                            unsafe {
-                                let ptr =
-                                    ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
-                                ::core::ptr::write(ptr as *mut __InSecStoredTy,
-                                    __LINK_SECTION_CONST_ITEM_VALUE);
-                            }
-                        }
-                        __LINK_SECTION_ITEM_FN
-                    };
+            #[link_section = ".data.link_section.FOO"]
+            #[used]
+            static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+            extern "C" {
+                #[link_name = ".data.link_section.FOO.bounds"]
+                #[allow(unsafe_code)]
+                static __LINK_SECTION_INFO:
+                    ::link_section::__support::wasm::LinkSectionRawInfo;
             }
+            #[link_section = ".init_array.0"]
+            #[used]
+            #[allow(non_snake_case)]
+            static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
+                {
+                    extern "C" fn __LINK_SECTION_ITEM_FN() {
+                        static DISARMED: ::core::sync::atomic::AtomicBool =
+                            ::core::sync::atomic::AtomicBool::new(false);
+                        if DISARMED.swap(true,
+                                ::core::sync::atomic::Ordering::Relaxed) {
+                            return;
+                        }
+                        unsafe {
+                            let ptr =
+                                ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                            ::core::ptr::write(ptr as *mut _,
+                                __LINK_SECTION_CONST_ITEM_VALUE);
+                        }
+                    }
+                    __LINK_SECTION_ITEM_FN
+                };
             __LINK_SECTION_CONST_ITEM_VALUE
         };
 fn main() {}

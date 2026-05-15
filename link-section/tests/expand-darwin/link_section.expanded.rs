@@ -9,24 +9,29 @@ impl FOO {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
-                extern "C" {
-                    #[link_name = "\u{1}section$start$__DATA$FOO"]
-                    #[allow(unsafe_code)]
-                    #[allow(unsafe_code)]
-                    static __START: u8;
-                }
-                extern "C" {
-                    #[link_name = "\u{1}section$end$__DATA$FOO"]
-                    #[allow(unsafe_code)]
-                    #[allow(unsafe_code)]
-                    static __END: u8;
-                }
                 ::link_section::__support::PtrBounds::new(
-                    unsafe { &raw const __START as *const () },
-                    unsafe { &raw const __END as *const () },
+                    {
+                        extern "C" {
+                            #[link_name = "\u{1}section$start$__DATA$FOO"]
+                            #[allow(unsafe_code)]
+                            #[allow(unsafe_code)]
+                            static __SYMBOL: u8;
+                        }
+                        unsafe { &raw const __SYMBOL as *const () }
+                    },
+                    {
+                        extern "C" {
+                            #[link_name = "\u{1}section$end$__DATA$FOO"]
+                            #[allow(unsafe_code)]
+                            #[allow(unsafe_code)]
+                            static __SYMBOL: u8;
+                        }
+                        unsafe { &raw const __SYMBOL as *const () }
+                    },
                 )
             };
             let name = "__DATA,FOO";
+            ::link_section::__support::validate_section_name(name);
             unsafe { <TypedSection<fn()>>::new(name, section) }
         };
         &SECTION
@@ -63,12 +68,14 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 fn foo() {
-    const _: () = {
+    const _: fn() = const {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
+        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[link_section = "__DATA,FOO,regular,no_dead_strip"]
         #[allow(unsafe_code)]
         #[used]
-        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
+        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
+        __LINK_SECTION_CONST_ITEM_VALUE
     };
     {
         ::std::io::_print(format_args!("foo\n"));

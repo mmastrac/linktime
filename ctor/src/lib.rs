@@ -160,7 +160,7 @@ pub mod collect {
         (priority = $priority:tt, fn = $fn:ident) => {
             $crate::__support::in_section!(
                 #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
-                pub const _: $crate::collect::Constructor = $crate::collect::Constructor {
+                const _: $crate::collect::Constructor = $crate::collect::Constructor {
                     priority: $priority,
                     ctor: $fn,
                 };
@@ -169,7 +169,7 @@ pub mod collect {
         (priority = $priority:tt, fn = (array $array:ident)) => {
             $crate::__support::in_section!(
                 #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
-                pub const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {
+                const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {
                     use core::mem::MaybeUninit;
 
                     // If length zero, register a stub that doesn't get executed

@@ -1,5 +1,4 @@
 //! WASM-specific implementation of the link section.
-use alloc::alloc::alloc;
 use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::ptr::{self, NonNull};
@@ -7,11 +6,10 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 #[doc(hidden)]
 #[macro_export]
-#[cfg(not(miri))]
-macro_rules! __get_section {
-    (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+macro_rules! __get_section_wasm {
+    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
-            static __LINK_SECTION_NAME: &'static str = $crate::__section_name!(
+            static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
                 raw data bare $ident $($aux)?
             );
             $crate::__support::add_section_link_attribute!(
@@ -26,7 +24,10 @@ macro_rules! __get_section {
     }
 }
 
+pub use crate::__get_section_wasm as get_section;
+
 crate::__def_section_name! {
+    __section_name_wasm,
     {
         data bare =>    (".data", ".link_section.") __ ();
         data section => (".data", ".link_section.") __ ();
@@ -40,6 +41,59 @@ crate::__def_section_name! {
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[doc(hidden)]
+#[macro_export]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
+macro_rules! __register_wasm_item {
+    (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {};
+}
+
+#[cfg(target_family = "wasm")]
+#[doc(hidden)]
+#[macro_export]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
+macro_rules! __register_wasm_item {
+    (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
+        // Register a counting item
+        $crate::__add_section_link_attribute!(
+            data section $section $($aux)?
+            #[link_section = __]
+            static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+        );
+
+        $crate::__add_section_link_attribute!(
+            data bounds $section $($aux)?
+            #[link_name = __]
+            extern "C" {
+                static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
+            }
+        );
+
+        #[link_section = ".init_array.0"]
+        #[used] // TODO: used(linker) with linktime_used_linker feature
+        #[allow(non_snake_case)]
+        static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+            extern "C" fn __LINK_SECTION_ITEM_FN() {
+                static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                    return;
+                }
+                unsafe {
+                    let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                    ::core::ptr::write(ptr as *mut _, $value);
+                    $(
+                        $ident.set(ptr);
+                    )?
+                }
+            }
+            __LINK_SECTION_ITEM_FN
+        };
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[allow(missing_unsafe_on_extern)] // MSRV
 extern "C" {
     /// Read custom section with name/name_length as a UTF8 string
     pub(crate) fn read_custom_section(
@@ -48,6 +102,16 @@ extern "C" {
         target_address: *mut u8,
         target_address_length: usize,
     ) -> usize;
+}
+
+#[cfg(not(target_family = "wasm"))]
+unsafe fn read_custom_section(
+    _name: *const u8,
+    _name_length: usize,
+    _target_address: *mut u8,
+    _target_address_length: usize,
+) -> usize {
+    unreachable!("placeholder for non-WASM platforms")
 }
 
 #[repr(u8)]
@@ -77,10 +141,12 @@ enum LockState {
 pub struct LinkSection(NonNull<LinkSectionRawInfo>);
 
 impl LinkSection {
+    /// Create a new link section.
     pub const fn new(info_ptr: NonNull<LinkSectionRawInfo>) -> Self {
         Self(info_ptr)
     }
 
+    /// Lock the link section and return a guard.
     #[inline(always)]
     pub fn lock<'a>(&'a self) -> LinkSectionLockGuard<'a> {
         let lock_state = unsafe { self.lock_ref() };
@@ -100,18 +166,21 @@ impl LinkSection {
     #[inline(never)]
     fn maybe_lock_uninit<'a>(&'a self, old: u8) -> LinkSectionLockGuard<'a> {
         let lock_state = unsafe { self.lock_ref() };
-        if old == LockState::Uninitialized as _ {
-            if let Err(_) = lock_state.compare_exchange(
-                LockState::Uninitialized as _,
-                LockState::Locked as _,
-                Ordering::Acquire,
-                Ordering::Acquire,
-            ) {
+        if old == LockState::Uninitialized as u8 {
+            if lock_state
+                .compare_exchange(
+                    LockState::Uninitialized as _,
+                    LockState::Locked as _,
+                    Ordering::Acquire,
+                    Ordering::Acquire,
+                )
+                .is_err()
+            {
                 panic!("Link section already being initialized");
             }
             let info = unsafe { self.as_mut() };
             info.initialize();
-            return LinkSectionLockGuard(lock_state, info);
+            LinkSectionLockGuard(lock_state, info)
         } else {
             panic!("Link section already locked");
         }
@@ -128,6 +197,7 @@ impl LinkSection {
     }
 
     #[inline(always)]
+    #[allow(clippy::mut_from_ref)]
     unsafe fn as_mut(&self) -> &mut LinkSectionInfo {
         unsafe {
             let unsafe_cell = ptr::addr_of!((*self.0.as_ptr()).info);
@@ -142,12 +212,12 @@ pub struct LinkSectionLockGuard<'a>(&'a AtomicU8, &'a mut LinkSectionInfo);
 impl<'a> core::ops::Deref for LinkSectionLockGuard<'a> {
     type Target = LinkSectionInfo;
     fn deref(&self) -> &Self::Target {
-        &self.1
+        self.1
     }
 }
 impl<'a> core::ops::DerefMut for LinkSectionLockGuard<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.1
+        self.1
     }
 }
 impl<'a> Drop for LinkSectionLockGuard<'a> {
@@ -169,6 +239,7 @@ pub struct LinkSectionRawInfo {
 // synchronize via `AtomicU8`.
 unsafe impl Sync for LinkSectionRawInfo {}
 
+/// A record describing the WASM link section.
 #[repr(C)]
 pub struct LinkSectionInfo {
     state: u8,
@@ -182,6 +253,7 @@ pub struct LinkSectionInfo {
 }
 
 impl LinkSectionRawInfo {
+    /// Create a new link section raw info.
     pub const fn new<T>(name: &'static str) -> Self {
         Self {
             lock: AtomicU8::new(LockState::Uninitialized as _),
@@ -200,6 +272,7 @@ impl LinkSectionRawInfo {
 }
 
 impl LinkSectionInfo {
+    /// Initialize the link section.
     pub fn initialize(&mut self) {
         let size =
             unsafe { read_custom_section(self.name, self.name_length as _, ptr::null_mut(), 0) };
@@ -222,7 +295,7 @@ impl LinkSectionInfo {
         unsafe {
             // We got these from a type, so they are always valid
             let ptr =
-                alloc(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
+                allocate(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
             if ptr.is_null() {
                 panic!("Link section allocation failed");
             }
@@ -234,27 +307,44 @@ impl LinkSectionInfo {
     }
 }
 
+/// Register a link section item.
+///
+/// # Safety
+///
+/// This is called by the `in_section` procedural macro.
 pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRawInfo) -> *mut T {
-    let link_section = LinkSection::new(NonNull::new_unchecked(info_ptr as _));
+    let link_section = unsafe { LinkSection::new(NonNull::new_unchecked(info_ptr as _)) };
     let mut info = link_section.lock();
 
     unsafe {
-        if info.state == LinkSectionState::Initialized as _ {
+        if info.state == LinkSectionState::Initialized as u8 {
             panic!("Link section already initialized");
         }
 
         let slot = info.current;
-        let next = slot.byte_add(info.size_of) as *const ();
+        let next = slot.cast::<u8>().add(info.size_of) as *const ();
         if next > info.end {
             panic!("Link section overflow: too many registered items");
         }
 
         info.current = next;
         if next == info.end {
-            info.state = LinkSectionState::Initialized as _;
+            info.state = LinkSectionState::Initialized as u8;
         }
         slot as *mut T
     }
+}
+
+#[cfg(target_family = "wasm")]
+unsafe fn allocate(layout: Layout) -> *mut () {
+    use alloc::alloc::alloc;
+
+    alloc(layout) as _
+}
+
+#[cfg(not(target_family = "wasm"))]
+unsafe fn allocate(_layout: Layout) -> *mut () {
+    unreachable!("placeholder for non-WASM platforms")
 }
 
 /// On WASM, we use an atomic pointer to the start and end of the
@@ -263,32 +353,39 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRaw
 pub struct Bounds(LinkSection);
 
 impl Bounds {
+    /// Create a new bounds struct.
+    ///
+    /// # Safety
+    ///
+    /// This is called by the `section` procedural macro.
     pub const unsafe fn new(info_ptr: *const LinkSectionRawInfo) -> Self {
         Self(LinkSection::new(unsafe {
             NonNull::new_unchecked(info_ptr as _)
         }))
     }
 
+    /// Get the start pointer of the link section.
     pub fn start_ptr(&self) -> *const () {
         let lock = self.0.lock();
-        if lock.state != LinkSectionState::Initialized as _ {
+        if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
-        return lock.start;
+        lock.start
     }
 
+    /// Get the end pointer of the link section.
     pub fn end_ptr(&self) -> *const () {
         let lock = self.0.lock();
-        if lock.state != LinkSectionState::Initialized as _ {
+        if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
-        return lock.end;
+        lock.end
     }
 
     /// This is intentionally safe to call before the section is fully
     /// initialized.
     pub fn byte_len(&self) -> usize {
         let lock = self.0.lock();
-        return unsafe { lock.end.byte_offset_from(lock.start) as usize };
+        unsafe { (lock.end.cast::<u8>()).offset_from(lock.start.cast::<u8>()) as usize }
     }
 }

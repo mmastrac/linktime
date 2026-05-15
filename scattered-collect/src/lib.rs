@@ -1,38 +1,87 @@
-#![doc = "Scattered collection helpers (scatter / gather)."]
+#![doc = include_str!("../README.md")]
+#![cfg_attr(linktime_used_linker, allow(unused_features))]
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
+#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
+
+pub mod slice;
+pub mod sorted_slice;
+
+pub use slice::ScatteredSlice;
+pub use sorted_slice::ScatteredSortedSlice;
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __scatter_parse {
-    (#[scatter $(($($meta:tt)*))?] $(#[$imeta:meta])* $($item:tt)*) => {
-        $(#[$imeta])*
-        $($item)*
+    // Send the #[scatter]'d item into the collection's private macro.
+    (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $($item:tt)*) => {
+        $($meta)* ! (
+            @scatter [$($meta)*]
+            $(#[$imeta])*
+            $($item)*
+        );
     };
-    (#[$imeta:meta] $($rest:tt)*) => {
-        $crate::__support::scatter_parse!(__reorder__(#[$imeta],), $($rest)*);
+
+    (#[scatter] $($rest:tt)* ) => {
+        compile_error!("Unknown collection type");
     };
-    (__reorder__($(#[$imeta:meta],)*), #[scatter $(($($meta:tt)*))?] $($rest:tt)*) => {
-        $crate::__support::scatter_parse!(#[scatter $(($($meta)*))?] $(#[$imeta])* $($rest)*);
+
+    (@reorder (#[scatter] $($item:tt)*) ($($rest:tt)*)) => {
+        $crate::__support::scatter_parse!(#[scatter] $($rest)* $($item)*);
     };
-    (__reorder__($(#[$imeta:meta],)*), #[$imeta2:meta] $($rest:tt)*) => {
-        $crate::__support::scatter_parse!(__reorder__($(#[$imeta],)*#[$imeta2],), $($rest)*);
+    (@reorder (#[$top:meta] $($item:tt)*) ($($rest:tt)*)) => {
+        $crate::__support::scatter_parse!(@reorder($($item)*) (#[$top] $($rest)*));
+    };
+    (@reorder ($item:item;) $($rest:tt)*) => {
+        compile_error!("Missing #[scatter] attribute.");
+    };
+    (@reorder $($rest:tt)*) => {
+        compile_error!("Missing #[scatter] attribute.");
+    };
+
+    ($($rest:tt)*) => {
+        $crate::__support::scatter_parse!(@reorder ($($rest)*) ());
     };
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __gather_parse {
-    (#[gather $(($($meta:tt)*))?] $(#[$imeta:meta])* $($item:tt)*) => {
-        $(#[$imeta])*
-        $($item)*
+    // Send the #[gather]'d item into the collection's private macro.
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >; ) => {
+        $crate::__slice ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $collection < $ty >;
+        );
     };
-    (#[$imeta:meta] $($rest:tt)*) => {
-        $crate::__support::gather_parse!(__reorder__(#[$imeta],), $($rest)*);
+
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >; ) => {
+        $crate::__sorted_slice ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $collection < $ty >;
+        );
     };
-    (__reorder__($(#[$imeta:meta],)*), #[gather $(($($meta:tt)*))?] $($rest:tt)*) => {
-        $crate::__support::gather_parse!(#[gather $(($($meta)*))?] $(#[$imeta])* $($rest)*);
+
+    (@done #[gather] $($rest:tt)* ) => {
+        compile_error!("Unknown collection type");
     };
-    (__reorder__($(#[$imeta:meta],)*), #[$imeta2:meta] $($rest:tt)*) => {
-        $crate::__support::gather_parse!(__reorder__($(#[$imeta],)*#[$imeta2],), $($rest)*);
+
+    (@reorder (#[gather] $($item:tt)*) ($($rest:tt)*) $collection:tt) => {
+        $crate::__support::gather_parse!(@done $collection #[gather] $($rest)* $($item)*);
+    };
+    (@reorder (#[$top:meta] $($item:tt)*) ($($rest:tt)*) $collection:tt) => {
+        $crate::__support::gather_parse!(@reorder ($($item)*) (#[$top] $($rest)*) $collection);
+    };
+    (@reorder ($item:item;) $($rest:tt)*) => {
+        compile_error!("Missing #[gather] attribute.");
+    };
+    (@reorder $($rest:tt)*) => {
+        compile_error!("Missing #[gather] attribute.");
+    };
+
+    ($(#$meta:tt)* $vis:vis static $name:ident: $collection:ident < $($rest:tt)* ) => {
+        $crate::__support::gather_parse!(@reorder ($(#$meta)* $vis static $name: $collection < $($rest)*) () ($collection));
     };
 }
 

@@ -32,7 +32,7 @@ pub static FN_BODIES: link_section::Section;
 pub static FN_ARRAY: link_section::TypedSection<fn()>;
 
 #[in_section(FN_ARRAY)]
-pub const _: fn() = linked_function;
+const _: fn() = linked_function;
 
 #[in_section(FN_BODIES)]
 pub fn linked_function() {

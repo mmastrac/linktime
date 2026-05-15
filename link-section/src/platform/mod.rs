@@ -1,21 +1,40 @@
-#[cfg(miri)]
-pub mod miri;
-
-#[cfg(all(not(target_family = "wasm"), not(target_os = "windows")))]
-/// LLVM/GCC (non-WASM, non-Windows): orphan section start/end symbols.
+pub mod apple;
 pub mod standard;
-
-#[cfg(target_family = "wasm")]
 pub mod wasm;
-
-#[cfg(target_os = "windows")]
 pub mod windows;
+
+#[cfg(target_vendor = "apple")]
+pub use apple::{get_section, section_name};
+#[cfg(all(
+    not(target_family = "wasm"),
+    not(target_os = "windows"),
+    not(target_vendor = "apple")
+))]
+pub use standard::{get_section, section_name};
+#[cfg(target_family = "wasm")]
+pub use wasm::{get_section, section_name};
+#[cfg(target_os = "windows")]
+pub use windows::{get_section, section_name};
 
 // Select the appropriate bounds type for the platform.
 #[cfg(target_family = "wasm")]
 pub use wasm::Bounds;
 #[cfg(not(target_family = "wasm"))]
 pub use PtrBounds as Bounds;
+
+/// Rejects section names that cannot be represented on the current target.
+pub const fn validate_section_name(name: &str) {
+    if cfg!(target_vendor = "apple") {
+        apple::validate_apple_section_name(name);
+    }
+    if cfg!(all(
+        not(target_family = "wasm"),
+        not(target_os = "windows"),
+        not(target_vendor = "apple")
+    )) {
+        standard::is_valid_section_name(name);
+    }
+}
 
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
@@ -30,7 +49,10 @@ impl PtrBounds {
     pub const fn new(start: *const (), end: *const ()) -> Self {
         Self { start, end }
     }
+}
 
+#[cfg(not(miri))]
+impl PtrBounds {
     #[inline(always)]
     /// Start as an opaque pointer.
     pub const fn start_ptr(&self) -> *const () {
@@ -49,6 +71,41 @@ impl PtrBounds {
         unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
     }
 }
+
+#[cfg(miri)]
+impl PtrBounds {
+    /// Start as an opaque pointer.
+    pub fn start_ptr(&self) -> *const () {
+        self.start as usize as *const ()
+    }
+    /// End as an opaque pointer.
+    pub fn end_ptr(&self) -> *const () {
+        self.end as usize as *const ()
+    }
+    /// Length in bytes (`end - start`).
+    pub fn byte_len(&self) -> usize {
+        self.end as usize - self.start as usize
+    }
+}
+
+/// `UnsafeCell` that is `Sync` and `Send`.
+#[repr(transparent)]
+pub struct SyncUnsafeCell<T> {
+    #[allow(unused)]
+    cell: ::core::cell::UnsafeCell<T>,
+}
+
+impl<T> SyncUnsafeCell<T> {
+    /// Create a new `SyncUnsafeCell`.
+    pub const fn new(value: T) -> Self {
+        Self {
+            cell: ::core::cell::UnsafeCell::new(value),
+        }
+    }
+}
+
+unsafe impl<T> Sync for SyncUnsafeCell<T> {}
+unsafe impl<T> Send for SyncUnsafeCell<T> {}
 
 /// A non-zero-sized type that is used to align the start and end of the
 /// section.
@@ -74,6 +131,7 @@ impl<T> Alignment<T> {
 #[doc(hidden)]
 macro_rules! __def_section_name {
     (
+        $__name:ident,
         {$(
             $__section:ident $__type:ident => $__prefix:tt __ $__suffix:tt;
         )*}
@@ -85,7 +143,7 @@ macro_rules! __def_section_name {
         /// Internal macro for generating a section name.
         #[macro_export]
         #[doc(hidden)]
-        macro_rules! __section_name {
+        macro_rules! $__name {
             $(
                 (raw $__section $__type $name:ident) => {
                     concat!(concat! $__prefix, stringify!($name), concat! $__suffix);
@@ -105,6 +163,40 @@ macro_rules! __def_section_name {
                     compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                 };
             };
+        }
+
+        pub use $__name as section_name;
+
+        pub(crate) const MAX_LENGTH: usize = $__max_length;
+        pub(crate) const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();
+
+        #[allow(unused)]
+        pub(crate) const fn is_valid_section_char(b: u8) -> bool {
+            let mut i = 0;
+            while i < VALID_SECTION_CHARS.len() {
+                if VALID_SECTION_CHARS[i] == b {
+                    return true;
+                }
+                i += 1;
+            }
+            false
+        }
+
+        #[allow(unused)]
+        pub(crate) const fn is_valid_section_name(name: &str) -> bool {
+            let bytes = name.as_bytes();
+            if bytes.is_empty() || bytes.len() > MAX_LENGTH {
+                return false;
+            }
+            let mut i = 0;
+            while i < bytes.len() {
+                let b = bytes[i];
+                if !is_valid_section_char(b) {
+                    return false;
+                }
+                i += 1;
+            }
+            true
         }
     };
 }

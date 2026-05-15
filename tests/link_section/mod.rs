@@ -16,6 +16,7 @@ $ cargo run --quiet
 ! TYPED_LINK_SECTION: TypedSection { name: "%{DATA}TYPED_LINK%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 4 }
 ! address of TYPED_LINK_SECTION[0]: %{BASE16NUM}
 ! address of TYPED_LINK_SECTION[1]: %{BASE16NUM}
+! AUX_LINK_SECTION: TypedSection { name: "%{DATA}AUX_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 1, stride: 4 }
 ! aux: 1234
 ! CODE_SECTION: TypedSection { name: "%{DATA}FN_ARRAY%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 8 }
 ! [%{BASE16NUM}, %{BASE16NUM}, %{BASE16NUM}]
@@ -31,6 +32,51 @@ choice {
     ! DEBUGGABLES: [1, 2, debuggable_function]
     ! DEBUGGABLES: [debuggable_function, 2, 1]
 }
+"#
+);
+
+clitest!(
+    interior_mut,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/interior_mut";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! INTERIOR_MUT_LINK_SECTION: TypedSection { name: "%{DATA}INTERIOR_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 8 }
+unordered {
+    ! item before: InteriorMutItem { value: 1, atomic: 1 }
+    ! item after: InteriorMutItem { value: 1, atomic: 2 }
+    ! item before: InteriorMutItem { value: 2, atomic: 2 }
+    ! item after: InteriorMutItem { value: 2, atomic: 3 }
+}
+"#
+);
+
+clitest!(
+    link_section_mut,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/mut";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 5, stride: 4 }
+"""
+item: 1
+item: 2
+item: 3
+item: 4
+item: 5
+"""
+! AUX_MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}AUX_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 4 }
+"""
+aux item: 1234
+aux item: 2341
+aux item: 4321
+"""
 "#
 );
 
