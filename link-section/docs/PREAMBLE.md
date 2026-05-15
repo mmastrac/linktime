@@ -43,7 +43,7 @@ remains usable as a normal Rust constant, and the section receives its own
 stored copy.
 
 ```rust
-# pub struct MyType; impl MyType { const fn new() -> Self { Self } }
+# pub struct MyType(u8); impl MyType { const fn new() -> Self { Self(0) } }
 # use link_section::{in_section, section};
 # #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
 #[in_section(MY_SECTION)]
@@ -56,7 +56,7 @@ underlying object. `static` submissions are supported for typed sections on
 native targets and for reference sections.
 
 ```rust
-# pub struct MyType; impl MyType { const fn new() -> Self { Self } }
+# pub struct MyType(u8); impl MyType { const fn new() -> Self { Self(0) } }
 # use link_section::{in_section, section};
 # #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
 #[in_section(MY_SECTION)]

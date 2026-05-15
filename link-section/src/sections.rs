@@ -57,6 +57,16 @@ pub trait IsUntypedSection {}
 
 macro_rules! impl_bounds_fns {
     ($generic:ident) => {
+        #[doc(hidden)]
+        pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
+            assert!(::core::mem::size_of::<$generic>() > 0, "Zero-sized types are not supported");
+            Self {
+                name,
+                bounds,
+                _phantom: ::core::marker::PhantomData,
+            }
+        }
+    
         /// The start address of the section.
         #[inline(always)]
         pub fn start_ptr(&self) -> *const T {
@@ -168,15 +178,6 @@ pub struct TypedSection<T: 'static> {
 }
 
 impl<T: 'static> TypedSection<T> {
-    #[doc(hidden)]
-    pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
-        Self {
-            name,
-            bounds,
-            _phantom: ::core::marker::PhantomData,
-        }
-    }
-
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -205,15 +206,6 @@ pub struct TypedMutableSection<T: 'static> {
 }
 
 impl<T: 'static> TypedMutableSection<T> {
-    #[doc(hidden)]
-    pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
-        Self {
-            name,
-            bounds,
-            _phantom: ::core::marker::PhantomData,
-        }
-    }
-
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -268,15 +260,6 @@ pub struct TypedReferenceSection<T: 'static> {
 }
 
 impl<T: 'static> TypedReferenceSection<T> {
-    #[doc(hidden)]
-    pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
-        Self {
-            name,
-            bounds,
-            _phantom: ::core::marker::PhantomData,
-        }
-    }
-
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
