@@ -59,6 +59,7 @@ mod link_section {
 
     pub fn test_link_section() {
         libc_println!("test_link_section");
+        libc_println!("DRIVER: {}", reference::DRIVER.name);
         (reference::DRIVER.f)();
         assert!(reference::DRIVERS.offset_of(&reference::DRIVER) == Some(0));
     }

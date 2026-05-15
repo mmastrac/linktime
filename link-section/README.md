@@ -15,14 +15,33 @@ Sections are defined using the `#[section(...)]` macro. This creates an
 associated `data` and `text` section, and items decorated with the
 `#[in_section(SECTION)]` macro are placed into the associated section.
 
-There are four section types:
+Items can be submitted to a section either as a `const` item, or a `static`
+item. `const` items are stored as a copy in the section, which means that Rust
+may make additional copies of the item data when referenced directly (and
+potentially optimize the storage of the item out entirely). `static` items are
+stored directly in the section and a reference to the item will yield the same
+underlying pointer as a reference to the item in the section's slice.
 
- - `untyped`: An untyped section purely used for collection and co-location of
-   data in the binary.
- - `typed`: An immutable section that can store a given type.
- - `mutable`: A mutable section that can store a given type.
- - `reference`: An immutable section that can support access both as a slice
-   and as a reference at the submission site.
+There are four section types that vary in their typed-ness, slicability, and
+mutability:
+
+- `untyped`: An untyped section purely used for collection and co-location of
+  data in the binary. This is useful for storing related functions and data in a
+  single section that may only be called during specific phases of the program's
+  execution (e.g.: initialization, shutdown, cold, etc.).
+- `typed`: An immutable section that can store a given type and can be accessed
+  as a slice. On WASM, only `const` items are supported.
+- `mutable`: A mutable section that can store a given type and can be accessed
+  as a mutable slice. As a consequence, `static` items are not supported.
+- `reference`: An immutable section that can support access both as a slice and
+  as a reference at the submission site on all platforms.
+
+| Section Type | Ref Slice | Mut Slice | `const` | `static`/Reference |
+| ------------ | --------- | --------- | ------- | ------------------ |
+| `untyped`    | ❌        | ❌        | ✅      | ✅                 |
+| `typed`      | ✅        | ❌        | ✅      | ⚠️                 |
+| `mutable`    | ✅        | ✅        | ✅      | ❌                 |
+| `reference`  | ✅        | ❌        | ✅      | ✅                 |
 
 ## Platform Support
 
@@ -169,13 +188,13 @@ The linker will report an error like this if the start/stop symbols are not
 found:
 
 ```text
-  = note: ld: 0711-317 ERROR: Undefined symbol: __start__data_link_section_DATABASES
-          ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
-          ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
+= note: ld: 0711-317 ERROR: Undefined symbol: __start__data_link_section_DATABASES
+        ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
+        ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
 ```
 
-For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out`
-and `-C link-arg=-bnoquiet` may also be useful. 
+For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out` and
+`-C link-arg=-bnoquiet` may also be useful.
 
 AIX supports a special mode to strip (`strip -r`) that preserves structural
 symbols like `csect`s and exports. A future version of `link-section` may add
