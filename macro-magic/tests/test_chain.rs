@@ -1,3 +1,4 @@
+//! macro-magic integration tests.
 use ::macro_magic::*;
 
 macro_rules! __parse_chain_input {

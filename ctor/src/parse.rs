@@ -329,7 +329,7 @@ macro_rules! __ctor_parse_impl {
             no_fail_on_missing_unsafe = (),
             priority = $priority:tt,
         ),
-        self = (),
+        self = ( $macro_name:ident ),
         meta = $meta:tt,
         unsafe = (),
         item = $item:tt
@@ -351,7 +351,7 @@ macro_rules! __ctor_parse_impl {
             no_fail_on_missing_unsafe = (),
             priority = $priority:tt,
         ),
-        self = ($($self:tt)*),
+        self = ($macro_name:ident ($($self:tt)*) ),
         meta = $meta:tt,
         unsafe = (),
         item = $item:tt

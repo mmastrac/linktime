@@ -4,28 +4,14 @@ use link_section::TypedSection;
 
 
 
-/// Internal macro for parsing the section. This is exported with
-/// the same name as the type below.
-#[doc(hidden)]
-use ::link_section::__in_section_helper_macro_generic as FOO;
 #[allow(non_camel_case_types)]
 struct FOO;
-impl ::link_section::__support::SectionItemType for FOO {
-    type Item = fn();
-}
-impl ::core::fmt::Debug for FOO {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        ::core::ops::Deref::deref(self).fmt(f)
-    }
-}
-impl ::core::ops::Deref for FOO {
-    type Target = TypedSection<fn()>;
-    fn deref(&self) -> &Self::Target { self.const_deref() }
-}
+#[doc(hidden)]
+use ::link_section::__in_section_helper_macro_generic as FOO;
 impl FOO {
     /// Get a `const` reference to the underlying section. In
     /// non-const contexts, `deref` is sufficient.
-    pub const fn const_deref(&self) -> &TypedSection<fn()> {
+    pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> =
             {
                 let section =
@@ -50,22 +36,42 @@ impl FOO {
         &SECTION
     }
 }
-impl ::core::iter::IntoIterator for FOO {
-    type Item = &'static fn();
-    type IntoIter = ::core::slice::Iter<'static, fn()>;
-    fn into_iter(self) -> Self::IntoIter { FOO.as_slice().iter() }
+impl ::core::fmt::Debug for FOO {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        ::core::ops::Deref::deref(self).fmt(f)
+    }
 }
-const _: () =
-    {
-        type __InSecStoredTy =
-            <FOO as ::link_section::__support::SectionItemType>::Item;
-        #[link_section = "_data_link_section_FOO"]
-        #[used]
-        #[export_name =
-        "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
-        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
-    };
-#[link_section = "_text_link_section_FOO"]
-#[allow(unsafe_code)]
-fn foo() {}
+impl ::core::ops::Deref for FOO {
+    type Target = TypedSection<fn()>;
+    fn deref(&self) -> &Self::Target { self.const_deref() }
+}
+impl ::link_section::__support::SectionItemType for FOO {
+    type Item = (fn());
+}
+impl ::link_section::__support::SectionItemTyped<(fn())> for FOO {
+    type Item = (fn());
+}
+impl FOO {
+    /// Get the section as a slice.
+    pub fn as_slice(&self) -> &[(fn())] { self.const_deref().as_slice() }
+}
+impl ::core::iter::IntoIterator for FOO {
+    type Item = &'static (fn());
+    type IntoIter = ::core::slice::Iter<'static, (fn())>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.const_deref().as_slice().iter()
+    }
+}
+fn foo() {
+    const _: () =
+        {
+            type __InSecStoredTy =
+                <FOO as ::link_section::__support::SectionItemType>::Item;
+            #[link_section = "_data_link_section_FOO"]
+            #[used]
+            #[export_name =
+            "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
+            static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
+        };
+}
 fn main() {}

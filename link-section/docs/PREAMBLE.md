@@ -1,8 +1,81 @@
-A crate for defining link sections in Rust.
+A crate for defining linker-backed sections in Rust.
 
-Sections are defined using the `#[section]` macro. This creates an associated
-`data` and `text` section, and items decorated with the `#[in_section]` macro
-are placed into the associated section.
+`link-section` provides two attributes:
+
+- `#[section(...)]` defines a section handle. The handle is a `static` item used
+  to inspect the section at runtime, usually as a slice.
+- `#[in_section(SECTION)]` submits an item to that section. A submitted item is
+  an item annotated with `#[in_section(...)]`; depending on the section kind, it
+  may also remain usable directly at the submission site.
+
+Together, these attributes let separately-declared items be collected into one
+linker section and accessed through a single section handle.
+
+## Section Kinds
+
+There are four section kinds:
+
+- `untyped`: Collects related code or data in one linker section without
+  exposing a typed slice. This is useful for co-location, phase-specific code,
+  or platform-specific section placement.
+- `typed`: Stores values of one type and exposes them as an immutable slice.
+- `mutable`: Stores values of one type and exposes them as a mutable slice.
+- `reference`: Stores values of one type, exposes them as an immutable slice,
+  and also lets each submitted item be used as a reference at its submission
+  site.
+
+| Section Kind | Immutable Slice | Mutable Slice | `const` Items | `static` / Reference Items |
+| ------------ | --------------- | ------------- | ------------- | -------------------------- |
+| `untyped`    | ❌              | ❌            | ✅            | ✅                         |
+| `typed`      | ✅              | ❌            | ✅            | ⚠️                         |
+| `mutable`    | ✅              | ✅            | ✅            | ❌                         |
+| `reference`  | ✅              | ❌            | ✅            | ✅                         |
+
+⚠️ Native targets support `static` submissions for `typed` sections; WASM uses
+`const` submissions only.
+
+## Submitting Items
+
+Items are submitted with `#[in_section(SECTION)]`.
+
+A `const` submission copies the value into the section. The original constant
+remains usable as a normal Rust constant, and the section receives its own
+stored copy.
+
+```rust
+# pub struct MyType(u8); impl MyType { const fn new() -> Self { Self(0) } }
+# use link_section::{in_section, section};
+# #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
+#[in_section(MY_SECTION)]
+pub const ITEM: MyType = MyType::new();
+```
+
+A `static` submission stores the `static` directly in the section. References to
+the `static` and references obtained from the section slice point at the same
+underlying object. `static` submissions are supported for typed sections on
+native targets and for reference sections.
+
+```rust
+# pub struct MyType(u8); impl MyType { const fn new() -> Self { Self(0) } }
+# use link_section::{in_section, section};
+# #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
+#[in_section(MY_SECTION)]
+pub static ITEM: MyType = MyType::new();
+```
+
+A `fn` submitted to a typed section is stored as a function pointer. The
+function body itself is not placed into the typed data section.
+
+```rust
+# use link_section::{in_section, section};
+#[section(typed)]
+pub static FUNCTIONS: link_section::TypedSection<fn()>;
+
+#[in_section(FUNCTIONS)]
+pub fn callback() {
+    // ...
+}
+```
 
 ## Platform Support
 
@@ -12,7 +85,7 @@ are placed into the associated section.
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
-| WASM                     | ✅ Fully supported (§2) (§3)                    |
+| WASM                     | ✅ Fully supported, via emulation (§2) (§3)     |
 | AIX                      | ✅ Supported (§4)                               |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
@@ -23,7 +96,7 @@ be defined without a pre-defined name.
 data to a contiguous section. To access link-section slices in WASM in `#[ctor]`
 functions, make sure to use at least `#[ctor(priority = 1)]`.
 
-(§3) Host environment support (by calling the exported `register_link_section`
+(§3) Host environment support (by calling the exported `read_custom_section`
 function) is required to register each section with the runtime.
 
 (§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
@@ -149,13 +222,13 @@ The linker will report an error like this if the start/stop symbols are not
 found:
 
 ```text
-  = note: ld: 0711-317 ERROR: Undefined symbol: __start__data_link_section_DATABASES
-          ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
-          ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
+= note: ld: 0711-317 ERROR: Undefined symbol: __start__data_link_section_DATABASES
+        ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
+        ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
 ```
 
-For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out`
-and `-C link-arg=-bnoquiet` may also be useful. 
+For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out` and
+`-C link-arg=-bnoquiet` may also be useful.
 
 AIX supports a special mode to strip (`strip -r`) that preserves structural
 symbols like `csect`s and exports. A future version of `link-section` may add
@@ -194,7 +267,7 @@ in close proximity:
 ```rust
 use link_section::{in_section, section};
 
-#[section]
+#[section(untyped)]
 pub static CODE_SECTION: link_section::Section;
 
 #[in_section(CODE_SECTION)]
@@ -214,7 +287,7 @@ mod my_registry {
         name: &'static str,
     }
 
-    #[section]
+    #[section(typed)]
     pub static MY_REGISTRY: link_section::TypedSection<MyStruct>;
 
     // Registers a `const` item.

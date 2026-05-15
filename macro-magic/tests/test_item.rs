@@ -1,4 +1,4 @@
-#![recursion_limit = "150"]
+//! macro-magic integration tests.
 use ::macro_magic::*;
 
 __declare_features!(
@@ -39,13 +39,50 @@ __test!(__split_meta:
 
 __test!(__parse_item[my_macro_parse]:
 (
+    #[my_macro]
+    fn foo() { /* ... */ }
+) =>
+(
+    features = (std = std : default, unsafe = (): default, priority = (): default, used_linker = (): default, anonymous = (): default,),
+    self = (my_macro),
+    meta = (),
+    item = (fn foo() { /* ... */ })
+));
+
+__test!(__parse_item[my_macro_parse]:
+(
+    #[my_macro]
+    pub fn foo() { /* ... */ }
+) =>
+(
+    features = (std = std : default, unsafe = (): default, priority = (): default, used_linker = (): default, anonymous = (): default,),
+    self = (my_macro),
+    meta = (),
+    item = (pub fn foo() { /* ... */ })
+));
+
+__test!(__parse_item[my_macro_parse]:
+(
     #[my_macro(unsafe, priority = 1)]
     fn foo() { /* ... */ }
 ) =>
 (
     features = (std = std : default, unsafe = unsafe : value, priority = 1 : value, used_linker = (): default, anonymous = (): default,),
-    self = (unsafe, priority = 1),
+    self = (my_macro (unsafe, priority = 1)),
     meta = (),
+    item = (fn foo() { /* ... */ })
+));
+
+__test!(__parse_item[my_macro_parse]:
+(
+    #[my_macro(unsafe)]
+    #[doc = ""]
+    fn foo() { /* ... */ }
+) =>
+(
+    features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = (): default, anonymous = (): default,),
+    self = (my_macro (unsafe)),
+    meta = (#[doc = ""]),
     item = (fn foo() { /* ... */ })
 ));
 
@@ -58,7 +95,7 @@ __test!(__parse_item[my_macro_parse]:
 ) =>
 (
     features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = (): default, anonymous = (): default,),
-    self = (unsafe),
+    self = (my_macro(unsafe)),
     meta = (#[other] #[doc]),
     item = (fn foo() { /* ... */ })
 ));
@@ -72,7 +109,7 @@ __test!(__parse_item[my_macro_parse]:
 ) =>
 (
     features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = used_linker : value, anonymous = (): default,),
-    self = (unsafe, used(linker)),
+    self = (my_macro (unsafe, used(linker))),
     meta = (#[other] #[doc]),
     item = (fn foo() { /* ... */ })
 ));
@@ -84,13 +121,14 @@ __declare_features!(
         example: "other = N";
         validate: [($numeric:literal)];
     };
-    /// One of `untyped`, `typed`, `reference`, or `moveable` (same choices as `#[section(...)]`).
+    /// One of `untyped`, `typed`, `reference`, or `movable` (same choices as
+    /// `#[section(...)]`).
     section_type {
         attr: [
-            ($(untyped)? $(typed)? $(reference)? $(moveable)?) => ($section_type)
+            ($(untyped)? $(typed)? $(reference)? $(movable)?) => ($section_type)
         ];
-        example: "untyped | typed | reference | moveable";
-        validate: [(untyped), (typed), (reference), (moveable)];
+        example: "untyped | typed | reference | movable";
+        validate: [(untyped), (typed), (reference), (movable)];
     };
 );
 
@@ -101,7 +139,7 @@ __test!(__parse_item[section_type_parse]:
 ) =>
 (
     features = (other = (): default, section_type = typed : value,),
-    self = (typed),
+    self = (section (typed)),
     meta = (),
     item = (fn foo() { /* ... */ })
 ));
@@ -113,7 +151,7 @@ __test!(__parse_item[section_type_parse]:
 ) =>
 (
     features = (other = 1: value, section_type = typed : value,),
-    self = (typed, other = 1),
+    self = (section (typed, other = 1)),
     meta = (),
     item = (fn foo() { /* ... */ })
 ));

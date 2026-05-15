@@ -82,7 +82,7 @@ use linktime::link_section::{section, in_section, TypedSection};
 use linktime::ctor;
 use libc_print::*;
 
-#[section]
+#[section(typed)]
 static FOO: TypedSection<fn()>;
 
 #[in_section(FOO)]

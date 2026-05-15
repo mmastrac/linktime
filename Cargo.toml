@@ -29,8 +29,11 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/mmastrac/linktime"
 
 [workspace.dependencies]
-ctor = { path = "ctor", version = "1.0.5", default-features = false }
+ctor = { path = "ctor", version = "1.0.6", default-features = false }
 dtor = { path = "dtor", version = "1.0.2", default-features = false }
-link-section = { path = "link-section", version = "0.16.1", default-features = false }
+link-section = { path = "link-section", version = "0.17.0", default-features = false }
 
 linktime-proc-macro = { path = "linktime-proc-macro", version = "0.1.0" }
+
+scattered-collect = { path = "scattered-collect", version = "0.1.0" }
+scattered-collect-proc-macro = { path = "scattered-collect-proc-macro", version = "0.1.0" }

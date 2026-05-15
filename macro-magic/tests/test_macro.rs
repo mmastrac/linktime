@@ -1,3 +1,4 @@
+//! macro-magic integration tests.
 #![allow(unexpected_cfgs)]
 #![recursion_limit = "256"]
 
@@ -153,13 +154,15 @@ __test!(my_macro_parse[my_macro_parse => @extract (std anonymous)]:
     (std = std_value,) => (std = std_value, anonymous = (),));
 
 __test!(__extract_meta[small_macro_parse]:
-    (()) => (std = std default, priority = ()default, unsafe = ()default,));
+    (small_macro) => (std = std default, priority = ()default, unsafe = ()default,));
 __test!(__extract_meta[small_macro_parse]:
-    ((unsafe)) => (std = std default, priority = ()default, unsafe = unsafe value,));
+    (small_macro()) => (std = std default, priority = ()default, unsafe = ()default,));
 __test!(__extract_meta[small_macro_parse]:
-    ((unsafe, priority = 1)) => (std = std default, priority = 1value, unsafe = unsafe value,));
+    (small_macro(unsafe)) => (std = std default, priority = ()default, unsafe = unsafe value,));
 __test!(__extract_meta[small_macro_parse]:
-    ((priority = 1)) => (std = std default, priority = 1value, unsafe = ()default,));
+    (small_macro(unsafe, priority = 1)) => (std = std default , priority = 1 value , unsafe = unsafe value ,));
+__test!(__extract_meta[small_macro_parse]:
+    (small_macro(priority = 1)) => (std = std default , priority = 1 value , unsafe = () default ,));
 
 #[cfg(target_vendor = "apple")]
 __test!(my_macro_parse[my_macro_parse => @crate]:
@@ -171,19 +174,17 @@ __test!(my_macro_parse[my_macro_parse => @crate]:
 
 #[cfg(target_vendor = "apple")]
 __test!(__extract_meta[my_macro_parse]:
-    ((used(linker))) => (
+    (my_macro(used(linker))) => (
         std = std default, used_linker = used_linker value, proc_macro = ()default,
         no_warn_on_missing_unsafe = ()default, priority_enabled = ()default, priority
         = ()default, link_section = "__DATA,__mod_term_func,mod_term_funcs" default,
         crate_path = ()default, anonymous = ()default,));
 
 __test!(my_macro_parse[my_macro_parse => @self]:
-    (#[my_macro]) => ((())()));
+    (#[my_macro]) => ((my_macro)()));
 __test!(my_macro_parse[my_macro_parse => @self]:
-    (#[my_macro(unsafe)]) => (((unsafe))()));
+    (#[my_macro(unsafe)]) => ((my_macro(unsafe))()));
 __test!(my_macro_parse[my_macro_parse => @self]:
-    (#[my_macro(unsafe, priority = 1)]) => (((unsafe, priority = 1))()));
+    (#[my_macro(unsafe, priority = 1)]) => ((my_macro(unsafe, priority = 1))()));
 __test!(my_macro_parse[my_macro_parse => @self]:
-    (#[my_macro(unsafe, priority = 1)] #[other_macro]) => (((unsafe, priority = 1))(#[other_macro])));
-__test!(my_macro_parse[my_macro_parse => @self]:
-    (#[other_macro]) => (()(#[other_macro])));
+    (#[my_macro(unsafe, priority = 1)] #[other_macro]) => ((my_macro(unsafe, priority = 1))(#[other_macro])));

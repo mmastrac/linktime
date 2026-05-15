@@ -25,15 +25,27 @@ macro_rules! __test {
                     ]
                 );
 
-                if !$crate::test::const_str_eq(
+                if let Some(index) = $crate::test::const_str_eq_test(
                     INPUT,
                     OUTPUT,
                 ) {
+                    const MISMATCH_INDEX: usize = match $crate::test::const_str_eq_test(
+                        INPUT,
+                        OUTPUT,
+                    ) { Some(index) => index, None => 0 };
+                    const MISMATCH: &str = match core::str::from_utf8(INPUT.as_bytes().split_at(MISMATCH_INDEX).1) {
+                        Ok(s) => s,
+                        Err(_) => "<invalid UTF-8>",
+                    };
                     const SLICE: &[&str] = &[
                         "Input and output do not match, processed input:\n", INPUT,
                         "\n... was not equal to expected output:\n", OUTPUT,
-                        "\nIn ",
-                        file!()
+                        "\n... in ",
+                        file!(),
+                        concat!(":", line!()),
+                        " at: '",
+                        MISMATCH,
+                        "'"
                     ];
                     let mut out = [0; $crate::test::const_str_slice_len(SLICE)];
                     panic!("{}", $crate::test::const_str_slice_concat(SLICE, &mut out));
@@ -87,4 +99,38 @@ pub const fn const_str_eq(a: &str, b: &str) -> bool {
         j += 1;
     }
     i == a.len() && j == b.len()
+}
+
+/// Compares two strings for equality, skipping whitespace mismatches.
+pub const fn const_str_eq_test(a: &str, b: &str) -> Option<usize> {
+    let mut i = 0;
+    let mut j = 0;
+    let a = a.trim_ascii().as_bytes();
+    let b = b.trim_ascii().as_bytes();
+    while i < a.len() && j < b.len() {
+        if a[i] != b[j] {
+            // Allow for space mismatches
+            if a[i].is_ascii_whitespace() && !b[j].is_ascii_whitespace() {
+                i += 1;
+                continue;
+            }
+            if !a[i].is_ascii_whitespace() && b[j].is_ascii_whitespace() {
+                j += 1;
+                continue;
+            }
+            if a[i].is_ascii_whitespace() && b[j].is_ascii_whitespace() {
+                i += 1;
+                j += 1;
+                continue;
+            }
+            return Some(i);
+        }
+        i += 1;
+        j += 1;
+    }
+    if i == a.len() && j == b.len() {
+        None
+    } else {
+        Some(i)
+    }
 }

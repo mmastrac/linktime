@@ -1,0 +1,110 @@
+use link_section::declarative::{section, in_section};
+use link_section::TypedSection;
+
+struct Driver {
+    name: &'static str,
+    f: fn(),
+}
+
+impl Driver {
+    const fn new(name: &'static str, f: fn()) -> Self { Self { name, f } }
+}
+
+
+
+#[allow(non_camel_case_types)]
+struct FOO;
+#[doc(hidden)]
+use ::link_section::__in_section_helper_macro_generic as FOO;
+impl FOO {
+    /// Get a `const` reference to the underlying section. In
+    /// non-const contexts, `deref` is sufficient.
+    pub const fn const_deref(&self) -> &'static TypedSection<Driver> {
+        static SECTION: TypedSection<Driver> =
+            {
+                let section =
+                    {
+                        static __LINK_SECTION_NAME: &'static str =
+                            ".data.link_section.FOO";
+                        #[export_name = ".data.link_section.FOO.bounds"]
+                        #[used]
+                        #[used]
+                        static __LINK_SECTION_INFO:
+                            ::link_section::__support::wasm::LinkSectionRawInfo =
+                            ::link_section::__support::wasm::LinkSectionRawInfo::new::<(Driver)>(__LINK_SECTION_NAME);
+                        unsafe {
+                            ::link_section::__support::Bounds::new(&raw const __LINK_SECTION_INFO)
+                        }
+                    };
+                let name = ".data.link_section.FOO";
+                unsafe { <TypedSection<Driver>>::new(name, section) }
+            };
+        &SECTION
+    }
+}
+impl ::core::fmt::Debug for FOO {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        ::core::ops::Deref::deref(self).fmt(f)
+    }
+}
+impl ::core::ops::Deref for FOO {
+    type Target = TypedSection<Driver>;
+    fn deref(&self) -> &Self::Target { self.const_deref() }
+}
+impl ::link_section::__support::SectionItemType for FOO {
+    type Item = (Driver);
+}
+impl ::link_section::__support::SectionItemTyped<(Driver)> for FOO {
+    type Item = (Driver);
+}
+impl FOO {
+    /// Get the section as a slice.
+    pub fn as_slice(&self) -> &[(Driver)] { self.const_deref().as_slice() }
+}
+impl ::core::iter::IntoIterator for FOO {
+    type Item = &'static (Driver);
+    type IntoIter = ::core::slice::Iter<'static, (Driver)>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.const_deref().as_slice().iter()
+    }
+}
+const DRIVER: Driver =
+    const {
+            type __InSecStoredTy =
+                <FOO as ::link_section::__support::SectionItemType>::Item;
+            const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
+                Driver::new("driver", || ());
+            {
+                #[link_section = ".data.link_section.FOO"]
+                #[used]
+                static __LINK_SECTION_CONST_ITEM: u8 = 0;
+                extern "C" {
+                    #[link_name = ".data.link_section.FOO.bounds"]
+                    #[allow(unsafe_code)]
+                    static __LINK_SECTION_INFO:
+                        ::link_section::__support::wasm::LinkSectionRawInfo;
+                }
+                #[used]
+                #[link_section = ".init_array.0"]
+                static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
+                    {
+                        extern "C" fn __LINK_SECTION_ITEM_FN() {
+                            static DISARMED: ::core::sync::atomic::AtomicBool =
+                                ::core::sync::atomic::AtomicBool::new(false);
+                            if DISARMED.swap(true,
+                                    ::core::sync::atomic::Ordering::Relaxed) {
+                                return;
+                            }
+                            unsafe {
+                                let ptr =
+                                    ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                                ::core::ptr::write(ptr as *mut __InSecStoredTy,
+                                    __LINK_SECTION_CONST_ITEM_VALUE);
+                            }
+                        }
+                        __LINK_SECTION_ITEM_FN
+                    };
+            }
+            __LINK_SECTION_CONST_ITEM_VALUE
+        };
+fn main() {}

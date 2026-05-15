@@ -86,7 +86,7 @@ macro_rules! __brace {
     };
 
     ( $($input:tt)* ) => {
-        const _: () = { compile_error!(concat!("Unexpected input: ", stringify!($($input)*))); };
+        const _: () = { compile_error!(concat!("Unexpected input to __brace: ", stringify!($($input)*))); };
     };
 }
 
@@ -152,6 +152,33 @@ macro_rules! __split {
 #[doc(hidden)]
 macro_rules! __parallel {
     // Entry point, start with empty accumulator
+    ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=[
+        $macro:path $([$($args:tt)*])? $(,)?
+    ] ) => {
+        compile_error!("__parallel: Specify at least two macros to avoid unnecessary overhead");
+    };
+
+    // Optimization for 2 items
+    ( @entry next=$next:path[$next_args:tt], input=$i:tt, args=[$m0:path $([$($m0_args:tt)*])?, $m1:path $([$($m1_args:tt)*])? $(,)?] ) => {
+        $m0 ! ( @entry
+            next=$crate::__parallel[[@continue2 [[$m1] $([$($m1_args)*])?] $i $next [$next_args]]],
+            input=$i
+            $(, args=[$($m0_args)*])?
+        );
+    };
+
+    ( [@continue2 [[$m1:path] $($m1_args:tt)?] $i:tt $next:path [$next_args:tt]], $accum:tt ) => {
+        $m1 ! ( @entry
+            next=$crate::__parallel[[@finish2 $accum $next [$next_args]]],
+            input=$i $(, args=$m1_args)?
+        );
+    };
+
+    ( [@finish2 ($($accum1:tt)*) $next:path [$next_args:tt]], ($($accum2:tt)*) ) => {
+        $next ! ( $next_args, ($($accum1)* $($accum2)*) );
+    };
+
+    // Entry point, start with empty accumulator
     ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=$args:tt ) => {
         $crate::__parallel!( @process $input, $args, (), [$next[$next_args]] );
     };
@@ -207,20 +234,51 @@ macro_rules! __chain {
 }
 
 /// Separates the token trees of the input into multiple paths and runs them in parallel.
+///
+/// If there are more inputs than macros, the remaining inputs are passed through.
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __separate {
+    // Optimization for 1 item (treat it like the second macro)
+    ( @entry next=$next:path[$next_args:tt], input=($i0:tt $($rest:tt)*), args=[$m0:path $([$($m0_args:tt)*])? $(,)?] ) => {
+        $m0 ! ( @entry
+            next=$crate::__separate[[@finish2 () [$($rest)*] $next [$next_args]]],
+            input=$i0
+            $(, args=[$($m0_args)*])?
+        );
+    };
+
+    // Optimization for 2 items
+    ( @entry next=$next:path[$next_args:tt], input=($i0:tt $i1:tt $($rest:tt)*), args=[$m0:path $([$($m0_args:tt)*])?, $m1:path $([$($m1_args:tt)*])? $(,)?] ) => {
+        $m0 ! ( @entry
+            next=$crate::__separate[[@continue2 [[$m1] $([$($m1_args)*])?], $i1, [$($rest)*] $next [$next_args]]],
+            input=$i0
+            $(, args=[$($m0_args)*])?
+        );
+    };
+
+    ( [@continue2 [[$m1:path] $($m1_args:tt)?], $i1:tt, $rest:tt $next:path [$next_args:tt]], $accum:tt ) => {
+        $m1 ! ( @entry
+            next=$crate::__separate[[@finish2 $accum $rest $next [$next_args]]],
+            input=$i1 $(, args=$m1_args)?
+        );
+    };
+
+    ( [@finish2 ($($accum1:tt)*) [$($rest:tt)*] $next:path [$next_args:tt]], ($($accum2:tt)*) ) => {
+        $next ! ( $next_args, ($($accum1)* $($accum2)* $($rest)*) );
+    };
+
     // Entry point, start with empty accumulator
     ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=$args:tt ) => {
         $crate::__separate!( @process $input, $args, (), [$next[$next_args]] );
     };
 
-    // Exit point, all parallel is done, emit accumulator to next macro
-    ( @process $input:tt, [], $accum:tt, [$next:path[$next_args:tt]] ) => {
-        $next ! ( $next_args, $accum );
+    // Exit point, all separate is done, emit accumulator to next macro
+    ( @process ($($input:tt)*), [], ($($accum:tt)*), [$next:path[$next_args:tt]] ) => {
+        $next ! ( $next_args, ($($accum)* $($input)*) );
     };
 
-    // Continue point, call the next macro in the parallel chain
+    // Continue point, call the next macro in the separate chain
     ( @process ($input:tt $($input_rest:tt)*), [$next:path $([$($args:tt)*])?, $($stack:tt)*], $accum:tt, $final:tt ) => {
         $next!(
             @entry next=$crate::__separate[[@continue [$($stack)*] ($($input_rest)*) $accum $final]],
@@ -233,7 +291,25 @@ macro_rules! __separate {
     };
 
     ( $($input:tt)* ) => {
-        const _: () = { compile_error!(concat!("Unexpected input: ", stringify!($($input)*))); };
+        const _: () = { compile_error!(concat!("Unexpected input to __separate: ", stringify!($($input)*))); };
+    };
+}
+
+/// Pass the first tt in the input to a macro, then write both the input and
+/// output to the next macro. Any additional input is passed through after.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __expand {
+    ( @entry next=$next:path[$next_args:tt], input=($first:tt $($rest:tt)*), args=[$macro:path $([$($args:tt)*])? $(,)?] ) => {
+        $macro ! ( @entry next=$crate::__expand[[@continue [$next[$next_args]] ($first) ($($rest)*)]], input=$first $(, args=[$($args)*])? );
+    };
+
+    ( [@continue [$next:path[$next_args:tt]] ($($input:tt)*) ($($rest:tt)*)], ($($output:tt)*) ) => {
+        $next ! ( $next_args, ($($input)* $($output)* $($rest)*) );
+    };
+
+    ( $($input:tt)* ) => {
+        const _: () = { compile_error!(concat!("Unexpected input to __expand: ", stringify!($($input)*))); };
     };
 }
 
@@ -338,5 +414,18 @@ macro_rules! __for_each {
 macro_rules! __call {
     ( @entry next=$next:path[$next_args:tt], input=($($input:tt)*), args=[$macro_name:path $([$($args:tt)*])?] ) => {
         $macro_name ! ( @entry next=$next[$next_args], input=($($input)*) $(, args=[$($args)*])? );
+    };
+}
+
+/// Park the current state of the chain so it can be resumed at a lower stack depth.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __park {
+    ( @entry next=$next:path[$next_args:tt], input=$input:tt, args=[$macro_name:ident] ) => {
+        macro_rules! $macro_name {
+            () => {
+                $next!($next_args, $input);
+            };
+        }
     };
 }

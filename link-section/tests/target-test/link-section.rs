@@ -2,7 +2,7 @@ use link_section::declarative::{section, in_section};
 use link_section::TypedSection;
 
 section! {
-    #[section]
+    #[section(typed)]
     static FOO: TypedSection<fn()>;
 }
 
