@@ -13,23 +13,28 @@ macro_rules! __get_section_windows {
             use $crate::__support::add_section_link_attribute;
             use core::mem;
 
-            add_section_link_attribute!(
-                data start $ident $($aux)?
-                #[link_section = __]
-                static __START: Alignment<$generic_ty> = Alignment::new();
-            );
-            let start = unsafe {
-                let start = &raw const __START;
-                start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
-            };
-            add_section_link_attribute!(
-                data end $ident $($aux)?
-                #[link_section = __]
-                static __END: Alignment<$generic_ty> = Alignment::new();
-            );
-            let end = unsafe { &raw const __END as *const () };
+            if cfg!(miri) {
+                // Miri doesn't support link section sorting
+                PtrBounds::new(::core::ptr::null(), ::core::ptr::null())
+            } else {
+                add_section_link_attribute!(
+                    data start $ident $($aux)?
+                    #[link_section = __]
+                    static __START: Alignment<$generic_ty> = Alignment::new();
+                );
+                let start = unsafe {
+                    let start = &raw const __START;
+                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
+                };
+                add_section_link_attribute!(
+                    data end $ident $($aux)?
+                    #[link_section = __]
+                    static __END: Alignment<$generic_ty> = Alignment::new();
+                );
+                let end = unsafe { &raw const __END as *const () };
 
-            PtrBounds::new(start, end)
+                PtrBounds::new(start, end)
+            }
         }
     }
 }
