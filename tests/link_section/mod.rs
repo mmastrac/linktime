@@ -36,6 +36,25 @@ choice {
 );
 
 clitest!(
+    interior_mut,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/interior_mut";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! INTERIOR_MUT_LINK_SECTION: TypedSection { name: "%{DATA}INTERIOR_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 8 }
+unordered {
+    ! item before: InteriorMutItem { value: 1, atomic: 1 }
+    ! item after: InteriorMutItem { value: 1, atomic: 2 }
+    ! item before: InteriorMutItem { value: 2, atomic: 2 }
+    ! item after: InteriorMutItem { value: 2, atomic: 3 }
+}
+"#
+);
+
+clitest!(
     link_section_mut,
     r#"
 set RUSTFLAGS "";

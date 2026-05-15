@@ -14,17 +14,16 @@ fn early() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: 101,
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
@@ -46,17 +45,16 @@ fn priority1() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: 1,
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
@@ -78,17 +76,16 @@ fn priority900() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: 900,
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
@@ -110,17 +107,16 @@ fn late() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: (::ctor::collect::LATE),
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
@@ -142,17 +138,16 @@ fn priority_default() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: 500,
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
@@ -174,17 +169,16 @@ fn priority_unspecified() {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
-            struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-            unsafe impl Sync for __LinkSectionConstItem {}
-            unsafe impl Send for __LinkSectionConstItem {}
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
                 priority: 500,
                 ctor: __ctor_private,
             };
             #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(
-                ::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE),
+            static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                __InSecStoredTy,
+            > = ::link_section::__support::SyncUnsafeCell::new(
+                __LINK_SECTION_CONST_ITEM_VALUE,
             );
             __LINK_SECTION_CONST_ITEM_VALUE
         };
