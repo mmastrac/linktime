@@ -96,7 +96,7 @@ be defined without a pre-defined name.
 data to a contiguous section. To access link-section slices in WASM in `#[ctor]`
 functions, make sure to use at least `#[ctor(priority = 1)]`.
 
-(§3) Host environment support (by calling the exported `register_link_section`
+(§3) Host environment support (by calling the exported `read_custom_section`
 function) is required to register each section with the runtime.
 
 (§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
