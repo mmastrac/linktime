@@ -13,7 +13,7 @@ macro_rules! __get_section_windows {
             use $crate::__support::PtrBounds;
             use $crate::__support::add_section_link_attribute;
             use core::mem;
-            use core::cell::UnsafeCell;
+            use $crate::__support::SyncUnsafeCell;
 
             if cfg!(miri) {
                 // Miri doesn't support link section sorting
@@ -22,7 +22,7 @@ macro_rules! __get_section_windows {
                 add_section_link_attribute!(
                     data start $ident $($aux)?
                     #[link_section = __]
-                    static __START: UnsafeCell<Alignment<$generic_ty>> = UnsafeCell::new(Alignment::new());
+                    static __START: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
                 let start = unsafe {
                     let start = &raw const __START;
@@ -31,7 +31,7 @@ macro_rules! __get_section_windows {
                 add_section_link_attribute!(
                     data end $ident $($aux)?
                     #[link_section = __]
-                    static __END: UnsafeCell<Alignment<$generic_ty>> = UnsafeCell::new(Alignment::new());
+                    static __END: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
                 let end = unsafe { &raw const __END as *const () };
 

@@ -88,6 +88,24 @@ impl PtrBounds {
     }
 }
 
+/// `UnsafeCell` that is `Sync` and `Send`.
+#[repr(transparent)]
+pub struct SyncUnsafeCell<T> {
+    cell: ::core::cell::UnsafeCell<T>,
+}
+
+impl<T> SyncUnsafeCell<T> {
+    /// Create a new `SyncUnsafeCell`.
+    pub const fn new(value: T) -> Self {
+        Self {
+            cell: ::core::cell::UnsafeCell::new(value),
+        }
+    }
+}
+
+unsafe impl<T> Sync for SyncUnsafeCell<T> {}
+unsafe impl<T> Send for SyncUnsafeCell<T> {}
+
 /// A non-zero-sized type that is used to align the start and end of the
 /// section.
 #[repr(C)]

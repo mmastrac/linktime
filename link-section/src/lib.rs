@@ -378,14 +378,11 @@ pub mod __support {
             compile_error!("static items are not supported on WASM: use const items instead");
         };
 
-        // mutable const items live in UnsafeCell
+        // mutable const items live in SyncUnsafeCell
         (@typed[mutable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
             $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
-                struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
-                unsafe impl Sync for __LinkSectionConstItem {}
-                unsafe impl Send for __LinkSectionConstItem {}
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
                 $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
@@ -394,7 +391,7 @@ pub mod __support {
                 $crate::__add_section_link_attribute!(
                     data section $section $($aux)?
                     #[link_section = __]
-                    static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE));
+                    static __LINK_SECTION_CONST_ITEM: $crate::__support::SyncUnsafeCell<__InSecStoredTy> = $crate::__support::SyncUnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE);
                 );
 
                 __LINK_SECTION_CONST_ITEM_VALUE
