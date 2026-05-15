@@ -1,4 +1,6 @@
-use crate::__support::Bounds;
+use core::sync::atomic::{AtomicU8, Ordering};
+
+use crate::__support::{Bounds, MovableBounds, SyncUnsafeCell};
 
 /// An untyped link section that can be used to store any type. The underlying
 /// data is not enumerable.
@@ -252,6 +254,267 @@ impl<T: 'static> TypedMutableSection<T> {
 }
 
 impl_bounds_traits!(TypedMutableSection<T>);
+
+/// A movable typed link section that can be used to store any sized type. The
+/// underlying data is (unsafely) mutable, enumerable, and expected to be
+/// relocated or reordered during startup initialization.
+///
+/// Only `const` items may be submitted to a [`TypedMovableSection`].
+#[repr(C)]
+pub struct TypedMovableSection<T: 'static> {
+    name: &'static str,
+    bounds: MovableBounds,
+    backref_state: AtomicU8,
+    _phantom: ::core::marker::PhantomData<T>,
+}
+
+impl<T: 'static> TypedMovableSection<T> {
+    #[doc(hidden)]
+    pub const unsafe fn new(name: &'static str, bounds: MovableBounds) -> Self {
+        assert!(
+            ::core::mem::size_of::<T>() > 0,
+            "Zero-sized types are not supported"
+        );
+        Self {
+            name,
+            bounds,
+            backref_state: AtomicU8::new(0),
+            _phantom: ::core::marker::PhantomData,
+        }
+    }
+
+    /// The start address of the section.
+    #[inline(always)]
+    pub fn start_ptr(&self) -> *const T {
+        self.bounds.values.start_ptr() as *const T
+    }
+
+    /// The end address of the section.
+    #[inline(always)]
+    pub fn end_ptr(&self) -> *const T {
+        self.bounds.values.end_ptr() as *const T
+    }
+
+    /// The stride of the typed section.
+    #[inline(always)]
+    pub const fn stride(&self) -> usize {
+        assert!(
+            ::core::mem::size_of::<T>() > 0
+                && ::core::mem::size_of::<T>() * 2 == ::core::mem::size_of::<[T; 2]>()
+        );
+        ::core::mem::size_of::<T>()
+    }
+
+    /// The byte length of the section.
+    #[inline]
+    pub fn byte_len(&self) -> usize {
+        self.bounds.values.byte_len()
+    }
+
+    /// The number of elements in the section.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.byte_len() / self.stride()
+    }
+
+    /// True if the section is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// The section as a slice.
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        if self.is_empty() {
+            &[]
+        } else {
+            unsafe { ::core::slice::from_raw_parts(self.start_ptr(), self.len()) }
+        }
+    }
+
+    /// The offset of the item in the section, if it is in the section.
+    #[inline]
+    pub fn offset_of(&self, item: &T) -> Option<usize> {
+        let ptr = item as *const T;
+        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
+            None
+        } else {
+            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
+        }
+    }
+
+    /// The start address of the section.
+    #[inline]
+    pub fn start_ptr_mut(&self) -> *mut T {
+        self.bounds.values.start_ptr() as *mut T
+    }
+
+    /// The end address of the section.
+    #[inline]
+    pub fn end_ptr_mut(&self) -> *mut T {
+        self.bounds.values.end_ptr() as *mut T
+    }
+
+    /// The section as a mutable slice.
+    ///
+    /// # Safety
+    ///
+    /// This cannot be safely used and is _absolutely unsound_ if any other
+    /// slices are live.
+    #[allow(clippy::mut_from_ref)]
+    #[inline]
+    pub unsafe fn as_mut_slice(&self) -> &mut [T] {
+        if self.is_empty() {
+            &mut []
+        } else {
+            unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
+        }
+    }
+
+    /// The backrefs as a mutable slice, ordered to match the current value
+    /// section addresses.
+    ///
+    /// # Safety
+    ///
+    /// This returns mutable access from a shared section handle and must not be
+    /// called while any other slices into either the value or backref sections
+    /// are live.
+    #[allow(clippy::mut_from_ref)]
+    #[inline]
+    pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
+        let backrefs = if self.backrefs_is_empty() {
+            &mut []
+        } else {
+            unsafe {
+                ::core::slice::from_raw_parts_mut(
+                    self.backrefs_start_ptr() as *mut MovableBackref<T>,
+                    self.backrefs_len(),
+                )
+            }
+        };
+        unsafe { self.fixup_backrefs(backrefs) };
+        backrefs
+    }
+
+    /// The start address of the backref section.
+    #[inline(always)]
+    pub fn backrefs_start_ptr(&self) -> *const MovableBackref<T> {
+        self.bounds.refs.start_ptr() as *const MovableBackref<T>
+    }
+
+    /// The end address of the backref section.
+    #[inline(always)]
+    pub fn backrefs_end_ptr(&self) -> *const MovableBackref<T> {
+        self.bounds.refs.end_ptr() as *const MovableBackref<T>
+    }
+
+    /// The number of backref records in the section.
+    #[inline]
+    pub fn backrefs_len(&self) -> usize {
+        self.bounds.refs.byte_len() / ::core::mem::size_of::<MovableBackref<T>>()
+    }
+
+    /// True if there are no backrefs.
+    #[inline]
+    pub fn backrefs_is_empty(&self) -> bool {
+        self.backrefs_len() == 0
+    }
+
+    unsafe fn fixup_backrefs(&self, backrefs: &mut [MovableBackref<T>]) {
+        match self
+            .backref_state
+            .compare_exchange(0, 1, Ordering::Acquire, Ordering::Acquire)
+        {
+            Ok(_) => {}
+            Err(2) => return,
+            Err(_) => panic!("movable section backrefs already being initialized"),
+        }
+
+        if backrefs.len() != self.len() {
+            panic!("movable section backref count does not match item count");
+        }
+
+        backrefs.sort_unstable_by_key(|backref| backref.original);
+        self.backref_state.store(2, Ordering::Release);
+    }
+}
+
+impl_bounds_traits!(TypedMovableSection<T>);
+
+/// A reference to a movable item through a stable pointer slot.
+#[repr(transparent)]
+pub struct MovableRef<T: 'static> {
+    slot: &'static SyncUnsafeCell<*const T>,
+}
+
+impl<T> MovableRef<T> {
+    #[doc(hidden)]
+    pub const fn new(slot: &'static SyncUnsafeCell<*const T>) -> Self {
+        Self { slot }
+    }
+
+    /// Raw pointer to the value currently referenced by this slot.
+    pub fn as_ptr(&self) -> *const T {
+        unsafe { *self.slot.get() }
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn set(&self, ptr: *const T) {
+        unsafe {
+            *self.slot.get() = ptr;
+        }
+    }
+}
+
+impl<T> ::core::ops::Deref for MovableRef<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.as_ptr().as_ref().expect("MovableRef not initialized") }
+    }
+}
+
+unsafe impl<T> Send for MovableRef<T> where T: Send {}
+unsafe impl<T> Sync for MovableRef<T> where T: Sync {}
+
+/// A backref record submitted alongside each item in a [`TypedMovableSection`].
+#[repr(C)]
+pub struct MovableBackref<T: 'static> {
+    original: *const T,
+    slot: *const SyncUnsafeCell<*const T>,
+}
+
+impl<T> MovableBackref<T> {
+    #[doc(hidden)]
+    pub const fn new(original: *const T, slot: *const SyncUnsafeCell<*const T>) -> Self {
+        Self { original, slot }
+    }
+
+    /// Original value-section cell for this backref.
+    pub fn original_ptr(&self) -> *const T {
+        self.original
+    }
+
+    /// Current value of the stable pointer slot.
+    pub fn current_ptr(&self) -> *const T {
+        unsafe { *(*self.slot).get() }
+    }
+
+    /// Update the stable pointer slot.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure `ptr` points to the logical item associated with
+    /// this backref.
+    pub unsafe fn set_current_ptr(&self, ptr: *const T) {
+        unsafe {
+            *(*self.slot).get() = ptr;
+        }
+    }
+}
+
+unsafe impl<T> Send for MovableBackref<T> where T: Send {}
+unsafe impl<T> Sync for MovableBackref<T> where T: Sync {}
 
 /// A typed link section that can be used to store any sized type. The
 /// underlying data is enumerable.

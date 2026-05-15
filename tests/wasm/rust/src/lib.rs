@@ -57,6 +57,48 @@ mod link_section {
         pub static DRIVER: Driver = Driver::new("driver", || libc_println!("driver"));
     }
 
+    mod movable {
+        use linktime::ctor;
+        use linktime::link_section::{section, in_section, TypedMovableSection};
+
+        #[section(movable)]
+        pub static MOVABLE_LINK_SECTION: TypedMovableSection<u32>;
+
+        #[in_section(MOVABLE_LINK_SECTION)]
+        pub static MOVABLE_40: u32 = 40;
+        #[in_section(MOVABLE_LINK_SECTION)]
+        pub static MOVABLE_20: u32 = 20;
+        #[in_section(MOVABLE_LINK_SECTION)]
+        pub static MOVABLE_10: u32 = 10;
+        #[in_section(MOVABLE_LINK_SECTION)]
+        pub static MOVABLE_30: u32 = 30;
+
+        #[ctor(unsafe, priority = 1)]
+        pub fn ctor() {
+            let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
+            let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
+
+            for i in 0..movable_section.len() {
+                for j in i + 1..movable_section.len() {
+                    if movable_section[i] > movable_section[j] {
+                        movable_section.swap(i, j);
+                        movable_backrefs.swap(i, j);
+                    }
+                }
+            }
+            for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
+                unsafe {
+                    backref.set_current_ptr(item as *const u32);
+                }
+            }
+
+            assert_eq!(*MOVABLE_40, 40);
+            assert_eq!(*MOVABLE_20, 20);
+            assert_eq!(*MOVABLE_10, 10);
+            assert_eq!(*MOVABLE_30, 30);
+        }
+    }
+
     pub fn test_link_section() {
         libc_println!("test_link_section");
         libc_println!("DRIVER: {}", reference::DRIVER.name);

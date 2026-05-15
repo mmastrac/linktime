@@ -6,6 +6,61 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_windows {
+    // Movable sections have an additional backref section.
+    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+        {
+            use $crate::__support::Alignment;
+            use $crate::__support::PtrBounds;
+            use $crate::__support::add_section_link_attribute;
+            use core::mem;
+            use $crate::__support::SyncUnsafeCell;
+
+            if cfg!(miri) {
+                // Miri doesn't support link section sorting
+                $crate::__support::MovableBounds::new(
+                    PtrBounds::new(::core::ptr::null(), ::core::ptr::null()),
+                    PtrBounds::new(::core::ptr::null(), ::core::ptr::null()),
+                )
+            } else {
+                add_section_link_attribute!(
+                    item data start $ident $($aux)?
+                    #[link_section = __]
+                    static __START: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
+                );
+                let start = unsafe {
+                    let start = &raw const __START;
+                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
+                };
+                add_section_link_attribute!(
+                    item data end $ident $($aux)?
+                    #[link_section = __]
+                    static __END: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
+                );
+                let end = unsafe { &raw const __END as *const () };
+
+                add_section_link_attribute!(
+                    backref data start $ident $($aux)?
+                    #[link_section = __]
+                    static __REF_START: Alignment<$crate::MovableBackref<$generic_ty>> = Alignment::new();
+                );
+                let ref_start = unsafe {
+                    let start = &raw const __REF_START;
+                    start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const()
+                };
+                add_section_link_attribute!(
+                    backref data end $ident $($aux)?
+                    #[link_section = __]
+                    static __REF_END: Alignment<$crate::MovableBackref<$generic_ty>> = Alignment::new();
+                );
+                let ref_end = unsafe { &raw const __REF_END as *const () };
+
+                $crate::__support::MovableBounds::new(
+                    PtrBounds::new(start, end),
+                    PtrBounds::new(ref_start, ref_end),
+                )
+            }
+        }
+    };
     // Mutable sections must use UnsafeCell to match items
     (mutable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
@@ -20,7 +75,7 @@ macro_rules! __get_section_windows {
                 PtrBounds::new(::core::ptr::null(), ::core::ptr::null())
             } else {
                 add_section_link_attribute!(
-                    data start $ident $($aux)?
+                    item data start $ident $($aux)?
                     #[link_section = __]
                     static __START: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
@@ -29,7 +84,7 @@ macro_rules! __get_section_windows {
                     start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
                 };
                 add_section_link_attribute!(
-                    data end $ident $($aux)?
+                    item data end $ident $($aux)?
                     #[link_section = __]
                     static __END: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
@@ -51,7 +106,7 @@ macro_rules! __get_section_windows {
                 PtrBounds::new(::core::ptr::null(), ::core::ptr::null())
             } else {
                 add_section_link_attribute!(
-                    data start $ident $($aux)?
+                    item data start $ident $($aux)?
                     #[link_section = __]
                     static __START: Alignment<$generic_ty> = Alignment::new();
                 );
@@ -60,7 +115,7 @@ macro_rules! __get_section_windows {
                     start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
                 };
                 add_section_link_attribute!(
-                    data end $ident $($aux)?
+                    item data end $ident $($aux)?
                     #[link_section = __]
                     static __END: Alignment<$generic_ty> = Alignment::new();
                 );
@@ -87,6 +142,7 @@ crate::__def_section_name! {
         code end =>     (".text", "$") __ ("$c");
     }
     AUXILIARY = "$d$";
+    REFS = "$r$";
     MAX_LENGTH = 64;
     HASH_LENGTH = 10;
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

@@ -22,6 +22,21 @@ const _: u32 = 3;
 #[in_section(MUT_LINK_SECTION)]
 const _: u32 = 5;
 
+#[section(movable)]
+pub static MOVABLE_LINK_SECTION: link_section::TypedMovableSection<u32>;
+
+#[in_section(MOVABLE_LINK_SECTION)]
+static MOVABLE_40: u32 = 40;
+
+#[in_section(MOVABLE_LINK_SECTION)]
+static MOVABLE_20: u32 = 20;
+
+#[in_section(MOVABLE_LINK_SECTION)]
+static MOVABLE_10: u32 = 10;
+
+#[in_section(MOVABLE_LINK_SECTION)]
+static MOVABLE_30: u32 = 30;
+
 mod aux_section {
     use ctor::ctor;
     use link_section::{in_section, section};
@@ -49,6 +64,26 @@ mod aux_section {
 pub fn ctor() {
     let section = unsafe { MUT_LINK_SECTION.as_mut_slice() };
     section.sort_unstable();
+
+    let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
+    let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
+    assert_eq!(movable_section.len(), movable_backrefs.len());
+    for backref in movable_backrefs.iter() {
+        assert_eq!(backref.current_ptr(), backref.original_ptr());
+    }
+    for i in 0..movable_section.len() {
+        for j in i + 1..movable_section.len() {
+            if movable_section[i] > movable_section[j] {
+                movable_section.swap(i, j);
+                movable_backrefs.swap(i, j);
+            }
+        }
+    }
+    for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
+        unsafe {
+            backref.set_current_ptr(item as *const u32);
+        }
+    }
 }
 
 pub fn main() {
@@ -60,4 +95,16 @@ pub fn main() {
     for item in aux_section::AUX_MUT_LINK_SECTION {
         libc_eprintln!("aux item: {item}");
     }
+    libc_eprintln!("MOVABLE_LINK_SECTION: {:?}", MOVABLE_LINK_SECTION);
+    libc_eprintln!(
+        "MOVABLE_BACKREFS: {}",
+        unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() }.len()
+    );
+    for item in MOVABLE_LINK_SECTION {
+        libc_eprintln!("movable item: {item}");
+    }
+    libc_eprintln!("MOVABLE_40: {}", *MOVABLE_40);
+    libc_eprintln!("MOVABLE_20: {}", *MOVABLE_20);
+    libc_eprintln!("MOVABLE_10: {}", *MOVABLE_10);
+    libc_eprintln!("MOVABLE_30: {}", *MOVABLE_30);
 }

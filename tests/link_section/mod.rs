@@ -77,6 +77,18 @@ aux item: 1234
 aux item: 2341
 aux item: 4321
 """
+! MOVABLE_LINK_SECTION: TypedMovableSection { name: "%{DATA}MOVABLE_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 4, stride: 4 }
+! MOVABLE_BACKREFS: 4
+"""
+movable item: 10
+movable item: 20
+movable item: 30
+movable item: 40
+"""
+! MOVABLE_40: 40
+! MOVABLE_20: 20
+! MOVABLE_10: 10
+! MOVABLE_30: 30
 "#
 );
 

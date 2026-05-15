@@ -122,6 +122,8 @@ macro_rules! __section_parse_impl {
     (@validate type=$type:tt final=TypedSection) => { compile_error!("Use #[section(typed)] to create a typed section"); };
     (@validate type=mutable final=TypedMutableSection) => {};
     (@validate type=$type:tt final=TypedMutableSection) => { compile_error!("Use #[section(mutable)] to create a mutable typed section"); };
+    (@validate type=movable final=TypedMovableSection) => {};
+    (@validate type=$type:tt final=TypedMovableSection) => { compile_error!("Use #[section(movable)] to create a movable typed section"); };
     (@validate type=reference final=TypedReferenceSection) => {};
     (@validate type=$type:tt final=TypedReferenceSection) => { compile_error!("Use #[section(reference)] to create a reference section"); };
     (@validate type=$type:tt final=$final:ident) => { compile_error!(concat!("Unexpected section type: ", stringify!($type), " for section type: ", stringify!($final))); };
@@ -231,7 +233,7 @@ macro_rules! __section_parse_impl {
                 static SECTION: $collection = {
                 let section = $crate::__support::get_section!($section_type, name=$ident, type=$generic_ty $(, aux=$aux )?);
                     let name = $crate::__support::section_name!(
-                        raw data bare $($aux)? $ident // swap
+                        raw item data bare $($aux)? $ident // swap
                     );
                     $crate::__support::validate_section_name(name);
                     unsafe { <$collection>::new(name, section) }
@@ -262,7 +264,7 @@ macro_rules! __section_parse_impl {
         const _: () = {
             // Ensure that untyped data sections are never empty.
             $crate::__add_section_link_attribute!(
-                data section $ident $($aux)?
+                item data section $ident $($aux)?
                 #[link_section = __]
                 static __LINK_SECTION_CONST_ITEM: u8 = 0;
             );
@@ -317,6 +319,10 @@ macro_rules! __section_declare_submission_macro {
     ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=mutable vis=$vis:vis name=$name:ident) => {
         #[doc(hidden)]
         $vis use $crate::__in_section_helper_macro_generic_mutable as $name;
+    };
+    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=movable vis=$vis:vis name=$name:ident) => {
+        #[doc(hidden)]
+        $vis use $crate::__in_section_helper_macro_generic_movable as $name;
     };
     ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=reference vis=$vis:vis name=$name:ident) => {
         #[doc(hidden)]

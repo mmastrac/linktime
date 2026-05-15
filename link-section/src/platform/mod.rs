@@ -22,6 +22,21 @@ pub use wasm::Bounds;
 #[cfg(not(target_family = "wasm"))]
 pub use PtrBounds as Bounds;
 
+/// Bounds for a movable section and its associated backref section.
+pub struct MovableBounds {
+    /// Bounds for the submitted values.
+    pub values: Bounds,
+    /// Bounds for the submitted backrefs.
+    pub refs: Bounds,
+}
+
+impl MovableBounds {
+    /// Create movable-section bounds.
+    pub const fn new(values: Bounds, refs: Bounds) -> Self {
+        Self { values, refs }
+    }
+}
+
 /// Rejects section names that cannot be represented on the current target.
 pub const fn validate_section_name(name: &str) {
     if cfg!(target_vendor = "apple") {
@@ -102,6 +117,12 @@ impl<T> SyncUnsafeCell<T> {
             cell: ::core::cell::UnsafeCell::new(value),
         }
     }
+
+    /// Get a raw pointer to the contained value.
+    #[inline]
+    pub const fn get(&self) -> *mut T {
+        self.cell.get()
+    }
 }
 
 unsafe impl<T> Sync for SyncUnsafeCell<T> {}
@@ -136,6 +157,7 @@ macro_rules! __def_section_name {
             $__section:ident $__type:ident => $__prefix:tt __ $__suffix:tt;
         )*}
         AUXILIARY = $__aux_sep:literal;
+        REFS = $__refs_sep:literal;
         MAX_LENGTH = $__max_length:literal;
         HASH_LENGTH = $__hash_length:literal;
         VALID_SECTION_CHARS = $__valid_section_chars:literal;
@@ -145,22 +167,34 @@ macro_rules! __def_section_name {
         #[doc(hidden)]
         macro_rules! $__name {
             $(
-                (raw $__section $__type $name:ident) => {
+                (raw item $__section $__type $name:ident) => {
                     concat!(concat! $__prefix, stringify!($name), concat! $__suffix);
                 };
-                (raw $__section $__type $name:ident $aux:ident) => {
+                (raw item $__section $__type $name:ident $aux:ident) => {
                     concat!(concat! $__prefix, stringify!($name), $__aux_sep, stringify!($aux), concat! $__suffix);
                 };
-                ($pattern:tt $__section $__type $name:ident) => {
+                (raw backref $__section $__type $name:ident) => {
+                    concat!(concat! $__prefix, stringify!($name), $__refs_sep, concat! $__suffix);
+                };
+                (raw backref $__section $__type $name:ident $aux:ident) => {
+                    concat!(concat! $__prefix, stringify!($name), $__aux_sep, stringify!($aux), $__refs_sep, concat! $__suffix);
+                };
+                ($pattern:tt item $__section $__type $name:ident) => {
                     $crate::__support::hash!($pattern ($__prefix) $name ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
-                ($pattern:tt $__section $__type $name:ident $aux:ident) => {
+                ($pattern:tt item $__section $__type $name:ident $aux:ident) => {
                     $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
+                ($pattern:tt backref $__section $__type $name:ident) => {
+                    $crate::__support::hash!($pattern ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                };
+                ($pattern:tt backref $__section $__type $name:ident $aux:ident) => {
+                    $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                };
             )*
-            ($pattern:tt $unknown_section:ident $unknown_type:ident $name:ident) => {
+            ($pattern:tt $unknown_ref_or_item:ident $unknown_section:ident $unknown_type:ident $name:ident) => {
                 const _: () = {
-                    compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
+                    compile_error!(concat!("Unknown section type: `", stringify!($unknown_ref_or_item), "/", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                 };
             };
         }

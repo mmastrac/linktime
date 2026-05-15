@@ -7,13 +7,42 @@ use core::sync::atomic::{AtomicU8, Ordering};
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_wasm {
+    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+        {
+            static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
+                (__) item data bare $ident $($aux)?
+            );
+            $crate::__support::add_section_link_attribute!(
+                item data bounds $ident $($aux)?
+                #[export_name = __]
+                #[used]
+                static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo = $crate::__support::wasm::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
+            );
+
+            static __LINK_SECTION_BACKREF_NAME: &'static str = $crate::__support::section_name!(
+                (__) backref data bare $ident $($aux)?
+            );
+            $crate::__support::add_section_link_attribute!(
+                backref data bounds $ident $($aux)?
+                #[export_name = __]
+                #[used]
+                static __LINK_SECTION_BACKREF_INFO: $crate::__support::wasm::LinkSectionRawInfo =
+                    $crate::__support::wasm::LinkSectionRawInfo::new::<$crate::MovableBackref<$generic_ty>>(__LINK_SECTION_BACKREF_NAME);
+            );
+
+            $crate::__support::MovableBounds::new(
+                unsafe { $crate::__support::Bounds::new(&raw const __LINK_SECTION_INFO) },
+                unsafe { $crate::__support::Bounds::new(&raw const __LINK_SECTION_BACKREF_INFO) },
+            )
+        }
+    };
     ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
-                raw data bare $ident $($aux)?
+                (__) item data bare $ident $($aux)?
             );
             $crate::__support::add_section_link_attribute!(
-                data bounds $ident $($aux)?
+                item data bounds $ident $($aux)?
                 #[export_name = __]
                 #[used]
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo = $crate::__support::wasm::LinkSectionRawInfo::new::<$generic_ty>(__LINK_SECTION_NAME);
@@ -36,6 +65,7 @@ crate::__def_section_name! {
         data bounds =>  (".data", ".link_section.") __ (".bounds");
     }
     AUXILIARY = ".";
+    REFS = ".r.";
     MAX_LENGTH = 16;
     HASH_LENGTH = 6;
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -49,6 +79,14 @@ macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {};
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[doc(hidden)]
+#[macro_export]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
+macro_rules! __register_wasm_movable_item {
+    (value=$value:expr, type=$ty:ty, section=$section:ident $($aux:ident)?) => {};
+}
+
 #[cfg(target_family = "wasm")]
 #[doc(hidden)]
 #[macro_export]
@@ -57,13 +95,13 @@ macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
         // Register a counting item
         $crate::__add_section_link_attribute!(
-            data section $section $($aux)?
+            item data section $section $($aux)?
             #[link_section = __]
             static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
         );
 
         $crate::__add_section_link_attribute!(
-            data bounds $section $($aux)?
+            item data bounds $section $($aux)?
             #[link_name = __]
             extern "C" {
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
@@ -85,6 +123,72 @@ macro_rules! __register_wasm_item {
                     $(
                         $ident.set(ptr);
                     )?
+                }
+            }
+            __LINK_SECTION_ITEM_FN
+        };
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[doc(hidden)]
+#[macro_export]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
+macro_rules! __register_wasm_movable_item {
+    (value=$value:expr, type=$ty:ty, section=$section:ident $($aux:ident)?) => {
+        // Register counting items for both the value section and its backref section.
+        $crate::__add_section_link_attribute!(
+            item data section $section $($aux)?
+            #[link_section = __]
+            static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+        );
+        $crate::__add_section_link_attribute!(
+            backref data section $section $($aux)?
+            #[link_section = __]
+            static __LINK_SECTION_BACKREF_COUNTING_ITEM: u8 = 0;
+        );
+
+        $crate::__add_section_link_attribute!(
+            item data bounds $section $($aux)?
+            #[link_name = __]
+            extern "C" {
+                static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
+            }
+        );
+        $crate::__add_section_link_attribute!(
+            backref data bounds $section $($aux)?
+            #[link_name = __]
+            extern "C" {
+                static __LINK_SECTION_BACKREF_INFO: $crate::__support::wasm::LinkSectionRawInfo;
+            }
+        );
+
+        static __LINK_SECTION_MOVABLE_PTR: $crate::__support::SyncUnsafeCell<*const $ty> =
+            $crate::__support::SyncUnsafeCell::new(::core::ptr::null());
+
+        #[link_section = ".init_array.0"]
+        #[used] // TODO: used(linker) with linktime_used_linker feature
+        #[allow(non_snake_case)]
+        static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+            extern "C" fn __LINK_SECTION_ITEM_FN() {
+                static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                    return;
+                }
+                unsafe {
+                    let ptr = $crate::__support::wasm::register_wasm_link_section_item::<$ty>(
+                        &raw const __LINK_SECTION_INFO,
+                    );
+                    ::core::ptr::write(ptr, $value);
+                    *__LINK_SECTION_MOVABLE_PTR.get() = ptr;
+
+                    let backref = $crate::__support::wasm::register_wasm_link_section_item::<
+                        $crate::MovableBackref<$ty>,
+                    >(&raw const __LINK_SECTION_BACKREF_INFO);
+                    ::core::ptr::write(
+                        backref,
+                        $crate::MovableBackref::new(ptr, &raw const __LINK_SECTION_MOVABLE_PTR),
+                    );
                 }
             }
             __LINK_SECTION_ITEM_FN
