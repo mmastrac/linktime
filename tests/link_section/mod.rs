@@ -35,6 +35,28 @@ choice {
 );
 
 clitest!(
+    link_section_mut,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/mut";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+"""
+item: 1
+item: 2
+item: 3
+item: 4
+item: 5
+aux item: 1234
+aux item: 2341
+aux item: 4321
+"""
+"#
+);
+
+clitest!(
     no_default_features,
     r#"
 set RUSTFLAGS "";
