@@ -1,36 +1,73 @@
-A crate for defining link sections in Rust.
+A crate for defining linker-backed sections in Rust.
 
-Sections are defined using the `#[section(...)]` macro. This creates an
-associated `data` and `text` section, and items decorated with the
-`#[in_section(SECTION)]` macro are placed into the associated section.
+`link-section` provides two attributes:
 
-Items can be submitted to a section either as a `const` item, or a `static`
-item. `const` items are stored as a copy in the section, which means that Rust
-may make additional copies of the item data when referenced directly (and
-potentially optimize the storage of the item out entirely). `static` items are
-stored directly in the section and a reference to the item will yield the same
-underlying pointer as a reference to the item in the section's slice.
+- `#[section(...)]` defines a section handle. The handle is a `static` item used
+  to inspect the section at runtime, usually as a slice.
+- `#[in_section(SECTION)]` submits an item to that section. A submitted item is
+  an item annotated with `#[in_section(...)]`; depending on the section kind, it
+  may also remain usable directly at the submission site.
 
-There are four section types that vary in their typed-ness, slicability, and
-mutability:
+Together, these attributes let separately-declared items be collected into one
+linker section and accessed through a single section handle.
 
-- `untyped`: An untyped section purely used for collection and co-location of
-  data in the binary. This is useful for storing related functions and data in a
-  single section that may only be called during specific phases of the program's
-  execution (e.g.: initialization, shutdown, cold, etc.).
-- `typed`: An immutable section that can store a given type and can be accessed
-  as a slice. On WASM, only `const` items are supported.
-- `mutable`: A mutable section that can store a given type and can be accessed
-  as a mutable slice. As a consequence, `static` items are not supported.
-- `reference`: An immutable section that can support access both as a slice and
-  as a reference at the submission site on all platforms.
+## Section Kinds
 
-| Section Type | Ref Slice | Mut Slice | `const` | `static`/Reference |
-| ------------ | --------- | --------- | ------- | ------------------ |
-| `untyped`    | ❌        | ❌        | ✅      | ✅                 |
-| `typed`      | ✅        | ❌        | ✅      | ⚠️                 |
-| `mutable`    | ✅        | ✅        | ✅      | ❌                 |
-| `reference`  | ✅        | ❌        | ✅      | ✅                 |
+There are four section kinds:
+
+- `untyped`: Collects related code or data in one linker section without
+  exposing a typed slice. This is useful for co-location, phase-specific code,
+  or platform-specific section placement.
+- `typed`: Stores values of one type and exposes them as an immutable slice.
+- `mutable`: Stores values of one type and exposes them as a mutable slice.
+- `reference`: Stores values of one type, exposes them as an immutable slice,
+  and also lets each submitted item be used as a reference at its submission
+  site.
+
+| Section Kind | Immutable Slice | Mutable Slice | `const` Items | `static` / Reference Items |
+| ------------ | --------------- | ------------- | ------------- | -------------------------- |
+| `untyped`    | ❌              | ❌            | ✅            | ✅                         |
+| `typed`      | ✅              | ❌            | ✅            | ⚠️                         |
+| `mutable`    | ✅              | ✅            | ✅            | ❌                         |
+| `reference`  | ✅              | ❌            | ✅            | ✅                         |
+
+⚠️ Native targets support `static` submissions for `typed` sections; WASM uses
+`const` submissions only.
+
+## Submitting Items
+
+Items are submitted with `#[in_section(SECTION)]`.
+
+A `const` submission copies the value into the section. The original constant
+remains usable as a normal Rust constant, and the section receives its own
+stored copy.
+
+```rust
+#[in_section(MY_SECTION)]
+pub const ITEM: MyType = MyType::new();
+```
+
+A `static` submission stores the `static` directly in the section. References to
+the `static` and references obtained from the section slice point at the same
+underlying object. `static` submissions are supported for typed sections on
+native targets and for reference sections.
+
+```rust
+#[in_section(MY_SECTION)]
+pub static ITEM: MyType = MyType::new();
+```
+
+A `fn` submitted to a typed section is stored as a function pointer. The
+function body itself is not placed into the typed data section.
+
+```rust
+#[section(typed)]
+pub static FUNCTIONS: link_section::TypedSection<fn()>;
+#[in_section(FUNCTIONS)]
+pub fn callback() {
+    // ...
+}
+```
 
 ## Platform Support
 
