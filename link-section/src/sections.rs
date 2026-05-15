@@ -59,14 +59,17 @@ macro_rules! impl_bounds_fns {
     ($generic:ident) => {
         #[doc(hidden)]
         pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
-            assert!(::core::mem::size_of::<$generic>() > 0, "Zero-sized types are not supported");
+            assert!(
+                ::core::mem::size_of::<$generic>() > 0,
+                "Zero-sized types are not supported"
+            );
             Self {
                 name,
                 bounds,
                 _phantom: ::core::marker::PhantomData,
             }
         }
-    
+
         /// The start address of the section.
         #[inline(always)]
         pub fn start_ptr(&self) -> *const T {
