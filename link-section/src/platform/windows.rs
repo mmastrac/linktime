@@ -18,19 +18,25 @@ macro_rules! __get_section_windows {
                 #[link_section = __]
                 static __START: Alignment<$generic_ty> = Alignment::new();
             );
+            let start = unsafe {
+                let start = &raw const __START;
+                start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
+            };
             add_section_link_attribute!(
                 data end $ident $($aux)?
                 #[link_section = __]
                 static __END: Alignment<$generic_ty> = Alignment::new();
             );
+            let end = unsafe { &raw const __END as *const () };
 
+            #[cfg(miri)]
             PtrBounds::new(
-                unsafe {
-                    let start = &raw const __START;
-                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
-                },
-                unsafe { &raw const __END as *const () },
+                ::core::hint::black_box(start),
+                ::core::hint::black_box(end),
             )
+
+            #[cfg(not(miri))]
+            PtrBounds::new(start, end)
         }
     }
 }
