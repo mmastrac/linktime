@@ -129,8 +129,8 @@ macro_rules! __def_section_name {
 
         pub use $__name as section_name;
 
-        pub const MAX_LENGTH: usize = $__max_length;
-        pub const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();
+        pub(crate) const MAX_LENGTH: usize = $__max_length;
+        pub(crate) const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();
 
         #[allow(unused)]
         pub(crate) const fn is_valid_section_char(b: u8) -> bool {

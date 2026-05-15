@@ -1,3 +1,5 @@
+//! A collection of items that are available via slice, in sorted order.
+
 use link_section::TypedMutableSection;
 
 /// A collection of sized items that are available via sorted slice.
@@ -13,19 +15,22 @@ pub struct ScatteredSortedSlice<T: Ord + 'static> {
 }
 
 impl<T: Ord + 'static> ScatteredSortedSlice<T> {
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
+    #[doc(hidden)]
     pub const unsafe fn new(data: &'static TypedMutableSection<T>) -> Self {
         Self {
             data,
             _marker: core::marker::PhantomData,
         }
+    }
+
+    /// The number of items in the sorted slice.
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    /// True if the sorted slice is empty.
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 }
 
@@ -40,7 +45,7 @@ impl<T: Ord + 'static> ::core::iter::IntoIterator for &'static ScatteredSortedSl
     type Item = &'static T;
     type IntoIter = ::core::slice::Iter<'static, T>;
     fn into_iter(self) -> Self::IntoIter {
-        self.data.as_slice().into_iter()
+        self.data.as_slice().iter()
     }
 }
 
@@ -54,6 +59,7 @@ pub unsafe fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
     main.sort_unstable();
 }
 
+/// Declare a scattered sorted slice.
 #[macro_export]
 macro_rules! __sorted_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
@@ -63,6 +69,7 @@ macro_rules! __sorted_slice {
 
         #[allow(unused)]
         #[allow(non_snake_case)]
+        #[doc(hidden)]
         $vis mod $name {
             $crate::__support::link_section::declarative::section!(
                 #[section(mutable)]

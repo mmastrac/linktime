@@ -78,10 +78,12 @@ enum LockState {
 pub struct LinkSection(NonNull<LinkSectionRawInfo>);
 
 impl LinkSection {
+    /// Create a new link section.
     pub const fn new(info_ptr: NonNull<LinkSectionRawInfo>) -> Self {
         Self(info_ptr)
     }
 
+    /// Lock the link section and return a guard.
     #[inline(always)]
     pub fn lock<'a>(&'a self) -> LinkSectionLockGuard<'a> {
         let lock_state = unsafe { self.lock_ref() };
@@ -102,17 +104,20 @@ impl LinkSection {
     fn maybe_lock_uninit<'a>(&'a self, old: u8) -> LinkSectionLockGuard<'a> {
         let lock_state = unsafe { self.lock_ref() };
         if old == LockState::Uninitialized as u8 {
-            if let Err(_) = lock_state.compare_exchange(
-                LockState::Uninitialized as _,
-                LockState::Locked as _,
-                Ordering::Acquire,
-                Ordering::Acquire,
-            ) {
+            if lock_state
+                .compare_exchange(
+                    LockState::Uninitialized as _,
+                    LockState::Locked as _,
+                    Ordering::Acquire,
+                    Ordering::Acquire,
+                )
+                .is_err()
+            {
                 panic!("Link section already being initialized");
             }
             let info = unsafe { self.as_mut() };
             info.initialize();
-            return LinkSectionLockGuard(lock_state, info);
+            LinkSectionLockGuard(lock_state, info)
         } else {
             panic!("Link section already locked");
         }
@@ -129,6 +134,7 @@ impl LinkSection {
     }
 
     #[inline(always)]
+    #[allow(clippy::mut_from_ref)]
     unsafe fn as_mut(&self) -> &mut LinkSectionInfo {
         unsafe {
             let unsafe_cell = ptr::addr_of!((*self.0.as_ptr()).info);
@@ -143,12 +149,12 @@ pub struct LinkSectionLockGuard<'a>(&'a AtomicU8, &'a mut LinkSectionInfo);
 impl<'a> core::ops::Deref for LinkSectionLockGuard<'a> {
     type Target = LinkSectionInfo;
     fn deref(&self) -> &Self::Target {
-        &self.1
+        self.1
     }
 }
 impl<'a> core::ops::DerefMut for LinkSectionLockGuard<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.1
+        self.1
     }
 }
 impl<'a> Drop for LinkSectionLockGuard<'a> {
@@ -170,6 +176,7 @@ pub struct LinkSectionRawInfo {
 // synchronize via `AtomicU8`.
 unsafe impl Sync for LinkSectionRawInfo {}
 
+/// A record describing the WASM link section.
 #[repr(C)]
 pub struct LinkSectionInfo {
     state: u8,
@@ -183,6 +190,7 @@ pub struct LinkSectionInfo {
 }
 
 impl LinkSectionRawInfo {
+    /// Create a new link section raw info.
     pub const fn new<T>(name: &'static str) -> Self {
         Self {
             lock: AtomicU8::new(LockState::Uninitialized as _),
@@ -201,6 +209,7 @@ impl LinkSectionRawInfo {
 }
 
 impl LinkSectionInfo {
+    /// Initialize the link section.
     pub fn initialize(&mut self) {
         let size =
             unsafe { read_custom_section(self.name, self.name_length as _, ptr::null_mut(), 0) };
@@ -235,6 +244,11 @@ impl LinkSectionInfo {
     }
 }
 
+/// Register a link section item.
+///
+/// # Safety
+///
+/// This is called by the `in_section` procedural macro.
 pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRawInfo) -> *mut T {
     let link_section = LinkSection::new(NonNull::new_unchecked(info_ptr as _));
     let mut info = link_section.lock();
@@ -245,7 +259,7 @@ pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRaw
         }
 
         let slot = info.current;
-        let next = slot.byte_add(info.size_of) as *const ();
+        let next = slot.byte_add(info.size_of);
         if next > info.end {
             panic!("Link section overflow: too many registered items");
         }
@@ -276,32 +290,39 @@ unsafe fn allocate(_layout: Layout) -> *mut () {
 pub struct Bounds(LinkSection);
 
 impl Bounds {
+    /// Create a new bounds struct.
+    ///
+    /// # Safety
+    ///
+    /// This is called by the `section` procedural macro.
     pub const unsafe fn new(info_ptr: *const LinkSectionRawInfo) -> Self {
         Self(LinkSection::new(unsafe {
             NonNull::new_unchecked(info_ptr as _)
         }))
     }
 
+    /// Get the start pointer of the link section.
     pub fn start_ptr(&self) -> *const () {
         let lock = self.0.lock();
         if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
-        return lock.start;
+        lock.start
     }
 
+    /// Get the end pointer of the link section.
     pub fn end_ptr(&self) -> *const () {
         let lock = self.0.lock();
         if lock.state != LinkSectionState::Initialized as u8 {
             panic!("Link section not initialized: possible ctor ordering issue");
         }
-        return lock.end;
+        lock.end
     }
 
     /// This is intentionally safe to call before the section is fully
     /// initialized.
     pub fn byte_len(&self) -> usize {
         let lock = self.0.lock();
-        return unsafe { lock.end.byte_offset_from(lock.start) as usize };
+        unsafe { lock.end.byte_offset_from(lock.start) as usize }
     }
 }

@@ -1,3 +1,6 @@
+//! A collection of sized items that collected into a slice in an arbitrary
+//! order.
+
 use link_section::TypedSection;
 
 /// A collection of sized items that collected into a slice in an arbitrary
@@ -7,6 +10,7 @@ pub struct ScatteredSlice<T: 'static> {
 }
 
 impl<T> ScatteredSlice<T> {
+    #[doc(hidden)]
     pub const unsafe fn new(section: &'static TypedSection<T>) -> Self {
         Self { section }
     }
@@ -15,10 +19,11 @@ impl<T> ScatteredSlice<T> {
 impl<T> ::core::ops::Deref for ScatteredSlice<T> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
-        &self.section
+        self.section
     }
 }
 
+/// Declare a scattered slice.
 #[macro_export]
 macro_rules! __slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
@@ -28,6 +33,7 @@ macro_rules! __slice {
 
         #[allow(unused)]
         #[allow(non_snake_case)]
+        #[doc(hidden)]
         $vis mod $name {
             $crate::__support::link_section::declarative::section!(
                 #[section(typed)]
