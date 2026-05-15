@@ -41,6 +41,7 @@ crate::__def_section_name! {
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
 
+#[allow(missing_unsafe_on_extern)] // MSRV
 extern "C" {
     /// Read custom section with name/name_length as a UTF8 string
     pub(crate) fn read_custom_section(
@@ -250,7 +251,7 @@ impl LinkSectionInfo {
 ///
 /// This is called by the `in_section` procedural macro.
 pub unsafe fn register_wasm_link_section_item<T>(info_ptr: *const LinkSectionRawInfo) -> *mut T {
-    let link_section = LinkSection::new(NonNull::new_unchecked(info_ptr as _));
+    let link_section = unsafe { LinkSection::new(NonNull::new_unchecked(info_ptr as _)) };
     let mut info = link_section.lock();
 
     unsafe {

@@ -51,6 +51,17 @@ impl PtrBounds {
     }
 
     #[inline(always)]
+    /// Length in bytes (`end - start`).
+    pub const fn byte_len(&self) -> usize {
+        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
+        // so we manually implement it here.
+        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
+    }
+}
+
+#[cfg(not(miri))]
+impl PtrBounds {
+    #[inline(always)]
     /// Start as an opaque pointer.
     pub const fn start_ptr(&self) -> *const () {
         self.start
@@ -60,12 +71,17 @@ impl PtrBounds {
     pub const fn end_ptr(&self) -> *const () {
         self.end
     }
-    #[inline(always)]
-    /// Length in bytes (`end - start`).
-    pub const fn byte_len(&self) -> usize {
-        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
-        // so we manually implement it here.
-        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
+}
+
+#[cfg(miri)]
+impl PtrBounds {
+    /// Start as an opaque pointer.
+    pub fn start_ptr(&self) -> *const () {
+        self.start as usize as *const ()
+    }
+    /// End as an opaque pointer.
+    pub fn end_ptr(&self) -> *const () {
+        self.end as usize as *const ()
     }
 }
 
