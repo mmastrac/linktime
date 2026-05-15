@@ -229,7 +229,7 @@ macro_rules! __section_parse_impl {
             /// non-const contexts, `deref` is sufficient.
             pub const fn const_deref(&self) -> &'static $collection {
                 static SECTION: $collection = {
-                let section = $crate::__support::get_section!(name=$ident, type=$generic_ty $(, aux=$aux )?);
+                let section = $crate::__support::get_section!($section_type, name=$ident, type=$generic_ty $(, aux=$aux )?);
                     let name = $crate::__support::section_name!(
                         raw data bare $($aux)? $ident // swap
                     );

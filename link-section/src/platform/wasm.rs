@@ -7,7 +7,7 @@ use core::sync::atomic::{AtomicU8, Ordering};
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_wasm {
-    (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
                 raw data bare $ident $($aux)?

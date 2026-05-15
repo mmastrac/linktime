@@ -6,7 +6,40 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_windows {
-    (name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    // Mutable sections must use UnsafeCell to match items
+    (mutable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+        {
+            use $crate::__support::Alignment;
+            use $crate::__support::PtrBounds;
+            use $crate::__support::add_section_link_attribute;
+            use core::mem;
+            use core::cell::UnsafeCell;
+
+            if cfg!(miri) {
+                // Miri doesn't support link section sorting
+                PtrBounds::new(::core::ptr::null(), ::core::ptr::null())
+            } else {
+                add_section_link_attribute!(
+                    data start $ident $($aux)?
+                    #[link_section = __]
+                    static __START: UnsafeCell<Alignment<$generic_ty>> = UnsafeCell::new(Alignment::new());
+                );
+                let start = unsafe {
+                    let start = &raw const __START;
+                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
+                };
+                add_section_link_attribute!(
+                    data end $ident $($aux)?
+                    #[link_section = __]
+                    static __END: UnsafeCell<Alignment<$generic_ty>> = UnsafeCell::new(Alignment::new());
+                );
+                let end = unsafe { &raw const __END as *const () };
+
+                PtrBounds::new(start, end)
+            }
+        }
+    };
+    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             use $crate::__support::Alignment;
             use $crate::__support::PtrBounds;
