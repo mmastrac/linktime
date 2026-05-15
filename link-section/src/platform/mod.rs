@@ -1,6 +1,4 @@
 pub mod apple;
-pub mod miri;
-/// LLVM/GCC (non-WASM, non-Windows): orphan section start/end symbols.
 pub mod standard;
 pub mod wasm;
 pub mod windows;

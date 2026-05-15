@@ -1,4 +1,4 @@
-//! Non-WASM, non-Windows: orphan section start/end symbols.
+//! Apple platform: `section$start$` and `section$end$` symbols.
 
 /// On Apple platforms, the linker provides a pointer to the start and end of
 /// the section regardless of the section's name.

@@ -31,8 +31,8 @@ macro_rules! __get_section_windows {
 
             #[cfg(miri)]
             PtrBounds::new(
-                ::core::hint::black_box(start),
-                ::core::hint::black_box(end),
+                ::core::hint::black_box(start as usize as *const ()),
+                ::core::hint::black_box(end as usize as *const ()),
             )
 
             #[cfg(not(miri))]
