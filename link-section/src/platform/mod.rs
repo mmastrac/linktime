@@ -91,6 +91,7 @@ impl PtrBounds {
 /// `UnsafeCell` that is `Sync` and `Send`.
 #[repr(transparent)]
 pub struct SyncUnsafeCell<T> {
+    #[allow(unused)]
     cell: ::core::cell::UnsafeCell<T>,
 }
 
