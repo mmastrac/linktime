@@ -74,6 +74,7 @@ function body itself is not placed into the typed data section.
 ```rust
 #[section(typed)]
 pub static FUNCTIONS: link_section::TypedSection<fn()>;
+
 #[in_section(FUNCTIONS)]
 pub fn callback() {
     // ...
