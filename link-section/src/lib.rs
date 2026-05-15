@@ -15,7 +15,8 @@ mod section_parse;
 mod sections;
 
 pub use sections::{Section, TypedMutableSection, TypedReferenceSection, TypedSection};
-/// [`Ref`] and related types for `reference` sections.
+
+/// Types for [`TypedReferenceSection`].
 pub mod reference {
     pub use crate::sections::Ref;
 }

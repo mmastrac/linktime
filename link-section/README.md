@@ -15,7 +15,7 @@ Sections are defined using the `#[section(...)]` macro. This creates an
 associated `data` and `text` section, and items decorated with the
 `#[in_section(SECTION)]` macro are placed into the associated section.
 
-There are five section types:
+There are four section types:
 
  - `untyped`: An untyped section purely used for collection and co-location of
    data in the binary.

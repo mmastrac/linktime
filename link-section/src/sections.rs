@@ -154,8 +154,8 @@ macro_rules! impl_bounds_traits {
 /// underlying data is immutable and enumerable. `static` and `const` items are
 /// stored directly in the section.
 ///
-/// `static` items are guaranteed to have a valid return from [`offset_of`] if
-/// they are in the section.
+/// `static` items are guaranteed to have a valid return from
+/// [`TypedSection::offset_of`] if they are in the section.
 ///
 /// Platform note: WASM platforms require `const` items. Use
 /// [`TypedReferenceSection`] for cross-platform support for `static` items.
