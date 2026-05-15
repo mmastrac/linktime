@@ -9,21 +9,25 @@ impl FOO {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
-                extern "C" {
-                    #[link_name = "\u{1}section$start$__DATA$FOO"]
-                    #[allow(unsafe_code)]
-                    #[allow(unsafe_code)]
-                    static __START: u8;
-                }
-                extern "C" {
-                    #[link_name = "\u{1}section$end$__DATA$FOO"]
-                    #[allow(unsafe_code)]
-                    #[allow(unsafe_code)]
-                    static __END: u8;
-                }
                 ::link_section::__support::PtrBounds::new(
-                    unsafe { &raw const __START as *const () },
-                    unsafe { &raw const __END as *const () },
+                    {
+                        extern "C" {
+                            #[link_name = "\u{1}section$start$__DATA$FOO"]
+                            #[allow(unsafe_code)]
+                            #[allow(unsafe_code)]
+                            static __SYMBOL: u8;
+                        }
+                        unsafe { &raw const __SYMBOL as *const () }
+                    },
+                    {
+                        extern "C" {
+                            #[link_name = "\u{1}section$start$__DATA$FOO"]
+                            #[allow(unsafe_code)]
+                            #[allow(unsafe_code)]
+                            static __SYMBOL: u8;
+                        }
+                        unsafe { &raw const __SYMBOL as *const () }
+                    },
                 )
             };
             let name = "__DATA,FOO";

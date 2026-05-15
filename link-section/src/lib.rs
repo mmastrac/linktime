@@ -187,7 +187,7 @@ pub mod __support {
                 // These are not valid items, but they are valid pointers.
                 // We cannot safely use them - only take pointers to them.
                 $crate::__support::add_section_link_attribute!(
-                    data start $name $($aux)?
+                    $section $type $name $($aux)?
                     #[link_name = __]
                     extern "C" {
                         static __SYMBOL: u8;

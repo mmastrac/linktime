@@ -41,6 +41,7 @@ crate::__def_section_name! {
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
 
+#[cfg(target_family = "wasm")]
 #[allow(missing_unsafe_on_extern)] // MSRV
 extern "C" {
     /// Read custom section with name/name_length as a UTF8 string
@@ -50,6 +51,16 @@ extern "C" {
         target_address: *mut u8,
         target_address_length: usize,
     ) -> usize;
+}
+
+#[cfg(not(target_family = "wasm"))]
+unsafe fn read_custom_section(
+    _name: *const u8,
+    _name_length: usize,
+    _target_address: *mut u8,
+    _target_address_length: usize,
+) -> usize {
+    unreachable!("placeholder for non-WASM platforms")
 }
 
 #[repr(u8)]

@@ -24,21 +24,25 @@ impl FOO {
             {
                 let section =
                     {
-                        extern "C" {
-                            #[link_name = "__start__data_link_section_FOO"]
-                            #[allow(unsafe_code)]
-                            static __START: u8;
-                        }
-                        extern "C" {
-                            #[link_name = "__stop__data_link_section_FOO"]
-                            #[allow(unsafe_code)]
-                            static __END: u8;
-                        }
-                        ::link_section::__support::PtrBounds::new(unsafe {
-                                &raw const __START as *const ()
-                            }, unsafe { &raw const __END as *const () })
+                        ::link_section::__support::PtrBounds::new({
+                                extern "C" {
+                                    #[link_name = "__start__data_link_section_FOO"]
+                                    #[allow(unsafe_code)]
+                                    static __SYMBOL: u8;
+                                }
+                                unsafe { &raw const __SYMBOL as *const () }
+                            },
+                            {
+                                extern "C" {
+                                    #[link_name = "__start__data_link_section_FOO"]
+                                    #[allow(unsafe_code)]
+                                    static __SYMBOL: u8;
+                                }
+                                unsafe { &raw const __SYMBOL as *const () }
+                            })
                     };
                 let name = "_data_link_section_FOO";
+                ::link_section::__support::validate_section_name(name);
                 unsafe { <TypedSection<Driver>>::new(name, section) }
             };
         &SECTION

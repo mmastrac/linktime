@@ -29,6 +29,7 @@ impl FOO {
                         }
                     };
                 let name = ".data.link_section.FOO";
+                ::link_section::__support::validate_section_name(name);
                 unsafe { <TypedSection<fn()>>::new(name, section) }
             };
         &SECTION
