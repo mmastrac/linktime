@@ -84,7 +84,7 @@ impl PtrBounds {
     }
     /// Length in bytes (`end - start`).
     pub fn byte_len(&self) -> usize {
-        (self.end as usize - self.start as usize)
+        self.end as usize - self.start as usize
     }
 }
 

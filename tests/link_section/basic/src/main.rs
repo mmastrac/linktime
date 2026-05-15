@@ -77,13 +77,13 @@ pub const DEBUGGABLE_FUNCTION: &'static (dyn ::core::fmt::Debug + Sync) = {
     &Debuggable
 };
 
-#[cfg(miri)]
+#[cfg(all(miri, not(windows)))]
 pub fn main() {
     libc_eprintln!("Miri is not supported for this test");
     assert_eq!(TYPED_LINK_SECTION.len(), 0);
 }
 
-#[cfg(not(miri))]
+#[cfg(any(not(miri), windows))]
 pub fn main() {
     libc_eprintln!("LINK_SECTION: {:?}", LINK_SECTION);
     link_section_function();
