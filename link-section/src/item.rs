@@ -6,7 +6,8 @@ pub trait SectionItemType {
     type Item;
 }
 
-#[diagnostic::on_unimplemented(message = "Incorrect section type for item")]
+// Waiting on Rust 1.78
+// #[diagnostic::on_unimplemented(message = "Incorrect section type for item")]
 /// Typed section compatibility for item `T`.
 pub trait SectionItemTyped<T> {
     /// Item representation for this `T`.
