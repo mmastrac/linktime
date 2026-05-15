@@ -35,6 +35,6 @@ fn main() {
     }
     println!(
         "REF_OPERATION_1: {}",
-        &*referenced_operations::REF_OPERATION_1
+        *referenced_operations::REF_OPERATION_1
     );
 }
