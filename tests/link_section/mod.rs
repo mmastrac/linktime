@@ -16,6 +16,7 @@ $ cargo run --quiet
 ! TYPED_LINK_SECTION: TypedSection { name: "%{DATA}TYPED_LINK%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 4 }
 ! address of TYPED_LINK_SECTION[0]: %{BASE16NUM}
 ! address of TYPED_LINK_SECTION[1]: %{BASE16NUM}
+! AUX_LINK_SECTION: TypedSection { name: "%{DATA}AUX_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 1, stride: 4 }
 ! aux: 1234
 ! CODE_SECTION: TypedSection { name: "%{DATA}FN_ARRAY%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 8 }
 ! [%{BASE16NUM}, %{BASE16NUM}, %{BASE16NUM}]

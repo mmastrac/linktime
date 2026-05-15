@@ -90,6 +90,7 @@ pub fn main() {
     libc_eprintln!("TYPED_LINK_SECTION: {:?}", TYPED_LINK_SECTION);
     libc_eprintln!("address of TYPED_LINK_SECTION[0]: {:p}", &LINKED_U32);
     libc_eprintln!("address of TYPED_LINK_SECTION[1]: {:p}", &LINKED_U32_2);
+    libc_eprintln!("AUX_LINK_SECTION: {:?}", AUX_LINK_SECTION);
     for aux in AUX_LINK_SECTION {
         libc_eprintln!("aux: {:?}", aux);
     }
