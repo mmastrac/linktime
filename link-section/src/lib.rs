@@ -401,6 +401,10 @@ pub mod __support {
             };
         };
 
+        (@typed[mutable] $($rest:tt)*) => {
+            compile_error!("Only const items are supported in mutable sections");
+        };
+
         // const items are the same across all other types
         (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*

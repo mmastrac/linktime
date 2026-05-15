@@ -7,7 +7,10 @@ zig_examples=(
   ctor-basic
   ctor-example
   ctor-advanced
+  link-section-const
+  link-section-dyn
   link-section-example
+  link-section-mut
 )
 
 for bin in "${zig_examples[@]}"; do
