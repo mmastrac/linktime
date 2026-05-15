@@ -165,9 +165,6 @@ macro_rules! __def_section_name {
 
         #[allow(unused)]
         pub(crate) const fn is_valid_section_name(name: &str) -> bool {
-            if !name.is_ascii() {
-                return false;
-            }
             let bytes = name.as_bytes();
             if bytes.is_empty() || bytes.len() > MAX_LENGTH {
                 return false;

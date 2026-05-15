@@ -22,3 +22,8 @@ path = "examples/slice.rs"
 [[example]]
 name = "sorted_slice"
 path = "examples/sorted_slice.rs"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(linktime_used_linker)',
+] }

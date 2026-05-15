@@ -44,7 +44,7 @@ crate::__def_section_name! {
 #[cfg(not(target_family = "wasm"))]
 #[doc(hidden)]
 #[macro_export]
-#[allow(edition_2024_expr_fragment_specifier, unknown_lints)]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {};
 }
@@ -52,7 +52,7 @@ macro_rules! __register_wasm_item {
 #[cfg(target_family = "wasm")]
 #[doc(hidden)]
 #[macro_export]
-#[allow(edition_2024_expr_fragment_specifier, unknown_lints)]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
         {
