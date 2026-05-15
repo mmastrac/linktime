@@ -77,7 +77,7 @@ const DRIVER: Driver =
                 Driver::new("driver", || ());
             #[link_section = ".data.link_section.FOO"]
             #[used]
-            static __LINK_SECTION_CONST_ITEM: u8 = 0;
+            static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
             extern "C" {
                 #[link_name = ".data.link_section.FOO.bounds"]
                 #[allow(unsafe_code)]
@@ -86,6 +86,7 @@ const DRIVER: Driver =
             }
             #[link_section = ".init_array.0"]
             #[used]
+            #[allow(non_snake_case)]
             static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
                 {
                     extern "C" fn __LINK_SECTION_ITEM_FN() {

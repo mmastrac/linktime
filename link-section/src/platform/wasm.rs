@@ -55,42 +55,40 @@ macro_rules! __register_wasm_item {
 #[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 macro_rules! __register_wasm_item {
     (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
-        {
-            // Register a counting item
-            $crate::__add_section_link_attribute!(
-                data section $section $($aux)?
-                #[link_section = __]
-                static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
-            );
+        // Register a counting item
+        $crate::__add_section_link_attribute!(
+            data section $section $($aux)?
+            #[link_section = __]
+            static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+        );
 
-            $crate::__add_section_link_attribute!(
-                data bounds $section $($aux)?
-                #[link_name = __]
-                extern "C" {
-                    static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
-                }
-            );
+        $crate::__add_section_link_attribute!(
+            data bounds $section $($aux)?
+            #[link_name = __]
+            extern "C" {
+                static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
+            }
+        );
 
-            #[link_section = ".init_array.0"]
-            #[used] // TODO: used(linker) with linktime_used_linker feature
-            #[allow(non_snake_case)]
-            static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
-                extern "C" fn __LINK_SECTION_ITEM_FN() {
-                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
-                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
-                        return;
-                    }
-                    unsafe {
-                        let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
-                        ::core::ptr::write(ptr as *mut _, $value);
-                        $(
-                            $ident.set(ptr);
-                        )?
-                    }
+        #[link_section = ".init_array.0"]
+        #[used] // TODO: used(linker) with linktime_used_linker feature
+        #[allow(non_snake_case)]
+        static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+            extern "C" fn __LINK_SECTION_ITEM_FN() {
+                static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                    return;
                 }
-                __LINK_SECTION_ITEM_FN
-            };
-        }
+                unsafe {
+                    let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                    ::core::ptr::write(ptr as *mut _, $value);
+                    $(
+                        $ident.set(ptr);
+                    )?
+                }
+            }
+            __LINK_SECTION_ITEM_FN
+        };
     }
 }
 

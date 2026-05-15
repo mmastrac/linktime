@@ -72,6 +72,7 @@ fn foo() {
                 type __InSecStoredTy =
                     <FOO as ::link_section::__support::SectionItemType>::Item;
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
+                ;
                 #[link_section = "_data_link_section_FOO"]
                 #[used]
                 #[export_name =

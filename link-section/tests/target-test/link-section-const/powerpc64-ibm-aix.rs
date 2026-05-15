@@ -80,6 +80,7 @@ const DRIVER: Driver =
                 <FOO as ::link_section::__support::SectionItemType>::Item;
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
                 Driver::new("driver", || ());
+            ;
             #[link_section = "_data_link_section_FOO"]
             #[used]
             #[export_name =
