@@ -41,6 +41,57 @@ crate::__def_section_name! {
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __register_wasm_item {
+    (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {};
+}
+
+#[cfg(target_family = "wasm")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __register_wasm_item {
+    (value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
+        mod __register_wasm_item {
+            // Register a counting item
+            $crate::__add_section_link_attribute!(
+                data section $section $($aux)?
+                #[link_section = __]
+                static __LINK_SECTION_CONST_ITEM: u8 = 0;
+            );
+
+            $crate::__add_section_link_attribute!(
+                data bounds $section $($aux)?
+                #[link_name = __]
+                extern "C" {
+                    static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
+                }
+            );
+
+            #[link_section = ".init_array.0"]
+            #[used] // TODO: used(linker) with linktime_used_linker feature
+            #[allow(non_snake_case)]
+            static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
+                extern "C" fn __LINK_SECTION_ITEM_FN() {
+                    static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
+                    if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
+                        return;
+                    }
+                    unsafe {
+                        let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                        ::core::ptr::write(ptr as *mut _, $value);
+                        $(
+                            $ident.set(ptr);
+                        )?
+                    }
+                }
+                __LINK_SECTION_ITEM_FN
+            };
+        }
+    }
+}
+
 #[cfg(target_family = "wasm")]
 #[allow(missing_unsafe_on_extern)] // MSRV
 extern "C" {

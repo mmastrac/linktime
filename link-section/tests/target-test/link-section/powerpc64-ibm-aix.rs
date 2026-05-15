@@ -26,7 +26,7 @@ impl FOO {
                             },
                             {
                                 extern "C" {
-                                    #[link_name = "__start__data_link_section_FOO"]
+                                    #[link_name = "__stop__data_link_section_FOO"]
                                     #[allow(unsafe_code)]
                                     static __SYMBOL: u8;
                                 }
@@ -67,15 +67,18 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 fn foo() {
-    const _: () =
-        {
-            type __InSecStoredTy =
-                <FOO as ::link_section::__support::SectionItemType>::Item;
-            #[link_section = "_data_link_section_FOO"]
-            #[used]
-            #[export_name =
-            "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
-            static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
-        };
+    const _: fn() =
+        const {
+                type __InSecStoredTy =
+                    <FOO as ::link_section::__support::SectionItemType>::Item;
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
+                #[link_section = "_data_link_section_FOO"]
+                #[used]
+                #[export_name =
+                "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
+                static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
+                    __LINK_SECTION_CONST_ITEM_VALUE;
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
 }
 fn main() {}

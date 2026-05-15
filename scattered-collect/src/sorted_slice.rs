@@ -16,6 +16,7 @@ pub struct ScatteredSortedSlice<T: Ord + 'static> {
 
 impl<T: Ord + 'static> ScatteredSortedSlice<T> {
     #[doc(hidden)]
+    #[allow(unsafe_code)]
     pub const unsafe fn new(data: &'static TypedMutableSection<T>) -> Self {
         Self {
             data,
@@ -50,7 +51,7 @@ impl<T: Ord + 'static> ::core::iter::IntoIterator for &'static ScatteredSortedSl
 }
 
 #[doc(hidden)]
-pub unsafe fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
+pub fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
     let n = main.len();
     if n == 0 {
         return;
@@ -107,12 +108,12 @@ mod tests {
     pub use super::ScatteredSortedSlice;
 
     __sorted_slice!(@gather pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 6;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 3;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 2;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 4;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 5;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 1;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 6;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 3;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 2;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 4;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 5;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 1;);
 
     #[test]
     fn test_scattered_sorted_slice() {

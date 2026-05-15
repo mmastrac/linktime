@@ -34,7 +34,7 @@ impl FOO {
                             },
                             {
                                 extern "C" {
-                                    #[link_name = "__start__data_link_section_FOO"]
+                                    #[link_name = "__stop__data_link_section_FOO"]
                                     #[allow(unsafe_code)]
                                     static __SYMBOL: u8;
                                 }

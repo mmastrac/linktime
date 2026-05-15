@@ -62,13 +62,41 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 fn foo() {
-    const _: () =
-        {
-            type __InSecStoredTy =
-                <FOO as ::link_section::__support::SectionItemType>::Item;
-            #[link_section = ".data.link_section.FOO"]
-            #[used]
-            static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
-        };
+    const _: fn() =
+        const {
+                type __InSecStoredTy =
+                    <FOO as ::link_section::__support::SectionItemType>::Item;
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
+                #[link_section = ".data.link_section.FOO"]
+                #[used]
+                static __LINK_SECTION_CONST_ITEM: u8 = 0;
+                extern "C" {
+                    #[link_name = ".data.link_section.FOO.bounds"]
+                    #[allow(unsafe_code)]
+                    static __LINK_SECTION_INFO:
+                        ::link_section::__support::wasm::LinkSectionRawInfo;
+                }
+                #[link_section = ".init_array.0"]
+                #[used]
+                static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
+                    {
+                        extern "C" fn __LINK_SECTION_ITEM_FN() {
+                            static DISARMED: ::core::sync::atomic::AtomicBool =
+                                ::core::sync::atomic::AtomicBool::new(false);
+                            if DISARMED.swap(true,
+                                    ::core::sync::atomic::Ordering::Relaxed) {
+                                return;
+                            }
+                            unsafe {
+                                let ptr =
+                                    ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
+                                ::core::ptr::write(ptr as *mut _,
+                                    __LINK_SECTION_CONST_ITEM_VALUE);
+                            }
+                        }
+                        __LINK_SECTION_ITEM_FN
+                    };
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
 }
 fn main() {}

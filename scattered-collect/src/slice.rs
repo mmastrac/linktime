@@ -11,6 +11,7 @@ pub struct ScatteredSlice<T: 'static> {
 
 impl<T> ScatteredSlice<T> {
     #[doc(hidden)]
+    #[allow(unsafe_code)]
     pub const unsafe fn new(section: &'static TypedSection<T>) -> Self {
         Self { section }
     }
@@ -63,9 +64,9 @@ mod tests {
     pub use super::ScatteredSlice;
 
     __slice!(@gather pub static TEST_SLICE: ScatteredSlice<u32>;);
-    __slice!(@scatter [TEST_SLICE] pub const _: u32 = 1;);
-    __slice!(@scatter [TEST_SLICE] pub const _: u32 = 3;);
-    __slice!(@scatter [TEST_SLICE] pub const _: u32 = 2;);
+    __slice!(@scatter [TEST_SLICE] const _: u32 = 1;);
+    __slice!(@scatter [TEST_SLICE] const _: u32 = 3;);
+    __slice!(@scatter [TEST_SLICE] const _: u32 = 2;);
 
     #[test]
     fn test_scattered_slice() {

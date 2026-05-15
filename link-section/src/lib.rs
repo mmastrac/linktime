@@ -378,46 +378,37 @@ pub mod __support {
             compile_error!("static items are not supported on WASM: use const items instead");
         };
 
-        // const items with a name are the same across all types
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:ident: $ty:ty = $value:expr;)) => {
+        // mutable const items live in UnsafeCell
+        (@typed[mutable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
+            $($meta)*
+            $vis const $ident: $ty = const {
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
+                struct __LinkSectionConstItem(::core::cell::UnsafeCell<__InSecStoredTy>);
+                unsafe impl Sync for __LinkSectionConstItem {}
+                unsafe impl Send for __LinkSectionConstItem {}
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
+
+                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
+
+                #[cfg(not(target_family = "wasm"))]
+                $crate::__add_section_link_attribute!(
+                    data section $section $($aux)?
+                    #[link_section = __]
+                    static __LINK_SECTION_CONST_ITEM: __LinkSectionConstItem = __LinkSectionConstItem(::core::cell::UnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE));
+                );
+
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
+        };
+
+        // const items are the same across all other types
+        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
             $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                #[cfg(target_family = "wasm")]
-                {
-                    // Register a counting item
-                    $crate::__add_section_link_attribute!(
-                        data section $section $($aux)?
-                        #[link_section = __]
-                        static __LINK_SECTION_CONST_ITEM: u8 = 0;
-                    );
-
-                    $crate::__add_section_link_attribute!(
-                        data bounds $section $($aux)?
-                        #[link_name = __]
-                        extern "C" {
-                            static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
-                        }
-                    );
-
-                    #[used] // TODO: used(linker) with linktime_used_linker feature
-                    #[link_section = ".init_array.0"]
-                    static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
-                        extern "C" fn __LINK_SECTION_ITEM_FN() {
-                            static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
-                            if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
-                                return;
-                            }
-                            unsafe {
-                                let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
-                                ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
-                            }
-                        }
-                        __LINK_SECTION_ITEM_FN
-                    };
-                }
+                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
 
                 #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
@@ -430,57 +421,13 @@ pub mod __support {
             };
         };
 
-        // anonymous const items are the same across all types
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const _: $ty:ty = $value:expr;)) => {
-            $($meta)* const _: () = {
-                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
-                $crate::__add_section_link_attribute!(
-                    data section $section $($aux)?
-                    #[link_section = __]
-                    $vis static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = $value;
-                );
-            };
-        };
-
         (@typed[reference] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             #[cfg(target_family="wasm")]
             $($meta)*
             $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
-
-                // Register a counting item
-                $crate::__add_section_link_attribute!(
-                    data section $section $($aux)?
-                    #[link_section = __]
-                    $vis static __LINK_SECTION_CONST_ITEM: u8 = 0;
-                );
-
-                $crate::__add_section_link_attribute!(
-                    data bounds $section $($aux)?
-                    #[link_name = __]
-                    extern "C" {
-                        static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionRawInfo;
-                    }
-                );
-
-                #[link_section = ".init_array.0"]
-                #[used] // TODO: used(linker) with linktime_used_linker feature
-                static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
-                    extern "C" fn __LINK_SECTION_ITEM_FN() {
-                        static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
-                        if DISARMED.swap(true, ::core::sync::atomic::Ordering::Relaxed) {
-                            return;
-                        }
-                        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
-                        unsafe {
-                            let ptr = $crate::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
-                            ::core::ptr::write(ptr as *mut __InSecStoredTy, __LINK_SECTION_CONST_ITEM_VALUE);
-                            $ident.set(ptr);
-                        }
-                    }
-                    __LINK_SECTION_ITEM_FN
-                };
-
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
+                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section $($aux)?);
                 $crate::reference::Ref::new()
             };
 

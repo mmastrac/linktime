@@ -21,7 +21,7 @@ impl FOO {
                     },
                     {
                         extern "C" {
-                            #[link_name = "\u{1}section$start$__DATA$FOO"]
+                            #[link_name = "\u{1}section$end$__DATA$FOO"]
                             #[allow(unsafe_code)]
                             #[allow(unsafe_code)]
                             static __SYMBOL: u8;
@@ -68,12 +68,14 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 fn foo() {
-    const _: () = {
+    const _: fn() = const {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
+        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[link_section = "__DATA,FOO,regular,no_dead_strip"]
         #[allow(unsafe_code)]
         #[used]
-        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
+        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
+        __LINK_SECTION_CONST_ITEM_VALUE
     };
     {
         ::std::io::_print(format_args!("foo\n"));
