@@ -17,7 +17,7 @@ const _: () = {
     extern "C" fn __ctor_private() {
         { _ = &*STATIC_CTOR }
     }
-    pub const _: () = {
+    const _: () = {
         type __InSecStoredTy = <::link_section::TypedSection<
             ::ctor::collect::Constructor,
         > as ::link_section::__support::SectionItemType>::Item;

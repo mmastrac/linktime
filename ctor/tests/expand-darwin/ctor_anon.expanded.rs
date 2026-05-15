@@ -15,7 +15,7 @@ const _: () = {
             extern "C" fn __ctor_private() {
                 { unsafe { __ctor_private_inner() } }
             }
-            pub const _: () = {
+            const _: () = {
                 type __InSecStoredTy = <::link_section::TypedSection<
                     ::ctor::collect::Constructor,
                 > as ::link_section::__support::SectionItemType>::Item;
@@ -46,7 +46,7 @@ const _: () = {
             extern "C" fn __ctor_private() {
                 { unsafe { __ctor_private_inner() } }
             }
-            pub const _: () = {
+            const _: () = {
                 type __InSecStoredTy = <::link_section::TypedSection<
                     ::ctor::collect::Constructor,
                 > as ::link_section::__support::SectionItemType>::Item;

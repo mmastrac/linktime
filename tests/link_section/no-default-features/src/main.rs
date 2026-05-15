@@ -2,7 +2,7 @@ use link_section::declarative::{in_section, section};
 use libc_print::*;
 
 section! {
-    #[section]
+    #[section(typed)]
     pub static SECT: link_section::TypedSection<fn()>;
 }
 

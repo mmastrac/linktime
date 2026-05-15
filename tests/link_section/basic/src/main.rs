@@ -4,7 +4,7 @@ use link_section::{in_section, section};
 use libc_print::*;
 
 /// An untyped link section with `code` linkage.
-#[section]
+#[section(untyped)]
 pub static LINK_SECTION: link_section::Section;
 
 /// A function in the `LINK_SECTION` section.
@@ -14,7 +14,7 @@ pub fn link_section_function() {
 }
 
 /// A typed link section with `data` linkage.
-#[section]
+#[section(typed)]
 pub static TYPED_LINK_SECTION: link_section::TypedSection<u32>;
 
 /// A `u32` in the `TYPED_LINK_SECTION` section.
@@ -26,7 +26,7 @@ pub static LINKED_U32: u32 = 1;
 pub static LINKED_U32_2: u32 = 2;
 
 /// Create an aux link section for `TYPED_LINK_SECTION`.
-#[section(aux = TYPED_LINK_SECTION)]
+#[section(typed, aux(main = TYPED_LINK_SECTION))]
 pub static AUX_LINK_SECTION: link_section::TypedSection<u32>;
 
 /// An auxiliary section item.
@@ -34,7 +34,7 @@ pub static AUX_LINK_SECTION: link_section::TypedSection<u32>;
 pub static AUX_LINKED_U32: u32 = 1234;
 
 /// A function pointerarray in the `data` section.
-#[section]
+#[section(typed)]
 pub static FN_ARRAY: link_section::TypedSection<fn()>;
 
 /// A function in the `FN_ARRAY` section.
@@ -54,7 +54,7 @@ pub fn linked_function_2() {
 pub static OTHER_FN: fn() = link_section_function;
 
 /// A debuggable section in the `data` section.
-#[section]
+#[section(typed)]
 pub static DEBUGGABLES: link_section::TypedSection<&'static (dyn ::core::fmt::Debug + Sync)>;
 
 /// A debuggable in the `DEBUGGABLES` section.

@@ -10,7 +10,7 @@ fn early() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
@@ -35,7 +35,7 @@ fn priority1() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
@@ -60,7 +60,7 @@ fn priority900() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
@@ -85,7 +85,7 @@ fn late() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
@@ -110,7 +110,7 @@ fn priority_default() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
@@ -135,7 +135,7 @@ fn priority_unspecified() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
-        pub const _: () = {
+        const _: () = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;
