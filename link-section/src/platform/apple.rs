@@ -45,7 +45,7 @@ const fn find_byte(bytes: &[u8], byte: u8) -> Option<usize> {
     None
 }
 
-pub const fn validate_apple_section_name(name: &str) {
+pub(crate) const fn validate_apple_section_name(name: &str) {
     let bytes = name.as_bytes();
     let comma = match find_byte(bytes, b',') {
         Some(i) => i,

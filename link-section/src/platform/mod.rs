@@ -134,7 +134,8 @@ macro_rules! __def_section_name {
         pub const MAX_LENGTH: usize = $__max_length;
         pub const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();
 
-        pub const fn is_valid_section_char(b: u8) -> bool {
+        #[allow(unused)]
+        pub(crate) const fn is_valid_section_char(b: u8) -> bool {
             let mut i = 0;
             while i < VALID_SECTION_CHARS.len() {
                 if VALID_SECTION_CHARS[i] == b {
@@ -145,7 +146,8 @@ macro_rules! __def_section_name {
             false
         }
 
-        pub const fn is_valid_section_name(name: &str) -> bool {
+        #[allow(unused)]
+        pub(crate) const fn is_valid_section_name(name: &str) -> bool {
             if !name.is_ascii() {
                 return false;
             }
