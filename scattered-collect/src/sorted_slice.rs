@@ -56,7 +56,7 @@ pub unsafe fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
 
 #[macro_export]
 macro_rules! __sorted_slice {
-    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >;) => {
+    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
         #[allow(unused)]
         $vis use $crate::__slice as $name;
@@ -71,7 +71,7 @@ macro_rules! __sorted_slice {
         }
 
         $(#[$meta])*
-        $vis static $name: $crate::sorted_slice::ScatteredSortedSlice<$ty> = {
+        $vis static $name: $collection<$ty> = {
             unsafe { $crate::sorted_slice::ScatteredSortedSlice::new(
                 self::$name::$name.const_deref()
             ) }
@@ -97,6 +97,8 @@ macro_rules! __sorted_slice {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
+    pub use super::ScatteredSortedSlice;
+
     __sorted_slice!(@gather pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
     __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 6;);
     __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 3;);

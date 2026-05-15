@@ -20,21 +20,21 @@ macro_rules! __scatter_parse {
         compile_error!("Unknown collection type");
     };
 
-    (__reorder__ (#[scatter] $($item:tt)*) ($($rest:tt)*)) => {
+    (@reorder (#[scatter] $($item:tt)*) ($($rest:tt)*)) => {
         $crate::__support::scatter_parse!(#[scatter] $($rest)* $($item)*);
     };
-    (__reorder__ (#[$top:meta] $($item:tt)*) ($($rest:tt)*)) => {
-        $crate::__support::scatter_parse!(__reorder__($($item)*) (#[$top] $($rest)*));
+    (@reorder (#[$top:meta] $($item:tt)*) ($($rest:tt)*)) => {
+        $crate::__support::scatter_parse!(@reorder($($item)*) (#[$top] $($rest)*));
     };
-    (__reorder__ ($item:item;) $($rest:tt)*) => {
+    (@reorder ($item:item;) $($rest:tt)*) => {
         compile_error!("Missing #[scatter] attribute.");
     };
-    (__reorder__ $($rest:tt)*) => {
+    (@reorder $($rest:tt)*) => {
         compile_error!("Missing #[scatter] attribute.");
     };
 
     ($($rest:tt)*) => {
-        $crate::__support::scatter_parse!(__reorder__ ($($rest)*) ());
+        $crate::__support::scatter_parse!(@reorder ($($rest)*) ());
     };
 }
 
@@ -42,41 +42,41 @@ macro_rules! __scatter_parse {
 #[macro_export]
 macro_rules! __gather_parse {
     // Send the #[gather]'d item into the collection's private macro.
-    (#[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >; ) => {
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >; ) => {
         $crate::__slice ! (
             @gather
             $(#[$imeta])*
-            $vis static $name: ScatteredSlice < $ty >;
+            $vis static $name: $collection < $ty >;
         );
     };
 
-    (#[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >; ) => {
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >; ) => {
         $crate::__sorted_slice ! (
             @gather
             $(#[$imeta])*
-            $vis static $name: ScatteredSortedSlice < $ty >;
+            $vis static $name: $collection < $ty >;
         );
     };
 
-    (#[gather] $($rest:tt)* ) => {
+    (@done #[gather] $($rest:tt)* ) => {
         compile_error!("Unknown collection type");
     };
 
-    (__reorder__ (#[gather] $($item:tt)*) ($($rest:tt)*)) => {
-        $crate::__support::gather_parse!(#[gather] $($rest)* $($item)*);
+    (@reorder (#[gather] $($item:tt)*) ($($rest:tt)*) $collection:tt) => {
+        $crate::__support::gather_parse!(@done $collection #[gather] $($rest)* $($item)*);
     };
-    (__reorder__ (#[$top:meta] $($item:tt)*) ($($rest:tt)*)) => {
-        $crate::__support::gather_parse!(__reorder__($($item)*) (#[$top] $($rest)*));
+    (@reorder (#[$top:meta] $($item:tt)*) ($($rest:tt)*) $collection:tt) => {
+        $crate::__support::gather_parse!(@reorder ($($item)*) (#[$top] $($rest)*) $collection);
     };
-    (__reorder__ ($item:item;) $($rest:tt)*) => {
+    (@reorder ($item:item;) $($rest:tt)*) => {
         compile_error!("Missing #[gather] attribute.");
     };
-    (__reorder__ $($rest:tt)*) => {
+    (@reorder $($rest:tt)*) => {
         compile_error!("Missing #[gather] attribute.");
     };
 
-    ($($rest:tt)*) => {
-        $crate::__support::gather_parse!(__reorder__ ($($rest)*) ());
+    ($(#$meta:tt)* $vis:vis static $name:ident: $collection:ident < $($rest:tt)* ) => {
+        $crate::__support::gather_parse!(@reorder ($(#$meta)* $vis static $name: $collection < $($rest)*) () ($collection));
     };
 }
 

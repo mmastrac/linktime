@@ -21,7 +21,7 @@ impl<T> ::core::ops::Deref for ScatteredSlice<T> {
 
 #[macro_export]
 macro_rules! __slice {
-    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >;) => {
+    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
         #[allow(unused)]
         $vis use $crate::__slice as $name;
@@ -36,7 +36,7 @@ macro_rules! __slice {
         }
 
         $(#[$meta])*
-        $vis static $name: $crate::slice::ScatteredSlice<$ty> = {
+        $vis static $name: $collection<$ty> = {
             unsafe { $crate::slice::ScatteredSlice::new(
                 self::$name::$name.const_deref()
             ) }
@@ -54,6 +54,8 @@ macro_rules! __slice {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
+    pub use super::ScatteredSlice;
+
     __slice!(@gather pub static TEST_SLICE: ScatteredSlice<u32>;);
     __slice!(@scatter [TEST_SLICE] pub const _: u32 = 1;);
     __slice!(@scatter [TEST_SLICE] pub const _: u32 = 3;);
