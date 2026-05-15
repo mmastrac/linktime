@@ -52,9 +52,11 @@ pub fn ctor() {
 }
 
 pub fn main() {
+    libc_eprintln!("MUT_LINK_SECTION: {:?}", MUT_LINK_SECTION);
     for item in MUT_LINK_SECTION {
         libc_eprintln!("item: {item}");
     }
+    libc_eprintln!("AUX_MUT_LINK_SECTION: {:?}", aux_section::AUX_MUT_LINK_SECTION);
     for item in aux_section::AUX_MUT_LINK_SECTION {
         libc_eprintln!("aux item: {item}");
     }

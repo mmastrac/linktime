@@ -44,12 +44,16 @@ defer {
     $ cargo clean --quiet
 }
 $ cargo run --quiet
+! MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 5, stride: 4 }
 """
 item: 1
 item: 2
 item: 3
 item: 4
 item: 5
+"""
+! AUX_MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}AUX_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 4 }
+"""
 aux item: 1234
 aux item: 2341
 aux item: 4321
