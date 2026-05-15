@@ -85,7 +85,7 @@ pub fn callback() {
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
-| WASM                     | ✅ Fully supported (§2) (§3)                    |
+| WASM                     | ✅ Fully supported, via emulation (§2) (§3)     |
 | AIX                      | ✅ Supported (§4)                               |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
