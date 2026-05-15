@@ -222,7 +222,8 @@ impl LinkSectionInfo {
             .unwrap_or_else(|| panic!("Link section size overflow"));
         unsafe {
             // We got these from a type, so they are always valid
-            let ptr = allocate(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
+            let ptr =
+                allocate(Layout::from_size_align(layout_bytes, self.align_of).unwrap_unchecked());
             if ptr.is_null() {
                 panic!("Link section allocation failed");
             }

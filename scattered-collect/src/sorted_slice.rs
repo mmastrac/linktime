@@ -95,7 +95,7 @@ macro_rules! __sorted_slice {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(miri)))]
 mod tests {
     __sorted_slice!(@gather pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
     __sorted_slice!(@scatter [TEST_SORTED_SLICE] pub const _: u32 = 6;);

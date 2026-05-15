@@ -172,7 +172,8 @@ pub mod __support {
     #[macro_export]
     macro_rules! __address_of_symbol {
         ($section:ident $type:ident $name:ident $($aux:ident)?) => {
-            // Miri does not support the symbols we use
+            // Miri does not support any of these linker-defined extern statics
+            // see: https://github.com/rust-lang/miri/blob/master/src/shims/extern_static.rs#L15
             ::core::ptr::null() as *const ()
         };
     }

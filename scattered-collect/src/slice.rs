@@ -52,7 +52,7 @@ macro_rules! __slice {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(miri)))]
 mod tests {
     __slice!(@gather pub static TEST_SLICE: ScatteredSlice<u32>;);
     __slice!(@scatter [TEST_SLICE] pub const _: u32 = 1;);

@@ -7,12 +7,16 @@ pub mod windows;
 
 #[cfg(target_vendor = "apple")]
 pub use apple::{get_section, section_name};
+#[cfg(all(
+    not(target_family = "wasm"),
+    not(target_os = "windows"),
+    not(target_vendor = "apple")
+))]
+pub use standard::{get_section, section_name};
 #[cfg(target_family = "wasm")]
 pub use wasm::{get_section, section_name};
 #[cfg(target_os = "windows")]
 pub use windows::{get_section, section_name};
-#[cfg(all(not(target_family = "wasm"), not(target_os = "windows"), not(target_vendor = "apple")))]
-pub use standard::{get_section, section_name};
 
 // Select the appropriate bounds type for the platform.
 #[cfg(target_family = "wasm")]
@@ -25,7 +29,11 @@ pub const fn validate_section_name(name: &str) {
     if cfg!(target_vendor = "apple") {
         apple::validate_apple_section_name(name);
     }
-    if cfg!(all(not(target_family = "wasm"), not(target_os = "windows"), not(target_vendor = "apple"))) {
+    if cfg!(all(
+        not(target_family = "wasm"),
+        not(target_os = "windows"),
+        not(target_vendor = "apple")
+    )) {
         standard::is_valid_section_name(name);
     }
 }
