@@ -1,17 +1,7 @@
-error[E0308]: mismatched types
- --> tests/errors/bad_item.rs:6:1
-  |
-6 | #[in_section(SECTION)]
-  | ^^^^^^^^^^^^^^^^^^^^^^ expected `u32`, found fn item
-  |
-  = note: expected type `u32`
-          found fn item `fn() {bad_item}`
-  = note: this error originates in the macro `$crate::__in_section_crate` which comes from the expansion of the attribute macro `in_section` (in Nightly builds, run with -Z macro-backtrace for more info)
-
 error[E0277]: the trait bound `SECTION: link_section::__support::SectionItemTyped<u64>` is not satisfied
-  --> tests/errors/bad_item.rs:11:1
+  --> tests/errors/bad_item.rs:12:1
    |
-11 | #[in_section(SECTION)]
+12 | #[in_section(SECTION)]
    | ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `SectionItemTyped<u64>` is not implemented for `SECTION`
