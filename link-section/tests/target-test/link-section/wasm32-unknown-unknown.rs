@@ -16,21 +16,19 @@ impl FOO {
             {
                 let section =
                     {
-                        extern "C" {
-                            #[link_name = "__start__data_link_section_FOO"]
-                            #[allow(unsafe_code)]
-                            static __START: u8;
+                        static __LINK_SECTION_NAME: &'static str =
+                            ".data.link_section.FOO";
+                        #[export_name = ".data.link_section.FOO.bounds"]
+                        #[used]
+                        #[used]
+                        static __LINK_SECTION_INFO:
+                            ::link_section::__support::wasm::LinkSectionRawInfo =
+                            ::link_section::__support::wasm::LinkSectionRawInfo::new::<(fn())>(__LINK_SECTION_NAME);
+                        unsafe {
+                            ::link_section::__support::Bounds::new(&raw const __LINK_SECTION_INFO)
                         }
-                        extern "C" {
-                            #[link_name = "__stop__data_link_section_FOO"]
-                            #[allow(unsafe_code)]
-                            static __END: u8;
-                        }
-                        ::link_section::__support::PtrBounds::new(unsafe {
-                                &raw const __START as *const ()
-                            }, unsafe { &raw const __END as *const () })
                     };
-                let name = "_data_link_section_FOO";
+                let name = ".data.link_section.FOO";
                 unsafe { <TypedSection<fn()>>::new(name, section) }
             };
         &SECTION
@@ -67,10 +65,8 @@ fn foo() {
         {
             type __InSecStoredTy =
                 <FOO as ::link_section::__support::SectionItemType>::Item;
-            #[link_section = "_data_link_section_FOO"]
+            #[link_section = ".data.link_section.FOO"]
             #[used]
-            #[export_name =
-            "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
             static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
         };
 }

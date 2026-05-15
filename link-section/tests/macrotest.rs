@@ -177,7 +177,7 @@ link-section = {{ path = "{repo_root}/link-section", default-features = false }}
                     "+nightly",
                     "rustc",
                     // Build core from source so we can target triples without prebuilt std.
-                    "-Zbuild-std=core",
+                    "-Zbuild-std=core,alloc",
                     "-Zbuild-std-features=compiler-builtins-mem",
                     "--target",
                     &target,

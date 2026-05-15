@@ -349,7 +349,7 @@ pub mod __support {
         // const items with a name are the same across all types
         (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:ident: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis const $ident: $ty = {
+            $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
@@ -370,6 +370,7 @@ pub mod __support {
                         }
                     );
 
+                    #[used] // TODO: used(linker) with linktime_used_linker feature
                     #[link_section = ".init_array.0"]
                     static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
                         extern "C" fn __LINK_SECTION_ITEM_FN() {
@@ -431,6 +432,7 @@ pub mod __support {
                 );
 
                 #[link_section = ".init_array.0"]
+                #[used] // TODO: used(linker) with linktime_used_linker feature
                 static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() = {
                     extern "C" fn __LINK_SECTION_ITEM_FN() {
                         static DISARMED: ::core::sync::atomic::AtomicBool = ::core::sync::atomic::AtomicBool::new(false);
