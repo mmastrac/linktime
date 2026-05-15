@@ -50,7 +50,8 @@ impl ::core::fmt::Debug for Section {
 unsafe impl Sync for Section {}
 unsafe impl Send for Section {}
 
-#[diagnostic::on_unimplemented(message = "This is not an untyped section")]
+// Waiting on Rust 1.78
+// #[diagnostic::on_unimplemented(message = "This is not an untyped section")]
 /// Marker: untyped [`Section`] handle.
 pub trait IsUntypedSection {}
 
