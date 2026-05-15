@@ -29,14 +29,15 @@ macro_rules! __get_section_windows {
             );
             let end = unsafe { &raw const __END as *const () };
 
-            #[cfg(miri)]
-            PtrBounds::new(
-                ::core::hint::black_box(start as usize as *const ()),
-                ::core::hint::black_box(end as usize as *const ()),
-            )
-
-            #[cfg(not(miri))]
-            PtrBounds::new(start, end)
+            #[cfg(miri)] {
+                PtrBounds::new(
+                    ::core::hint::black_box(start as usize as *const ()),
+                    ::core::hint::black_box(end as usize as *const ()),
+                )
+            }
+            #[cfg(not(miri))] {
+                PtrBounds::new(start, end)
+            }
         }
     }
 }
