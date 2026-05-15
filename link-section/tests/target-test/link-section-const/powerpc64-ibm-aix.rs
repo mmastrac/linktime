@@ -71,17 +71,17 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 const DRIVER: Driver =
-    {
-        type __InSecStoredTy =
-            <FOO as ::link_section::__support::SectionItemType>::Item;
-        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
-            Driver::new("driver", || ());
-        #[link_section = "_data_link_section_FOO"]
-        #[used]
-        #[export_name =
-        "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L22C1"]
-        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
-            __LINK_SECTION_CONST_ITEM_VALUE;
-        __LINK_SECTION_CONST_ITEM_VALUE
-    };
+    const {
+            type __InSecStoredTy =
+                <FOO as ::link_section::__support::SectionItemType>::Item;
+            const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
+                Driver::new("driver", || ());
+            #[link_section = "_data_link_section_FOO"]
+            #[used]
+            #[export_name =
+            "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L22C1"]
+            static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
+                __LINK_SECTION_CONST_ITEM_VALUE;
+            __LINK_SECTION_CONST_ITEM_VALUE
+        };
 fn main() {}
