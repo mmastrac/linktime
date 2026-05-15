@@ -1,8 +1,8 @@
 use link_section::{section, in_section, TypedSection};
-#[doc(hidden)]
-use ::link_section::__in_section_helper_macro_generic as FOO;
 #[allow(non_camel_case_types)]
 struct FOO;
+#[doc(hidden)]
+use ::link_section::__in_section_helper_macro_generic as FOO;
 impl FOO {
     /// Get a `const` reference to the underlying section. In
     /// non-const contexts, `deref` is sufficient.
@@ -50,6 +50,7 @@ impl ::link_section::__support::SectionItemTyped<(fn())> for FOO {
     type Item = (fn());
 }
 impl FOO {
+    /// Get the section as a slice.
     pub fn as_slice(&self) -> &[(fn())] {
         self.const_deref().as_slice()
     }
@@ -61,14 +62,14 @@ impl ::core::iter::IntoIterator for FOO {
         self.const_deref().as_slice().iter()
     }
 }
-const _: () = {
-    type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
-    #[link_section = "__DATA,FOO,regular,no_dead_strip"]
-    #[allow(unsafe_code)]
-    #[used]
-    static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
-};
 fn foo() {
+    const _: () = {
+        type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
+        #[link_section = "__DATA,FOO,regular,no_dead_strip"]
+        #[allow(unsafe_code)]
+        #[used]
+        static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = foo;
+    };
     {
         ::std::io::_print(format_args!("foo\n"));
     };
