@@ -43,6 +43,9 @@ remains usable as a normal Rust constant, and the section receives its own
 stored copy.
 
 ```rust
+# pub struct MyType; impl MyType { const fn new() -> Self { Self } }
+# use link_section::{in_section, section};
+# #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
 #[in_section(MY_SECTION)]
 pub const ITEM: MyType = MyType::new();
 ```
@@ -53,6 +56,9 @@ underlying object. `static` submissions are supported for typed sections on
 native targets and for reference sections.
 
 ```rust
+# pub struct MyType; impl MyType { const fn new() -> Self { Self } }
+# use link_section::{in_section, section};
+# #[section(typed)] pub static MY_SECTION: link_section::TypedSection<MyType>;
 #[in_section(MY_SECTION)]
 pub static ITEM: MyType = MyType::new();
 ```
@@ -61,8 +67,10 @@ A `fn` submitted to a typed section is stored as a function pointer. The
 function body itself is not placed into the typed data section.
 
 ```rust
+# use link_section::{in_section, section};
 #[section(typed)]
 pub static FUNCTIONS: link_section::TypedSection<fn()>;
+
 #[in_section(FUNCTIONS)]
 pub fn callback() {
     // ...
