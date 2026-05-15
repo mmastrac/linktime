@@ -21,7 +21,10 @@ mod operations {
     const OPERATION_3: &'static str = "operation_3";
 }
 
+#[allow(unsafe_code)]
 fn main() {
+    // This should normally be done in a `ctor`, but for this example we know
+    // there are no other live threads and we do it here.
     {
         let ops = unsafe { OPERATIONS.as_mut_slice() };
         ops.sort_unstable();
