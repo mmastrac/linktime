@@ -386,17 +386,18 @@ impl<T: 'static> TypedMovableSection<T> {
     ///
     /// The caller must ensure no other threads are accessing the movable slice.
     /// It is recommended to only use this in a `ctor`.
+    #[allow(unsafe_code)]
     pub unsafe fn sort_unstable(&self)
     where
         T: Ord,
     {
         // Trivial case.
-        let main = self.as_mut_slice();
+        let main = unsafe { self.as_mut_slice() };
         if main.len() <= 1 {
             return;
         }
 
-        let refs = self.as_mut_backrefs();
+        let refs = unsafe { self.as_mut_backrefs() };
         debug_assert_eq!(main.len(), refs.len());
 
         fn partition<T: Ord, R>(main: &mut [T], refs: &mut [R]) -> usize {
@@ -495,15 +496,8 @@ impl<T> MovableBackref<T> {
         Self { slot }
     }
 
-    /// Current value of the stable pointer slot.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure no other threads are accessing the movable slice.
-    /// No references must be live to any of the static items.
-    ///
-    /// It is recommended to only use this in a `ctor`.
-    pub unsafe fn current_ptr(&self) -> *const T {
+    /// Current value of the stable pointer slot as a pointer.
+    pub fn current_ptr(&self) -> *const T {
         unsafe { ptr::read(UnsafeCell::raw_get(self.slot)) }
     }
 

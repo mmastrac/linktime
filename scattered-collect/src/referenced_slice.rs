@@ -8,10 +8,10 @@ pub use link_section::reference::Ref;
 /// A collection of sized items available both as a slice over the gathered
 /// section and as `static` handles at each declaration site.
 ///
-/// Storage uses [`TypedReferenceSection`] (see `link_section`); the slice is in
-/// arbitrary link order. For a sorted slice without per-item handles, use
-/// [`crate::ScatteredSlice`]. For sorted data with stable per-item references,
-/// use [`crate::ScatteredSortedReferencedSlice`].
+/// The slice is in an arbitrary link order which is platform-dependent. For a
+/// sorted slice without per-item handles, use [`crate::ScatteredSlice`]. For
+/// sorted data with stable per-item references, use
+/// [`crate::ScatteredSortedReferencedSlice`].
 pub struct ScatteredReferencedSlice<T: 'static> {
     section: &'static TypedReferenceSection<T>,
 }
