@@ -76,23 +76,8 @@ mod link_section {
 
         #[ctor(unsafe, priority = 1)]
         pub fn ctor() {
-            {
-                let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
-                let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
-
-                for i in 0..movable_section.len() {
-                    for j in i + 1..movable_section.len() {
-                        if movable_section[i] > movable_section[j] {
-                            movable_section.swap(i, j);
-                            movable_backrefs.swap(i, j);
-                        }
-                    }
-                }
-                for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
-                    unsafe {
-                        backref.set_current_ptr(item as *const u32);
-                    }
-                }
+            unsafe {
+                MOVABLE_LINK_SECTION.sort_unstable();
             }
 
             assert_eq!(*MOVABLE_40, 40);
