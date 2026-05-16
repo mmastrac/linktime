@@ -76,14 +76,6 @@ macro_rules! __sorted_referenced_slice_decl_rslot {
     };
 }
 
-/// Sort the scattered items and update declaration-site handles.
-#[doc(hidden)]
-pub unsafe fn initialize_scattered_sorted_referenced_slice<T: Ord + 'static>(
-    section: &TypedMovableSection<T>,
-) {
-    unsafe { section.sort_unstable() };
-}
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __sorted_referenced_slice {
@@ -97,8 +89,7 @@ macro_rules! __sorted_referenced_slice {
 
         $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __sorted_referenced_slice_private_macro__) (as $name;));
 
-        #[allow(unused)]
-        #[allow(non_snake_case)]
+        #[allow(unused, non_snake_case, unsafe_code)]
         #[doc(hidden)]
         $vis mod $name {
             $crate::__support::link_section::declarative::section!(
@@ -110,9 +101,7 @@ macro_rules! __sorted_referenced_slice {
                 #[ctor(unsafe, anonymous, priority = 0)]
                 fn __sorted_referenced_slice_init() {
                     unsafe {
-                        $crate::sorted_referenced_slice::initialize_scattered_sorted_referenced_slice(
-                            &$name,
-                        );
+                        $name.sort_unstable();
                     }
                 }
             );
