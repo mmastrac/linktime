@@ -10,7 +10,7 @@ macro_rules! __get_section_wasm {
     (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
-                (__) item data bare $ident $($aux)?
+                string item data bare $ident $($aux)?
             );
             $crate::__support::add_section_link_attribute!(
                 item data bounds $ident $($aux)?
@@ -28,7 +28,7 @@ macro_rules! __get_section_wasm {
     ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
-                (__) item data bare $ident $($aux)?
+                string item data bare $ident $($aux)?
             );
             $crate::__support::add_section_link_attribute!(
                 item data bounds $ident $($aux)?

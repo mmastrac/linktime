@@ -181,6 +181,26 @@ impl<T> Alignment<T> {
 /// Declares the section_name macro.
 #[macro_export]
 #[doc(hidden)]
+#[cfg(feature = "proc_macro")]
+macro_rules! __section_name_string {
+    ($name:ident $($rest:tt)*) => {
+        $crate::$name!((__) $($rest)*)
+    };
+}
+
+/// Declares the section_name macro.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(not(feature = "proc_macro"))]
+macro_rules! __section_name_string {
+    ($name:ident $($rest:tt)*) => {
+        $crate::$name!(raw $($rest)*)
+    };
+}
+
+/// Declares the section_name macro.
+#[macro_export]
+#[doc(hidden)]
 macro_rules! __def_section_name {
     (
         $__name:ident,
@@ -209,6 +229,12 @@ macro_rules! __def_section_name {
                 };
                 (raw backref $__section $__type $name:ident $aux:ident) => {
                     concat!(concat! $__prefix, stringify!($name), $__aux_sep, stringify!($aux), $__refs_sep, concat! $__suffix);
+                };
+                (string $ref_or_item:ident $__section $__type $name:ident) => {
+                    $crate::__section_name_string!($__name $ref_or_item $__section $__type $name)
+                };
+                (string $ref_or_item:ident $__section $__type $name:ident $aux:ident) => {
+                    $crate::__section_name_string!($__name $ref_or_item $__section $__type $name $aux)
                 };
                 ($pattern:tt item $__section $__type $name:ident) => {
                     $crate::__support::hash!($pattern ($__prefix) $name ($__suffix) $__hash_length $__max_length $__valid_section_chars);

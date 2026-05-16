@@ -233,7 +233,7 @@ macro_rules! __section_parse_impl {
                 static SECTION: $collection = {
                 let section = $crate::__support::get_section!($section_type, name=$ident, type=$generic_ty $(, aux=$aux )?);
                     let name = $crate::__support::section_name!(
-                        raw item data bare $($aux)? $ident // swap
+                        string item data bare $ident $($aux)?
                     );
                     $crate::__support::validate_section_name(name);
                     unsafe { <$collection>::new(name, section) }
