@@ -19,7 +19,6 @@ impl FOO {
                         ::link_section::__support::PtrBounds::new({
                                 extern "C" {
                                     #[link_name = "__start__data_link_section_FOO"]
-                                    #[allow(unsafe_code)]
                                     static __SYMBOL: u8;
                                 }
                                 unsafe { &raw const __SYMBOL as *const () }
@@ -27,7 +26,6 @@ impl FOO {
                             {
                                 extern "C" {
                                     #[link_name = "__stop__data_link_section_FOO"]
-                                    #[allow(unsafe_code)]
                                     static __SYMBOL: u8;
                                 }
                                 unsafe { &raw const __SYMBOL as *const () }
@@ -73,10 +71,9 @@ fn foo() {
                     <FOO as ::link_section::__support::SectionItemType>::Item;
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
                 ;
-                #[link_section = "_data_link_section_FOO"]
                 #[used]
-                #[export_name =
-                "_expand_probe_expand_probe___LINK_SECTION_CONST_ITEM_L11C1"]
+                #[export_name = "_expand_probe_expand_probe_$ident_L11_C1"]
+                #[link_section = "_data_link_section_FOO"]
                 static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
                     __LINK_SECTION_CONST_ITEM_VALUE;
                 __LINK_SECTION_CONST_ITEM_VALUE

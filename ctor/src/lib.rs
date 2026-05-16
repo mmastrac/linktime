@@ -9,10 +9,7 @@
     all(target_vendor = "apple", linktime_used_linker),
     feature(used_with_arg)
 )]
-#![cfg_attr(
-    all(target_vendor = "apple", linktime_asan),
-    feature(sanitize)
-)]
+#![cfg_attr(all(target_vendor = "apple", linktime_asan), feature(sanitize))]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 #[cfg(feature = "std")]

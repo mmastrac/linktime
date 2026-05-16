@@ -130,8 +130,8 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __hash_no_proc_macro {
-        ((__) (($($__prefix:tt)*)) ($($name:tt)*) (($($__suffix:tt)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
-            concat!($($__prefix),*, $(stringify!($name)),*, $($__suffix),*);
+        ((__) (($($__prefix:literal $(,)?)*)) ($($name:tt)*) (($($__suffix:literal $(,)?)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
+            concat!($($__prefix,)* $(stringify!($name)),* $(,$__suffix)*);
         };
     }
     #[cfg(not(feature = "proc_macro"))]
