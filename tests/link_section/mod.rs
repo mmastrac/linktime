@@ -16,7 +16,7 @@ $ cargo run --quiet
 ! TYPED_LINK_SECTION: TypedSection { name: "%{DATA}TYPED_LINK%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 4 }
 ! address of TYPED_LINK_SECTION[0]: %{BASE16NUM}
 ! address of TYPED_LINK_SECTION[1]: %{BASE16NUM}
-! AUX_LINK_SECTION: TypedSection { name: "%{DATA}AUX_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 1, stride: 4 }
+! AUX_LINK_SECTION: TypedSection { name: "%{DATA}AUX_LINK_S%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 1, stride: 4 }
 ! aux: 1234
 ! CODE_SECTION: TypedSection { name: "%{DATA}FN_ARRAY%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 8 }
 ! [%{BASE16NUM}, %{BASE16NUM}, %{BASE16NUM}]
@@ -44,7 +44,7 @@ defer {
     $ cargo clean --quiet
 }
 $ cargo run --quiet
-! INTERIOR_MUT_LINK_SECTION: TypedSection { name: "%{DATA}INTERIOR_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 8 }
+! INTERIOR_MUT_LINK_SECTION: TypedSection { name: "%{DATA}INTERIOR_M%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 2, stride: 8 }
 unordered {
     ! item before: InteriorMutItem { value: 1, atomic: 1 }
     ! item after: InteriorMutItem { value: 1, atomic: 2 }
@@ -63,7 +63,7 @@ defer {
     $ cargo clean --quiet
 }
 $ cargo run --quiet
-! MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 5, stride: 4 }
+! MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}MUT_LINK_S%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 5, stride: 4 }
 """
 item: 1
 item: 2
@@ -71,13 +71,13 @@ item: 3
 item: 4
 item: 5
 """
-! AUX_MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}AUX_MUT_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 4 }
+! AUX_MUT_LINK_SECTION: TypedMutableSection { name: "%{DATA}AUX_MUT_LI%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 3, stride: 4 }
 """
 aux item: 1234
 aux item: 2341
 aux item: 4321
 """
-! MOVABLE_LINK_SECTION: TypedMovableSection { name: "%{DATA}MOVABLE_LINK_SECTION%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 4, stride: 4 }
+! MOVABLE_LINK_SECTION: TypedMovableSection { name: "%{DATA}MOVABLE_LI%{DATA}", start: %{BASE16NUM}, end: %{BASE16NUM}, len: 4, stride: 4 }
 ! MOVABLE_BACKREFS: 4
 """
 movable item: 10
