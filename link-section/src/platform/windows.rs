@@ -41,7 +41,8 @@ macro_rules! __get_section_windows {
                 add_section_link_attribute!(
                     backref data start $ident $($aux)?
                     #[link_section = __]
-                    static __REF_START: Alignment<$crate::MovableBackref<$generic_ty>> = Alignment::new();
+                    static __REF_START: SyncUnsafeCell<Alignment<$crate::MovableBackref<$generic_ty>>> =
+                        SyncUnsafeCell::new(Alignment::new());
                 );
                 let ref_start = unsafe {
                     let start = &raw const __REF_START;
@@ -50,7 +51,8 @@ macro_rules! __get_section_windows {
                 add_section_link_attribute!(
                     backref data end $ident $($aux)?
                     #[link_section = __]
-                    static __REF_END: Alignment<$crate::MovableBackref<$generic_ty>> = Alignment::new();
+                    static __REF_END: SyncUnsafeCell<Alignment<$crate::MovableBackref<$generic_ty>>> =
+                        SyncUnsafeCell::new(Alignment::new());
                 );
                 let ref_end = unsafe { &raw const __REF_END as *const () };
 

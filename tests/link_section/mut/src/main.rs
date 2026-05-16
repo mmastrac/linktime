@@ -71,13 +71,13 @@ pub fn ctor() {
         assert_eq!(movable_section.len(), movable_backrefs.len());
         // Check that the backrefs are in the same order as the items.
         for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
-            unsafe {
-                assert_eq!(backref.current_ptr(), item as *const u32);
-            }
+            assert_eq!(backref.current_ptr(), item as *const u32);
         }
     }
 
-    unsafe { MOVABLE_LINK_SECTION.sort_unstable(); }
+    unsafe {
+        MOVABLE_LINK_SECTION.sort_unstable();
+    }
 }
 
 pub fn main() {
@@ -85,7 +85,10 @@ pub fn main() {
     for item in MUT_LINK_SECTION {
         libc_eprintln!("item: {item}");
     }
-    libc_eprintln!("AUX_MUT_LINK_SECTION: {:?}", aux_section::AUX_MUT_LINK_SECTION);
+    libc_eprintln!(
+        "AUX_MUT_LINK_SECTION: {:?}",
+        aux_section::AUX_MUT_LINK_SECTION
+    );
     for item in aux_section::AUX_MUT_LINK_SECTION {
         libc_eprintln!("aux item: {item}");
     }

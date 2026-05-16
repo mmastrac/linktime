@@ -429,10 +429,13 @@ pub mod __support {
                     $crate::__add_section_link_attribute!(
                         backref data section $section $($aux)?
                         #[link_section = __]
-                        static __LINK_SECTION_MOVABLE_BACKREF: $crate::MovableBackref<__InSecStoredTy> =
+                        static __LINK_SECTION_MOVABLE_BACKREF: $crate::__support::SyncUnsafeCell<
+                            $crate::MovableBackref<__InSecStoredTy>
+                        > = $crate::__support::SyncUnsafeCell::new(
                             $crate::MovableBackref::new(
                                 $crate::MovableRef::slot_ptr(&raw const $ident),
-                            );
+                            )
+                        );
                     );
 
                     $crate::MovableRef::new(
