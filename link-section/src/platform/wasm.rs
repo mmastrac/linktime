@@ -201,6 +201,11 @@ pub struct LinkSection<I>(NonNull<LinkSectionInfoLock<I>>);
 
 impl<I: LinkSectionInfoInit> LinkSection<I> {
     /// Get a handle to the lock.
+    ///
+    /// # Safety
+    ///
+    /// `info_ptr` must be non-null, properly aligned, and point to a live
+    /// `LinkSectionInfoLock<I>` for the duration of the returned handle.
     pub const unsafe fn new(info_ptr: *const LinkSectionInfoLock<I>) -> Self {
         Self(unsafe { NonNull::new_unchecked(info_ptr as *mut _) })
     }
@@ -298,7 +303,10 @@ pub struct LinkSectionInfoLock<I> {
 // synchronize via `AtomicU8`.
 unsafe impl<I> Sync for LinkSectionInfoLock<I> {}
 
+/// Initialization behavior for WASM link-section metadata records.
 pub trait LinkSectionInfoInit {
+    /// Initialize the backing storage and return the number of registered
+    /// items expected in the section.
     fn initialize(&mut self) -> usize;
 }
 
@@ -316,6 +324,7 @@ pub struct LinkSectionInfo {
 }
 
 impl LinkSectionInfo {
+    /// Create metadata for a WASM link section storing `T`.
     pub const fn new<T: 'static>(name: &'static str) -> Self {
         Self {
             state: LinkSectionState::Uninitialized as _,
@@ -330,6 +339,7 @@ impl LinkSectionInfo {
     }
 }
 
+/// A record describing a movable WASM link section and its backref storage.
 #[repr(C)]
 pub struct LinkSectionMovableInfo {
     base: LinkSectionInfo,
@@ -342,6 +352,7 @@ const BACKREF_SIZE_OF: usize = ::core::mem::size_of::<crate::MovableBackref<()>>
 const BACKREF_ALIGN_OF: usize = ::core::mem::align_of::<crate::MovableBackref<()>>();
 
 impl LinkSectionMovableInfo {
+    /// Create metadata for a movable WASM link section storing `T`.
     pub const fn new<T: 'static>(name: &'static str) -> Self {
         Self {
             base: LinkSectionInfo::new::<T>(name),
@@ -557,6 +568,7 @@ impl Bounds {
     }
 }
 
+/// Runtime bounds for a WASM movable link section and its backref section.
 pub struct MovableBounds(LinkSection<LinkSectionMovableInfo>);
 
 impl MovableBounds {

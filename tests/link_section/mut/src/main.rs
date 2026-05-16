@@ -65,25 +65,19 @@ pub fn ctor() {
     let section = unsafe { MUT_LINK_SECTION.as_mut_slice() };
     section.sort_unstable();
 
-    let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
-    let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
-    assert_eq!(movable_section.len(), movable_backrefs.len());
-    for backref in movable_backrefs.iter() {
-        assert_eq!(backref.current_ptr(), backref.original_ptr());
-    }
-    for i in 0..movable_section.len() {
-        for j in i + 1..movable_section.len() {
-            if movable_section[i] > movable_section[j] {
-                movable_section.swap(i, j);
-                movable_backrefs.swap(i, j);
+    {
+        let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
+        let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
+        assert_eq!(movable_section.len(), movable_backrefs.len());
+        // Check that the backrefs are in the same order as the items.
+        for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
+            unsafe {
+                assert_eq!(backref.current_ptr(), item as *const u32);
             }
         }
     }
-    for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
-        unsafe {
-            backref.set_current_ptr(item as *const u32);
-        }
-    }
+
+    unsafe { MOVABLE_LINK_SECTION.sort_unstable(); }
 }
 
 pub fn main() {

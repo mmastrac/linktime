@@ -102,26 +102,32 @@ impl PtrMovableBounds {
         Self { values, refs }
     }
 
+    /// Start pointer for the movable item section.
     #[inline(always)]
     pub fn start_ptr(&self) -> *const () {
         self.values.start_ptr()
     }
+    /// End pointer for the movable item section.
     #[inline(always)]
     pub fn end_ptr(&self) -> *const () {
         self.values.end_ptr()
     }
+    /// Length in bytes of the movable item section.
     #[inline(always)]
     pub fn byte_len(&self) -> usize {
         self.values.byte_len()
     }
+    /// Start pointer for the movable backref section.
     #[inline(always)]
     pub fn backrefs_start_ptr(&self) -> *const () {
         self.refs.start_ptr()
     }
+    /// End pointer for the movable backref section.
     #[inline(always)]
     pub fn backrefs_end_ptr(&self) -> *const () {
         self.refs.end_ptr()
     }
+    /// Length in bytes of the movable backref section.
     #[inline(always)]
     pub fn backrefs_byte_len(&self) -> usize {
         self.refs.byte_len()
