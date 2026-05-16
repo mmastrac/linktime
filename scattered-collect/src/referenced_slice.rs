@@ -41,6 +41,7 @@ impl<T: 'static> ::core::ops::Deref for ScatteredReferencedSlice<T> {
     }
 }
 
+/// Declare a scattered referenced slice.
 #[macro_export]
 macro_rules! __referenced_slice {
     (gather $vis:vis $name:ident: $ty:ty) => {

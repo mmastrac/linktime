@@ -27,10 +27,12 @@ impl<T: Ord + 'static> ScatteredSortedReferencedSlice<T> {
         }
     }
 
+    /// The number of items in the sorted referenced slice.
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
+    /// True if the sorted referenced slice is empty.
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
@@ -68,6 +70,7 @@ impl<T> ::core::ops::Deref for Ref<T> {
 }
 
 impl<T> Ref<T> {
+    #[doc(hidden)]
     pub const fn new(ptr: *const T) -> Self {
         Self {
             tag: 0,
@@ -76,7 +79,9 @@ impl<T> Ref<T> {
     }
 }
 
+#[allow(unsafe_code)]
 unsafe impl<T: Sync> Sync for Ref<T> {}
+#[allow(unsafe_code)]
 unsafe impl<T: Send> Send for Ref<T> {}
 
 /// Used by [`__sorted_referenced_slice!`] scatter arm; do not call directly.
@@ -152,6 +157,7 @@ fn co_sort_unstable_by_main<T: Ord, R>(main: &mut [T], refs: &mut [R]) {
 /// unique target addresses, and that this runs exactly once before any
 /// concurrent read of `refs` through [`Ref::deref`].
 #[doc(hidden)]
+#[allow(clippy::needless_range_loop)]
 pub unsafe fn initialize_scattered_sorted_referenced_slice<T: Ord>(
     main: &mut [T],
     refs: &mut [Ref<T>],
@@ -188,6 +194,7 @@ pub unsafe fn initialize_scattered_sorted_referenced_slice<T: Ord>(
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! __sorted_referenced_slice {
     (gather $vis:vis $name:ident: $ty:ty) => {
