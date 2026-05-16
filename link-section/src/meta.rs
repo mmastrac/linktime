@@ -5,7 +5,7 @@ use crate::{__chain, __perform};
 __perform!((all=() export=()), __chain[
     __add_used,
     __add_asan,
-    __add_export_name,
+    __add_export_name[$],
     __generate_macro[$],
 ]);
 
@@ -39,26 +39,25 @@ macro_rules! __add_asan {
 
 #[cfg(target_os = "aix")]
 macro_rules! __add_export_name {
-    (@entry next=$next:path[$next_args:tt], input=(all=$all:tt export=($($input:tt)*))) => {
-        $next!($next_args, (all=$all export=($($input)* #[export_name = concat!(
-            "_", env!("CARGO_PKG_NAME"), "_",
-            ::core::module_path!(), "_",
-            stringify!($ident),
+    (@entry next=$next:path[$next_args:tt], input=(all=$all:tt export=($($input:tt)*)), args=[$dollar:tt]) => {
+        $next!($next_args, (all=$all export=((
+            "_P", env!("CARGO_PKG_NAME"), 
+            "_M", ::core::module_path!(), 
             "_L", line!(),
             "_C", column!()
-        )])));
+        ))));
     };
 }
 
 #[cfg(not(target_os = "aix"))]
 macro_rules! __add_export_name {
-    (@entry next=$next:path[$next_args:tt], input=$input:tt) => {
+    (@entry next=$next:path[$next_args:tt], input=$input:tt, args=[$dollar:tt]) => {
         $next!($next_args, $input);
     };
 }
 
 macro_rules! __generate_macro {
-    (@entry next=$next:path[$next_args:tt], input=(all=($($all:tt)*) export=($($export:tt)*)), args=[$dollar:tt]) => {
+    (@entry next=$next:path[$next_args:tt], input=(all=($($all:tt)*) export=($(($($export:tt)*))?)), args=[$dollar:tt]) => {
         #[doc(hidden)]
         #[macro_export]
         #[allow(edition_2024_expr_fragment_specifier)]
@@ -68,7 +67,7 @@ macro_rules! __generate_macro {
                 $dollar (#[$meta:meta])* $vis:vis static $ident:ident : $dollar ($static:tt)*
             ) => {
                 $($all)*
-                $($export)*
+                $(#[export_name = concat! (stringify!($ident), $($export)* )])?
                 $dollar (#[$meta])*
                 #[link_section = $link_section]
                 $vis static $ident : $dollar ($static)*
@@ -78,6 +77,7 @@ macro_rules! __generate_macro {
                 #[export_name = $export_name:expr]
                 $dollar (#[$meta:meta])* $vis:vis static $ident:ident : $dollar ($static:tt)*
             ) => {
+                #[export_name = $export_name]
                 $($all)*
                 $dollar (#[$meta])*
                 $vis static $ident : $dollar ($static)*

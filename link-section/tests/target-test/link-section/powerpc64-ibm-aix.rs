@@ -72,7 +72,8 @@ fn foo() {
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
                 ;
                 #[used]
-                #[export_name = "_expand_probe_expand_probe_$ident_L11_C1"]
+                #[export_name =
+                "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L11_C1"]
                 #[link_section = "_data_link_section_FOO"]
                 static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
                     __LINK_SECTION_CONST_ITEM_VALUE;

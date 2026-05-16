@@ -26,6 +26,7 @@ impl FOO {
                     {
                         static __LINK_SECTION_NAME: &'static str =
                             ".data.link_section.FOO";
+                        #[export_name = ".data.link_section.FOO.bounds"]
                         #[used]
                         #[used]
                         static __LINK_SECTION_INFO:
