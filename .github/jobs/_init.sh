@@ -1,4 +1,5 @@
-DEFAULT_TARGET=`rustc --print host-tuple`
+# This actually fails on older rustc
+DEFAULT_TARGET=`rustc --print host-tuple || echo x86_64-unknown-linux-gnu`
 TARGET="${TARGET:-$DEFAULT_TARGET}"
 
 CLIPPY_LINTS=$(cat <<EOF

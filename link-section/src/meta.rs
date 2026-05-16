@@ -89,6 +89,7 @@ macro_rules! __generate_macro {
                     $dollar (#[$meta:meta])* $vis:vis static $ident:ident : $ty:ty;
                 }
             ) => {
+                #[allow(missing_unsafe_on_extern)] // MSRV
                 extern "C" {
                     #[link_name = $link_name]
                     $dollar (#[$meta])* $vis static $ident : $ty;

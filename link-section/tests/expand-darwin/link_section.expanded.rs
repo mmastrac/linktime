@@ -11,6 +11,7 @@ impl FOO {
             let section = {
                 ::link_section::__support::PtrBounds::new(
                     {
+                        #[allow(missing_unsafe_on_extern)]
                         extern "C" {
                             #[link_name = "\u{1}section$start$__DATA$FOO"]
                             static __SYMBOL: u8;
@@ -18,6 +19,7 @@ impl FOO {
                         unsafe { &raw const __SYMBOL as *const () }
                     },
                     {
+                        #[allow(missing_unsafe_on_extern)]
                         extern "C" {
                             #[link_name = "\u{1}section$end$__DATA$FOO"]
                             static __SYMBOL: u8;

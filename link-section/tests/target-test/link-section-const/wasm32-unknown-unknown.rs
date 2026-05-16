@@ -79,6 +79,7 @@ const DRIVER: Driver =
             #[used]
             #[link_section = ".data.link_section.FOO"]
             static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+            #[allow(missing_unsafe_on_extern)]
             extern "C" {
                 #[link_name = ".data.link_section.FOO.bounds"]
                 static __LINK_SECTION_INFO:

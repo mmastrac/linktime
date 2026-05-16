@@ -9,6 +9,11 @@ rm Cargo.lock || true
 minimal_crates=(
   tests/ctor/edition-2018
   tests/ctor/edition-2021
+  tests/dtor/link-section
+  tests/link_section/basic
+  tests/link_section/interior_mut
+  tests/link_section/mut
+  tests/link_section/no-default-features
 )
 for dir in "${minimal_crates[@]}"; do
   (cd "$dir" && cargo run --target "$TARGET")
