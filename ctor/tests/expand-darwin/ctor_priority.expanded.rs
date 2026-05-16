@@ -18,8 +18,8 @@ fn early() {
                 priority: 101,
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(
@@ -49,8 +49,8 @@ fn priority1() {
                 priority: 1,
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(
@@ -80,8 +80,8 @@ fn priority900() {
                 priority: 900,
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(
@@ -111,8 +111,8 @@ fn late() {
                 priority: (::ctor::collect::LATE),
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(
@@ -142,8 +142,8 @@ fn priority_default() {
                 priority: 500,
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(
@@ -173,8 +173,8 @@ fn priority_unspecified() {
                 priority: 500,
                 ctor: __ctor_private,
             };
-            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             #[used]
+            #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
             static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                 __InSecStoredTy,
             > = ::link_section::__support::SyncUnsafeCell::new(

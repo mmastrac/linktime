@@ -23,8 +23,8 @@ const _: () = {
                     priority: 500,
                     ctor: __ctor_private,
                 };
-                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
+                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                     __InSecStoredTy,
                 > = ::link_section::__support::SyncUnsafeCell::new(
@@ -60,8 +60,8 @@ const _: () = {
                     priority: 500,
                     ctor: __ctor_private,
                 };
-                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 #[used]
+                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
                 static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
                     __InSecStoredTy,
                 > = ::link_section::__support::SyncUnsafeCell::new(
