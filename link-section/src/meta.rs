@@ -61,6 +61,7 @@ macro_rules! __generate_macro {
     (@entry next=$next:path[$next_args:tt], input=(all=($($all:tt)*) export=($($export:tt)*)), args=[$dollar:tt]) => {
         #[doc(hidden)]
         #[macro_export]
+        #[allow(edition_2024_expr_fragment_specifier)]
         macro_rules! __add_linktime_attributes_to_static {
             (
                 #[link_section = $link_section:expr]
