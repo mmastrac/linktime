@@ -204,8 +204,11 @@ impl<I: LinkSectionInfoInit> LinkSection<I> {
     ///
     /// # Safety
     ///
-    /// `info_ptr` must be non-null, properly aligned, and point to a live
-    /// `LinkSectionInfoLock<I>` for the duration of the returned handle.
+    /// `info_ptr` must be non-null, properly aligned, and point to the
+    /// macro-generated `LinkSectionInfoLock<I>` static for the section's entire
+    /// lifetime. The section must only be initialized and accessed from a single
+    /// thread during pre-`main` registration and ctor setup (concurrent access
+    /// during initialization may panic).
     pub const unsafe fn new(info_ptr: *const LinkSectionInfoLock<I>) -> Self {
         Self(unsafe { NonNull::new_unchecked(info_ptr as *mut _) })
     }
@@ -446,7 +449,9 @@ impl LinkSectionInfoInit for LinkSectionMovableInfo {
 ///
 /// # Safety
 ///
-/// This is called by the `in_section` procedural macro.
+/// For macro-generated use only. `info_ptr` must be the matching
+/// `LinkSectionInfoLock` static. Must run during single-threaded pre-`main`
+/// registration before the section is marked initialized.
 pub unsafe fn register_wasm_link_section_item<T>(
     info_ptr: *const LinkSectionInfoLock<LinkSectionInfo>,
 ) -> *mut T {
@@ -476,7 +481,9 @@ pub unsafe fn register_wasm_link_section_item<T>(
 ///
 /// # Safety
 ///
-/// This is called by the `in_section` procedural macro.
+/// For macro-generated use only. `info_ptr` and `backref_slot` must be the
+/// macro-generated statics for this submission. Must run during single-threaded
+/// pre-`main` registration before the section is marked initialized.
 pub unsafe fn register_wasm_link_section_movable_item<T: 'static>(
     info_ptr: *const LinkSectionInfoLock<LinkSectionMovableInfo>,
     backref_slot: *const UnsafeCell<*const T>,
@@ -537,7 +544,8 @@ impl Bounds {
     ///
     /// # Safety
     ///
-    /// This is called by the `section` procedural macro.
+    /// For macro-generated use only. `info_ptr` must be the section's
+    /// `LinkSectionInfoLock` static (see [`LinkSection::new`]).
     pub const unsafe fn new(info_ptr: *const LinkSectionInfoLock<LinkSectionInfo>) -> Self {
         unsafe { Self(LinkSection::new(info_ptr)) }
     }
@@ -576,7 +584,8 @@ impl MovableBounds {
     ///
     /// # Safety
     ///
-    /// This is called by the `section` procedural macro.
+    /// For macro-generated use only. `info_ptr` must be the movable section's
+    /// `LinkSectionInfoLock` static (see [`LinkSection::new`]).
     pub const unsafe fn new(info_ptr: *const LinkSectionInfoLock<LinkSectionMovableInfo>) -> Self {
         unsafe { Self(LinkSection::new(info_ptr)) }
     }

@@ -268,6 +268,19 @@ For `static` items: the static is stored directly in the link section.
 `fn` items are special-cased and stored as function pointers in the typed
 section.
 
+## Exclusive Access
+
+Mutable sections (ie: [`TypedMutableSection`] and [`TypedMovableSection`])
+require exclusive access to the section's memory while calling
+[`TypedMutableSection::as_mut_slice`] or [`TypedMovableSection::as_mut_slice`].
+
+This is normally satisfied only during pre-`main` initialization (for example
+inside a `#[ctor]`). After `main`, the caller must guarantee no concurrent reads
+or writes from other threads and no active Rust references into the section.
+
+It is highly recommended not to access the mutable references after `main` has
+started.
+
 ## Usage
 
 Create an untyped section using the `#[section]` macro that keeps related items

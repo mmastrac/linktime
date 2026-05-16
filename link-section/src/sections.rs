@@ -13,6 +13,10 @@ pub struct Section {
 }
 
 impl Section {
+    /// # Safety
+    ///
+    /// For macro-generated use only. `bounds` must match the linker-resolved
+    /// (or WASM-initialized) section range for `name`.
     #[doc(hidden)]
     pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
         Self { name, bounds }
@@ -61,6 +65,10 @@ pub trait IsUntypedSection {}
 
 macro_rules! impl_section_new {
     ($generic:ident) => {
+        /// # Safety
+        ///
+        /// For macro-generated use only. `bounds` must match the linker-resolved
+        /// (or WASM-initialized) section range for `name`.
         #[doc(hidden)]
         pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
             assert!(
@@ -210,6 +218,10 @@ impl_bounds_traits!(TypedSection<T>);
 /// underlying data is (unsafely) mutable and enumerable.
 ///
 /// Only `const` items may be submitted to a [`TypedMutableSection`].
+///
+/// Mutating the section (for example via [`TypedMutableSection::as_mut_slice`])
+/// requires exclusive access. See [Exclusive access](crate#exclusive-access) for
+/// more information.
 #[repr(C)]
 pub struct TypedMutableSection<T: 'static> {
     name: &'static str,
@@ -248,8 +260,8 @@ impl<T: 'static> TypedMutableSection<T> {
     ///
     /// # Safety
     ///
-    /// This cannot be safely used and is _absolutely unsound_ if any other
-    /// slices are live.
+    /// Mutating the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
@@ -265,11 +277,16 @@ impl_bounds_traits!(TypedMutableSection<T>);
 
 /// A movable typed link section that can be used to store any sized type. The
 /// underlying data is (unsafely) mutable, enumerable, and expected to be
-/// relocated or reordered during startup initialization.
-///
-///
+/// reordered during startup initialization. Each item is paired with a
+/// [`MovableBackref`] that updates a stable [`MovableRef`] slot when the
+/// section is sorted.
 ///
 /// Only `static` items may be submitted to a [`TypedMovableSection`].
+///
+/// Mutating or reordering the section requires exclusive access. See
+/// [Exclusive access](crate#exclusive-access) for more information.
+/// [`TypedMovableSection::sort_unstable`] also updates every [`MovableRef`]; any
+/// `&T` obtained before sorting may be stale afterward.
 #[repr(C)]
 pub struct TypedMovableSection<T: 'static> {
     name: &'static str,
@@ -280,6 +297,10 @@ pub struct TypedMovableSection<T: 'static> {
 }
 
 impl<T: 'static> TypedMovableSection<T> {
+    /// # Safety
+    ///
+    /// For macro-generated use only. `bounds` must describe the final layout of
+    /// the linker (or WASM runtime) section after all items are registered.
     #[doc(hidden)]
     pub const unsafe fn new(name: &'static str, bounds: MovableBounds) -> Self {
         assert!(
@@ -312,8 +333,8 @@ impl<T: 'static> TypedMovableSection<T> {
     ///
     /// # Safety
     ///
-    /// This cannot be safely used and is _absolutely unsound_ if any other
-    /// slices are live.
+    /// Mutating the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
@@ -329,9 +350,10 @@ impl<T: 'static> TypedMovableSection<T> {
     ///
     /// # Safety
     ///
-    /// This returns mutable access from a shared section handle and must not be
-    /// called while any other slices into either the value or backref sections
-    /// are live.
+    /// Mutating the backref section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. Do not
+    /// call while any other slice into either the value or backref linker
+    /// sections is live.
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
@@ -384,8 +406,11 @@ impl<T: 'static> TypedMovableSection<T> {
     ///
     /// # Safety
     ///
-    /// The caller must ensure no other threads are accessing the movable slice.
-    /// It is recommended to only use this in a `ctor`.
+    /// Reordering the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. After
+    /// this returns, every [`MovableRef`] slot points at the new location of its
+    /// item; any `&T` obtained through [`MovableRef`] before the sort must not
+    /// be used.
     #[allow(unsafe_code)]
     pub unsafe fn sort_unstable(&self)
     where
@@ -447,6 +472,10 @@ impl<T: 'static> TypedMovableSection<T> {
 impl_bounds_traits!(TypedMovableSection<T>);
 
 /// A reference to a movable item through a stable pointer slot.
+///
+/// The slot is updated when a [`TypedMovableSection`] is reordered (for example
+/// by [`TypedMovableSection::sort_unstable`]). Do not keep an `&T` from
+/// dereferencing this handle across such an update.
 #[repr(transparent)]
 pub struct MovableRef<T: 'static> {
     slot: SyncUnsafeCell<*const T>,
@@ -505,10 +534,9 @@ impl<T> MovableBackref<T> {
     ///
     /// # Safety
     ///
-    /// The caller must ensure no other threads are accessing the movable slice.
-    /// No references must be live to any of the static items.
-    ///
-    /// It is recommended to only use this in a `ctor`.
+    /// Updating the slot requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. Any live
+    /// `&T` or [`MovableRef`] dereference may alias the old or new target.
     pub unsafe fn set_current_ptr(&self, ptr: *const T) {
         unsafe {
             ptr::write(UnsafeCell::raw_get(self.slot), ptr);
@@ -572,6 +600,11 @@ impl<T> Ref<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// For macro/runtime registration only. `ptr` must refer to the item's final
+    /// location in the WASM link section. Requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
     #[cfg(target_family = "wasm")]
     #[doc(hidden)]
     pub unsafe fn set(&self, ptr: *const T) {
