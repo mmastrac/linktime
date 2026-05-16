@@ -10,6 +10,7 @@ pub mod life_before_main {}
 
 mod item;
 mod macros;
+mod meta;
 mod platform;
 mod section_parse;
 mod sections;
@@ -126,49 +127,15 @@ pub mod __support {
     #[cfg(feature = "proc_macro")]
     pub use linktime_proc_macro::ident_concat;
 
-    #[cfg(not(linktime_used_linker))]
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __add_used {
-        (
-            $ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
-            $(#[$meta:meta])*
-            $vis:vis static $ident:ident : $($static:tt)*
-        ) => {
-            $crate::__add_section_link_attribute_impl!(
-                $ref_or_item $section $type $name $($aux)? #[$attr = __]
-                $(#[$meta])*
-                #[used]
-                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
-                    ::core::module_path!(), "_",
-                    stringify!($ident),
-                    "_L", line!(), "C", column!()))]
-                $vis static $ident : $($static)*
-            );
+    macro_rules! __hash_no_proc_macro {
+        ((__) (($($__prefix:tt)*)) ($($name:tt)*) (($($__suffix:tt)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
+            concat!($($__prefix),*, $(stringify!($name)),*, $($__suffix),*);
         };
     }
-
-    #[cfg(linktime_used_linker)]
-    #[doc(hidden)]
-    #[macro_export]
-    macro_rules! __add_used {
-        (
-            $ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
-            $(#[$meta:meta])*
-            $vis:vis static $ident:ident : $($static:tt)*
-        ) => {
-            $crate::__add_section_link_attribute_impl!(
-                $ref_or_item $section $type $name $($aux)? #[$attr = __]
-                $(#[$meta])*
-                #[used(linker)]
-                #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
-                    ::core::module_path!(), "_",
-                    stringify!($ident),
-                    "_L", line!(), "C", column!()))]
-                $vis static $ident : $($static)*
-            );
-        };
-    }
+    #[cfg(not(feature = "proc_macro"))]
+    pub use __hash_no_proc_macro as hash;
 
     #[cfg(miri)]
     #[doc(hidden)]
@@ -189,10 +156,9 @@ pub mod __support {
             {
                 // These are not valid items, but they are valid pointers.
                 // We cannot safely use them - only take pointers to them.
-                $crate::__support::add_section_link_attribute!(
-                    $ref_or_item $section $type $name $($aux)?
-                    #[link_name = __]
+                $crate::__add_linktime_attributes_to_static!(
                     extern "C" {
+                        #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
                         static __SYMBOL: u8;
                     }
                 );
@@ -209,8 +175,8 @@ pub mod __support {
             $(#[$meta:meta])*
             $vis:vis static $($static:tt)*
         ) => {
-            $crate::__add_used!(
-                $ref_or_item $section $type $name $($aux)? #[$attr = __]
+            $crate::__add_linktime_attributes_to_static!(
+                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
                 $(#[$meta])*
                 $vis static $($static)*
             );
@@ -221,46 +187,21 @@ pub mod __support {
                 $vis:vis static $($static:tt)*
             }
         ) => {
-            extern "C" {
-                $crate::__add_section_link_attribute_impl!(
-                    $ref_or_item $section $type $name $($aux)? #[$attr = __]
+            $crate::__add_linktime_attributes_to_static!(
+                extern "C" {
+                    #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
                     $(#[$meta])*
-                    #[allow(unsafe_code)]
                     $vis static $($static)*
-                );
-            }
+                }
+            );
         };
         ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $($item:tt)*) => {
-            $crate::__add_section_link_attribute_impl!(
-                $ref_or_item $section $type $name $($aux)? #[$attr = __]
-                #[allow(unsafe_code)]
+            $crate::__add_linktime_attributes_to_static!(
+                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
                 $($item)*
             );
         };
-    );
-
-    #[cfg(feature = "proc_macro")]
-    #[doc(hidden)]
-    #[macro_export]
-    macro_rules! __add_section_link_attribute_impl(
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
-            $crate::__support::section_name!(
-                (#[$attr = __] #[allow(unsafe_code)] $($item)*)
-                $ref_or_item $section $type $name $($aux)?
-            );
-        }
-    );
-
-    #[cfg(not(feature = "proc_macro"))]
-    #[doc(hidden)]
-    #[macro_export]
-    macro_rules! __add_section_link_attribute_impl(
-        ($ref_or_item:ident $section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
-            #[$attr = $crate::__support::section_name!(
-                raw $ref_or_item $section $type $name
-            )] $($item)*
-        }
     );
 
     // Without the proc macro, only name/type supported (no `aux`).

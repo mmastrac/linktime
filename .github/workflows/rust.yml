@@ -58,7 +58,7 @@ jobs:
                 target: x86_64-unknown-linux-musl
               macos:
                 os: macOS-latest
-                job: [lint, test, test-used-linker, miri, zigbuild]
+                job: [lint, test, test-used-linker, miri, zigbuild, sanitize]
                 target: aarch64-apple-darwin
               windows:
                 os: windows-latest

@@ -14,5 +14,13 @@ sanitize_runs=(
 for spec in "${sanitize_runs[@]}"; do
   pkg="${spec%%:*}"
   example="${spec#*:}"
-  RUSTFLAGS="-Z sanitizer=address" cargo +nightly run -p "$pkg" --example "$example" --target "$TARGET"
+  RUSTFLAGS="--cfg linktime_asan" \
+    cargo +nightly rustc -p "$pkg" --example "$example" --target "$TARGET" -- \
+    -Z sanitizer=address -Z "crate-attr=feature(sanitize)"
+  if [[ -n "${TARGET:-}" ]]; then
+    example_exe="target/${TARGET}/debug/examples/${example}"
+  else
+    example_exe="target/debug/examples/${example}"
+  fi
+  "$example_exe"
 done
