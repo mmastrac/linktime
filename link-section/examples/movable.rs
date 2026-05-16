@@ -46,11 +46,11 @@ pub(crate) mod operations {
     pub static OPERATION_J: Operation = Operation(7);
 }
 
+#[allow(unsafe_code)]
 fn sort_operations() {
     unsafe { OPERATIONS.sort_unstable() };
 }
 
-#[allow(unsafe_code)]
 fn main() {
     // This should normally be done in a `ctor`, but for this example we know
     // there are no other live threads and we do it here.
