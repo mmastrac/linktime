@@ -35,7 +35,7 @@
 
 
 </td></tr>
-<tr><td><code>untyped | typed | mutable | reference</code></td><td>
+<tr><td><code>untyped | typed | mutable | movable | reference</code></td><td>
 
  The type of the section.
 

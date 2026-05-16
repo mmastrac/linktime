@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `reference` sections support access both as a slice and as a reference at the
   submission site on all platforms (including WASM).
+- `movable` sections support reordering and back-reference updates during
+  startup initialization (allowing a "reference" to an item that may move during
+  initialization at the submission site).
 - `typed` and `mutable` sections have been split: `typed` allows for `const` and
   `static` items, while `mutable` allows for `const` items and `as_mut_slice`
   access.
@@ -19,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Significant rewrite to link-section's internal implementation.
 - Sections require a type: `#[section(typed)]`, `#[section(untyped)]`,
-  `#[section(mutable)]`, or `#[section(reference)]`.
+  `#[section(mutable)]`, `#[section(movable)]`, or `#[section(reference)]`.
 - When submitting a fn() with a body to a typed link section, the function's
 body is not placed in any specific section. To restore the previous behavior,
 manually split function pointers and bodies:

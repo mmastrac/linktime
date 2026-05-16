@@ -13,7 +13,7 @@ linker section and accessed through a single section handle.
 
 ## Section Kinds
 
-There are four section kinds:
+There are five section kinds:
 
 - `untyped`: Collects related code or data in one linker section without
   exposing a typed slice. This is useful for co-location, phase-specific code,
@@ -23,6 +23,10 @@ There are four section kinds:
 - `reference`: Stores values of one type, exposes them as an immutable slice,
   and also lets each submitted item be used as a reference at its submission
   site.
+- `movable`: Stores values of one type and exposes them as a mutable slice, and
+  also lets each submitted item be used as a reference at its submission site.
+  The entire section is available as a mutable slice, and items may be reordered
+  during startup initialization (see [`TypedMovableSection`] for more details).
 
 | Section Kind | Immutable Slice | Mutable Slice | `const` Items | `static` / Reference Items |
 | ------------ | --------------- | ------------- | ------------- | -------------------------- |
@@ -30,6 +34,7 @@ There are four section kinds:
 | `typed`      | ✅              | ❌            | ✅            | ⚠️                         |
 | `mutable`    | ✅              | ✅            | ✅            | ❌                         |
 | `reference`  | ✅              | ❌            | ✅            | ✅                         |
+| `movable`    | ✅              | ✅            | ❌            | ✅                         |
 
 ⚠️ Native targets support `static` submissions for `typed` sections; WASM uses
 `const` submissions only.
@@ -258,6 +263,19 @@ For `static` items: the static is stored directly in the link section.
 
 `fn` items are special-cased and stored as function pointers in the typed
 section.
+
+## Exclusive Access
+
+Mutable sections (ie: [`TypedMutableSection`] and [`TypedMovableSection`])
+require exclusive access to the section's memory while calling
+[`TypedMutableSection::as_mut_slice`] or [`TypedMovableSection::as_mut_slice`].
+
+This is normally satisfied only during pre-`main` initialization (for example
+inside a `#[ctor]`). After `main`, the caller must guarantee no concurrent reads
+or writes from other threads and no active Rust references into the section.
+
+It is highly recommended not to access the mutable references after `main` has
+started.
 
 ## Usage
 

@@ -25,7 +25,8 @@ pub mod link_section {
 
     #[doc(inline)]
     pub use link_section::{
-        reference, Section, TypedMutableSection, TypedReferenceSection, TypedSection,
+        reference, MovableBackref, MovableRef, Section, TypedMovableSection, TypedMutableSection,
+        TypedReferenceSection, TypedSection,
     };
 
     /// Declarative `section` / `in_section` macros (no proc-macro feature).

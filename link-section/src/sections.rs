@@ -1,4 +1,8 @@
-use crate::__support::Bounds;
+#[cfg(not(target_family = "wasm"))]
+use core::sync::atomic::{AtomicU8, Ordering};
+use core::{cell::UnsafeCell, ptr};
+
+use crate::__support::{Bounds, MovableBounds, SyncUnsafeCell};
 
 /// An untyped link section that can be used to store any type. The underlying
 /// data is not enumerable.
@@ -9,6 +13,10 @@ pub struct Section {
 }
 
 impl Section {
+    /// # Safety
+    ///
+    /// For macro-generated use only. `bounds` must match the linker-resolved
+    /// (or WASM-initialized) section range for `name`.
     #[doc(hidden)]
     pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
         Self { name, bounds }
@@ -55,8 +63,12 @@ unsafe impl Send for Section {}
 /// Marker: untyped [`Section`] handle.
 pub trait IsUntypedSection {}
 
-macro_rules! impl_bounds_fns {
+macro_rules! impl_section_new {
     ($generic:ident) => {
+        /// # Safety
+        ///
+        /// For macro-generated use only. `bounds` must match the linker-resolved
+        /// (or WASM-initialized) section range for `name`.
         #[doc(hidden)]
         pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
             assert!(
@@ -69,7 +81,11 @@ macro_rules! impl_bounds_fns {
                 _phantom: ::core::marker::PhantomData,
             }
         }
+    };
+}
 
+macro_rules! impl_bounds_fns {
+    ($generic:ident) => {
         /// The start address of the section.
         #[inline(always)]
         pub fn start_ptr(&self) -> *const T {
@@ -181,6 +197,7 @@ pub struct TypedSection<T: 'static> {
 }
 
 impl<T: 'static> TypedSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -201,6 +218,10 @@ impl_bounds_traits!(TypedSection<T>);
 /// underlying data is (unsafely) mutable and enumerable.
 ///
 /// Only `const` items may be submitted to a [`TypedMutableSection`].
+///
+/// Mutating the section (for example via [`TypedMutableSection::as_mut_slice`])
+/// requires exclusive access. See [Exclusive access](crate#exclusive-access) for
+/// more information.
 #[repr(C)]
 pub struct TypedMutableSection<T: 'static> {
     name: &'static str,
@@ -209,6 +230,7 @@ pub struct TypedMutableSection<T: 'static> {
 }
 
 impl<T: 'static> TypedMutableSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -238,8 +260,8 @@ impl<T: 'static> TypedMutableSection<T> {
     ///
     /// # Safety
     ///
-    /// This cannot be safely used and is _absolutely unsound_ if any other
-    /// slices are live.
+    /// Mutating the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
@@ -253,6 +275,278 @@ impl<T: 'static> TypedMutableSection<T> {
 
 impl_bounds_traits!(TypedMutableSection<T>);
 
+/// A movable typed link section that can be used to store any sized type. The
+/// underlying data is (unsafely) mutable, enumerable, and expected to be
+/// reordered during startup initialization. Each item is paired with a
+/// [`MovableBackref`] that updates a stable [`MovableRef`] slot when the
+/// section is sorted.
+///
+/// Only `static` items may be submitted to a [`TypedMovableSection`].
+///
+/// Mutating or reordering the section requires exclusive access. See
+/// [Exclusive access](crate#exclusive-access) for more information.
+/// [`TypedMovableSection::sort_unstable`] also updates every [`MovableRef`]; any
+/// `&T` obtained before sorting may be stale afterward.
+#[repr(C)]
+pub struct TypedMovableSection<T: 'static> {
+    name: &'static str,
+    bounds: MovableBounds,
+    #[cfg(not(target_family = "wasm"))]
+    backref_state: AtomicU8,
+    _phantom: ::core::marker::PhantomData<T>,
+}
+
+impl<T: 'static> TypedMovableSection<T> {
+    /// # Safety
+    ///
+    /// For macro-generated use only. `bounds` must describe the final layout of
+    /// the linker (or WASM runtime) section after all items are registered.
+    #[doc(hidden)]
+    pub const unsafe fn new(name: &'static str, bounds: MovableBounds) -> Self {
+        assert!(
+            ::core::mem::size_of::<T>() > 0,
+            "Zero-sized types are not supported"
+        );
+        Self {
+            name,
+            bounds,
+            #[cfg(not(target_family = "wasm"))]
+            backref_state: AtomicU8::new(0),
+            _phantom: ::core::marker::PhantomData,
+        }
+    }
+
+    impl_bounds_fns!(T);
+
+    /// The offset of the item in the section, if it is in the section.
+    #[inline]
+    pub fn offset_of(&self, item: &T) -> Option<usize> {
+        let ptr = item as *const T;
+        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
+            None
+        } else {
+            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
+        }
+    }
+
+    /// The section as a mutable slice.
+    ///
+    /// # Safety
+    ///
+    /// Mutating the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
+    #[allow(clippy::mut_from_ref)]
+    #[inline]
+    pub unsafe fn as_mut_slice(&self) -> &mut [T] {
+        if self.is_empty() {
+            &mut []
+        } else {
+            unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
+        }
+    }
+
+    /// The backrefs as a mutable slice, ordered to match the current value
+    /// section addresses.
+    ///
+    /// # Safety
+    ///
+    /// Mutating the backref section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. Do not
+    /// call while any other slice into either the value or backref linker
+    /// sections is live.
+    #[allow(clippy::mut_from_ref)]
+    #[inline]
+    pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
+        let backrefs_len =
+            self.bounds.backrefs_byte_len() / ::core::mem::size_of::<MovableBackref<T>>();
+        let backrefs = if backrefs_len == 0 {
+            &mut []
+        } else {
+            unsafe {
+                ::core::slice::from_raw_parts_mut(
+                    self.bounds.backrefs_start_ptr() as *mut MovableBackref<T>,
+                    backrefs_len,
+                )
+            }
+        };
+        #[cfg(not(target_family = "wasm"))]
+        unsafe {
+            self.fixup_backrefs(backrefs)
+        };
+        backrefs
+    }
+
+    /// As we cannot guarantee that the linker placed the items and backrefs in
+    /// the same order, we need to sort the backrefs to match the items.
+    ///
+    /// The exception, of course, is WASM where we placed both of them
+    /// ourselves.
+    #[cfg(not(target_family = "wasm"))]
+    unsafe fn fixup_backrefs(&self, backrefs: &mut [MovableBackref<T>]) {
+        match self
+            .backref_state
+            .compare_exchange(0, 1, Ordering::Acquire, Ordering::Acquire)
+        {
+            Ok(_) => {}
+            Err(2) => return,
+            Err(_) => panic!("movable section backrefs already being initialized"),
+        }
+
+        if backrefs.len() != self.len() {
+            panic!("movable section backref count does not match item count");
+        }
+
+        backrefs.sort_unstable_by_key(|backref| backref.current_ptr());
+        self.backref_state.store(2, Ordering::Release);
+    }
+
+    /// Sort the section and backrefs in place.
+    ///
+    /// This algorithm is currently implemented as a quicksort.
+    ///
+    /// # Safety
+    ///
+    /// Reordering the section requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. After
+    /// this returns, every [`MovableRef`] slot points at the new location of its
+    /// item; any `&T` obtained through [`MovableRef`] before the sort must not
+    /// be used.
+    #[allow(unsafe_code)]
+    pub unsafe fn sort_unstable(&self)
+    where
+        T: Ord,
+    {
+        // Trivial case.
+        let main = unsafe { self.as_mut_slice() };
+        if main.len() <= 1 {
+            return;
+        }
+
+        let refs = unsafe { self.as_mut_backrefs() };
+        debug_assert_eq!(main.len(), refs.len());
+
+        fn partition<T: Ord, R>(main: &mut [T], refs: &mut [R]) -> usize {
+            let n = main.len();
+            if n == 0 {
+                return 0;
+            }
+            let pivot = n - 1;
+            let mut i = 0;
+            for j in 0..pivot {
+                if main[j] <= main[pivot] {
+                    main.swap(i, j);
+                    refs.swap(i, j);
+                    i += 1;
+                }
+            }
+            main.swap(i, pivot);
+            refs.swap(i, pivot);
+            i
+        }
+
+        fn recurse<T: Ord, R>(main: &mut [T], refs: &mut [R]) {
+            let n = main.len();
+            if n <= 1 {
+                return;
+            }
+            let p = partition(main, refs);
+            let (ml, mr) = main.split_at_mut(p);
+            let (rl, rr) = refs.split_at_mut(p);
+            recurse(ml, rl);
+            if mr.len() > 1 {
+                recurse(&mut mr[1..], &mut rr[1..]);
+            }
+        }
+
+        recurse(main, refs);
+
+        // TODO: could we avoid the fixup if no changes are made?
+        for (item, backref) in main.iter().zip(refs.iter()) {
+            unsafe {
+                backref.set_current_ptr(item as *const T);
+            }
+        }
+    }
+}
+
+impl_bounds_traits!(TypedMovableSection<T>);
+
+/// A reference to a movable item through a stable pointer slot.
+///
+/// The slot is updated when a [`TypedMovableSection`] is reordered (for example
+/// by [`TypedMovableSection::sort_unstable`]). Do not keep an `&T` from
+/// dereferencing this handle across such an update.
+#[repr(transparent)]
+pub struct MovableRef<T: 'static> {
+    slot: SyncUnsafeCell<*const T>,
+}
+
+impl<T> MovableRef<T> {
+    #[doc(hidden)]
+    pub const fn new(ptr: *const T) -> Self {
+        Self {
+            slot: SyncUnsafeCell::new(ptr),
+        }
+    }
+
+    /// Get a raw pointer to the stable pointer slot inside this handle. Note
+    /// that both this and the SyncUnsafeCell are transparent.
+    #[doc(hidden)]
+    pub const fn slot_ptr(this: *const Self) -> *const UnsafeCell<*const T> {
+        this.cast::<UnsafeCell<*const T>>()
+    }
+
+    /// Raw pointer to the value currently referenced by this slot.
+    pub fn as_ptr(&self) -> *const T {
+        unsafe { *self.slot.get() }
+    }
+}
+
+impl<T> ::core::ops::Deref for MovableRef<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.as_ptr().as_ref().expect("MovableRef not initialized") }
+    }
+}
+
+unsafe impl<T> Send for MovableRef<T> where T: Send {}
+unsafe impl<T> Sync for MovableRef<T> where T: Sync {}
+
+/// A backref record submitted alongside each item in a [`TypedMovableSection`].
+/// This points to a [`MovableRef`] that lives outside of the section.
+#[repr(C)]
+pub struct MovableBackref<T: 'static> {
+    slot: *const UnsafeCell<*const T>,
+}
+
+impl<T> MovableBackref<T> {
+    #[doc(hidden)]
+    pub const fn new(slot: *const UnsafeCell<*const T>) -> Self {
+        Self { slot }
+    }
+
+    /// Current value of the stable pointer slot as a pointer.
+    pub fn current_ptr(&self) -> *const T {
+        unsafe { ptr::read(UnsafeCell::raw_get(self.slot)) }
+    }
+
+    /// Update the stable pointer slot.
+    ///
+    /// # Safety
+    ///
+    /// Updating the slot requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information. Any live
+    /// `&T` or [`MovableRef`] dereference may alias the old or new target.
+    pub unsafe fn set_current_ptr(&self, ptr: *const T) {
+        unsafe {
+            ptr::write(UnsafeCell::raw_get(self.slot), ptr);
+        }
+    }
+}
+
+unsafe impl<T> Send for MovableBackref<T> where T: Send {}
+unsafe impl<T> Sync for MovableBackref<T> where T: Sync {}
+
 /// A typed link section that can be used to store any sized type. The
 /// underlying data is enumerable.
 #[repr(C)]
@@ -263,6 +557,7 @@ pub struct TypedReferenceSection<T: 'static> {
 }
 
 impl<T: 'static> TypedReferenceSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -305,6 +600,11 @@ impl<T> Ref<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// For macro/runtime registration only. `ptr` must refer to the item's final
+    /// location in the WASM link section. Requires exclusive access. See
+    /// [Exclusive access](crate#exclusive-access) for more information.
     #[cfg(target_family = "wasm")]
     #[doc(hidden)]
     pub unsafe fn set(&self, ptr: *const T) {

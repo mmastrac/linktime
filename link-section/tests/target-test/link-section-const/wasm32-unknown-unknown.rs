@@ -30,8 +30,9 @@ impl FOO {
                         #[used]
                         #[used]
                         static __LINK_SECTION_INFO:
-                            ::link_section::__support::wasm::LinkSectionRawInfo =
-                            ::link_section::__support::wasm::LinkSectionRawInfo::new::<(Driver)>(__LINK_SECTION_NAME);
+                            ::link_section::__support::wasm::LinkSectionInfoLock<::link_section::__support::wasm::LinkSectionInfo>
+                            =
+                            ::link_section::__support::wasm::LinkSectionInfoLock::new(::link_section::__support::wasm::LinkSectionInfo::new::<(Driver)>(__LINK_SECTION_NAME));
                         unsafe {
                             ::link_section::__support::Bounds::new(&raw const __LINK_SECTION_INFO)
                         }
@@ -82,7 +83,7 @@ const DRIVER: Driver =
                 #[link_name = ".data.link_section.FOO.bounds"]
                 #[allow(unsafe_code)]
                 static __LINK_SECTION_INFO:
-                    ::link_section::__support::wasm::LinkSectionRawInfo;
+                    ::link_section::__support::wasm::LinkSectionInfoLock<::link_section::__support::wasm::LinkSectionInfo>;
             }
             #[link_section = ".init_array.0"]
             #[used]

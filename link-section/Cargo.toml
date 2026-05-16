@@ -41,6 +41,10 @@ name = "link-section-example"
 path = "examples/example.rs"
 
 [[example]]
+name = "link-section-movable"
+path = "examples/movable.rs"
+
+[[example]]
 name = "link-section-mut"
 path = "examples/mut.rs"
 

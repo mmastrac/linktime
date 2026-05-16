@@ -18,9 +18,9 @@ pub use windows::{get_section, section_name};
 
 // Select the appropriate bounds type for the platform.
 #[cfg(target_family = "wasm")]
-pub use wasm::Bounds;
+pub use {wasm::Bounds, wasm::MovableBounds};
 #[cfg(not(target_family = "wasm"))]
-pub use PtrBounds as Bounds;
+pub use {PtrBounds as Bounds, PtrMovableBounds as MovableBounds};
 
 /// Rejects section names that cannot be represented on the current target.
 pub const fn validate_section_name(name: &str) {
@@ -88,6 +88,52 @@ impl PtrBounds {
     }
 }
 
+/// Bounds for a movable section and its associated backref section.
+pub struct PtrMovableBounds {
+    /// Bounds for the submitted values.
+    values: PtrBounds,
+    /// Bounds for the submitted backrefs.
+    refs: PtrBounds,
+}
+
+impl PtrMovableBounds {
+    /// Create movable-section bounds.
+    pub const fn new(values: PtrBounds, refs: PtrBounds) -> Self {
+        Self { values, refs }
+    }
+
+    /// Start pointer for the movable item section.
+    #[inline(always)]
+    pub fn start_ptr(&self) -> *const () {
+        self.values.start_ptr()
+    }
+    /// End pointer for the movable item section.
+    #[inline(always)]
+    pub fn end_ptr(&self) -> *const () {
+        self.values.end_ptr()
+    }
+    /// Length in bytes of the movable item section.
+    #[inline(always)]
+    pub fn byte_len(&self) -> usize {
+        self.values.byte_len()
+    }
+    /// Start pointer for the movable backref section.
+    #[inline(always)]
+    pub fn backrefs_start_ptr(&self) -> *const () {
+        self.refs.start_ptr()
+    }
+    /// End pointer for the movable backref section.
+    #[inline(always)]
+    pub fn backrefs_end_ptr(&self) -> *const () {
+        self.refs.end_ptr()
+    }
+    /// Length in bytes of the movable backref section.
+    #[inline(always)]
+    pub fn backrefs_byte_len(&self) -> usize {
+        self.refs.byte_len()
+    }
+}
+
 /// `UnsafeCell` that is `Sync` and `Send`.
 #[repr(transparent)]
 pub struct SyncUnsafeCell<T> {
@@ -101,6 +147,12 @@ impl<T> SyncUnsafeCell<T> {
         Self {
             cell: ::core::cell::UnsafeCell::new(value),
         }
+    }
+
+    /// Get a raw pointer to the contained value.
+    #[inline]
+    pub const fn get(&self) -> *mut T {
+        self.cell.get()
     }
 }
 
@@ -129,6 +181,26 @@ impl<T> Alignment<T> {
 /// Declares the section_name macro.
 #[macro_export]
 #[doc(hidden)]
+#[cfg(feature = "proc_macro")]
+macro_rules! __section_name_string {
+    ($name:ident $($rest:tt)*) => {
+        $crate::$name!((__) $($rest)*)
+    };
+}
+
+/// Declares the section_name macro.
+#[macro_export]
+#[doc(hidden)]
+#[cfg(not(feature = "proc_macro"))]
+macro_rules! __section_name_string {
+    ($name:ident $($rest:tt)*) => {
+        $crate::$name!(raw $($rest)*)
+    };
+}
+
+/// Declares the section_name macro.
+#[macro_export]
+#[doc(hidden)]
 macro_rules! __def_section_name {
     (
         $__name:ident,
@@ -136,6 +208,7 @@ macro_rules! __def_section_name {
             $__section:ident $__type:ident => $__prefix:tt __ $__suffix:tt;
         )*}
         AUXILIARY = $__aux_sep:literal;
+        REFS = $__refs_sep:literal;
         MAX_LENGTH = $__max_length:literal;
         HASH_LENGTH = $__hash_length:literal;
         VALID_SECTION_CHARS = $__valid_section_chars:literal;
@@ -145,22 +218,40 @@ macro_rules! __def_section_name {
         #[doc(hidden)]
         macro_rules! $__name {
             $(
-                (raw $__section $__type $name:ident) => {
+                (raw item $__section $__type $name:ident) => {
                     concat!(concat! $__prefix, stringify!($name), concat! $__suffix);
                 };
-                (raw $__section $__type $name:ident $aux:ident) => {
+                (raw item $__section $__type $name:ident $aux:ident) => {
                     concat!(concat! $__prefix, stringify!($name), $__aux_sep, stringify!($aux), concat! $__suffix);
                 };
-                ($pattern:tt $__section $__type $name:ident) => {
+                (raw backref $__section $__type $name:ident) => {
+                    concat!(concat! $__prefix, stringify!($name), $__refs_sep, concat! $__suffix);
+                };
+                (raw backref $__section $__type $name:ident $aux:ident) => {
+                    concat!(concat! $__prefix, stringify!($name), $__aux_sep, stringify!($aux), $__refs_sep, concat! $__suffix);
+                };
+                (string $ref_or_item:ident $__section $__type $name:ident) => {
+                    $crate::__section_name_string!($__name $ref_or_item $__section $__type $name)
+                };
+                (string $ref_or_item:ident $__section $__type $name:ident $aux:ident) => {
+                    $crate::__section_name_string!($__name $ref_or_item $__section $__type $name $aux)
+                };
+                ($pattern:tt item $__section $__type $name:ident) => {
                     $crate::__support::hash!($pattern ($__prefix) $name ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
-                ($pattern:tt $__section $__type $name:ident $aux:ident) => {
+                ($pattern:tt item $__section $__type $name:ident $aux:ident) => {
                     $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
+                ($pattern:tt backref $__section $__type $name:ident) => {
+                    $crate::__support::hash!($pattern ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                };
+                ($pattern:tt backref $__section $__type $name:ident $aux:ident) => {
+                    $crate::__support::hash!($pattern ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                };
             )*
-            ($pattern:tt $unknown_section:ident $unknown_type:ident $name:ident) => {
+            ($pattern:tt $unknown_ref_or_item:ident $unknown_section:ident $unknown_type:ident $name:ident) => {
                 const _: () = {
-                    compile_error!(concat!("Unknown section type: `", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
+                    compile_error!(concat!("Unknown section type: `", stringify!($unknown_ref_or_item), "/", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
                 };
             };
         }

@@ -14,7 +14,10 @@ mod platform;
 mod section_parse;
 mod sections;
 
-pub use sections::{Section, TypedMutableSection, TypedReferenceSection, TypedSection};
+pub use sections::{
+    MovableBackref, MovableRef, Section, TypedMovableSection, TypedMutableSection,
+    TypedReferenceSection, TypedSection,
+};
 
 /// Types for [`TypedReferenceSection`].
 pub mod reference {
@@ -58,8 +61,8 @@ __declare_features!(
         attr: [
             (type = $section_type:ident) => ($section_type)
         ];
-        example: "untyped | typed | mutable | reference";
-        validate: [(untyped), (typed), (mutable), (reference)];
+        example: "untyped | typed | mutable | movable | reference";
+        validate: [(untyped), (typed), (mutable), (movable), (reference)];
     };
 );
 
@@ -86,8 +89,8 @@ __declare_features!(
     };
     section_type {
         attr: [(type = $section_type_name:ident) => ($section_type_name)];
-        example: "type = untyped | typed | mutable | reference";
-        validate: [(untyped), (typed), (mutable), (reference)];
+        example: "type = untyped | typed | mutable | movable | reference";
+        validate: [(untyped), (typed), (mutable), (movable), (reference)];
     };
     unsafe {
         attr: [(unsafe) => (unsafe)];
@@ -128,12 +131,12 @@ pub mod __support {
     #[macro_export]
     macro_rules! __add_used {
         (
-            $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
             $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
-                $section $type $name $($aux)? #[$attr = __]
+                $ref_or_item $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used]
                 #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
@@ -150,12 +153,12 @@ pub mod __support {
     #[macro_export]
     macro_rules! __add_used {
         (
-            $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+            $ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
             $vis:vis static $ident:ident : $($static:tt)*
         ) => {
             $crate::__add_section_link_attribute_impl!(
-                $section $type $name $($aux)? #[$attr = __]
+                $ref_or_item $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 #[used(linker)]
                 #[cfg_attr(target_os = "aix", export_name = concat!("_", env!("CARGO_PKG_NAME"), "_",
@@ -171,7 +174,7 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __address_of_symbol {
-        ($section:ident $type:ident $name:ident $($aux:ident)?) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)?) => {
             // Miri does not support any of these linker-defined extern statics
             // see: https://github.com/rust-lang/miri/blob/master/src/shims/extern_static.rs#L15
             ::core::ptr::null() as *const ()
@@ -182,12 +185,12 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __address_of_symbol {
-        ($section:ident $type:ident $name:ident $($aux:ident)?) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)?) => {
             {
                 // These are not valid items, but they are valid pointers.
                 // We cannot safely use them - only take pointers to them.
                 $crate::__support::add_section_link_attribute!(
-                    $section $type $name $($aux)?
+                    $ref_or_item $section $type $name $($aux)?
                     #[link_name = __]
                     extern "C" {
                         static __SYMBOL: u8;
@@ -202,17 +205,17 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute(
-        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $(#[$meta:meta])*
             $vis:vis static $($static:tt)*
         ) => {
             $crate::__add_used!(
-                $section $type $name $($aux)? #[$attr = __]
+                $ref_or_item $section $type $name $($aux)? #[$attr = __]
                 $(#[$meta])*
                 $vis static $($static)*
             );
         };
-        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             extern "C" {
                 $(#[$meta:meta])*
                 $vis:vis static $($static:tt)*
@@ -220,17 +223,17 @@ pub mod __support {
         ) => {
             extern "C" {
                 $crate::__add_section_link_attribute_impl!(
-                    $section $type $name $($aux)? #[$attr = __]
+                    $ref_or_item $section $type $name $($aux)? #[$attr = __]
                     $(#[$meta])*
                     #[allow(unsafe_code)]
                     $vis static $($static)*
                 );
             }
         };
-        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
             $($item:tt)*) => {
             $crate::__add_section_link_attribute_impl!(
-                $section $type $name $($aux)? #[$attr = __]
+                $ref_or_item $section $type $name $($aux)? #[$attr = __]
                 #[allow(unsafe_code)]
                 $($item)*
             );
@@ -241,10 +244,10 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute_impl(
-        ($section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __] $($item:tt)*) => {
             $crate::__support::section_name!(
                 (#[$attr = __] #[allow(unsafe_code)] $($item)*)
-                $section $type $name $($aux)?
+                $ref_or_item $section $type $name $($aux)?
             );
         }
     );
@@ -253,9 +256,9 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute_impl(
-        ($section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:ident #[$attr:ident = __] $($item:tt)*) => {
             #[$attr = $crate::__support::section_name!(
-                raw $section $type $name
+                raw $ref_or_item $section $type $name
             )] $($item)*
         }
     );
@@ -286,6 +289,12 @@ pub mod __support {
 
     #[macro_export]
     #[doc(hidden)]
+    macro_rules! __in_section_helper_macro_generic_movable {
+        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=movable) ; $($args)*)); }
+    }
+
+    #[macro_export]
+    #[doc(hidden)]
     macro_rules! __in_section_helper_macro_generic_reference {
         (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=reference) ; $($args)*)); }
     }
@@ -310,7 +319,7 @@ pub mod __support {
         // Untyped items are placed in the data or code section as-is.
         (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($vis:vis fn $($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
-                code section $section $($aux)?
+                item code section $section $($aux)?
                 #[link_section = __]
                 $($meta)*
                 $vis fn $($rest)*
@@ -323,7 +332,7 @@ pub mod __support {
         };
         (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
-                data section $section $($aux)?
+                item data section $section $($aux)?
                 #[link_section = __]
                 $($meta)*
                 $($rest)*
@@ -362,7 +371,7 @@ pub mod __support {
         (@typed[typed] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident : $ty:ty = $value:expr;)) => {
             #[cfg(not(target_family = "wasm"))]
             $crate::__add_section_link_attribute!(
-                data section $section $($aux)?
+                item data section $section $($aux)?
                 #[link_section = __]
                 $($meta)*
                 $vis static $ident: $crate::__in_section_crate!(@type_select $path) = const{
@@ -385,11 +394,11 @@ pub mod __support {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
+                $crate::__register_wasm_item!(mutable, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
 
                 #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
-                    data section $section $($aux)?
+                    item data section $section $($aux)?
                     #[link_section = __]
                     static __LINK_SECTION_CONST_ITEM: $crate::__support::SyncUnsafeCell<__InSecStoredTy> = $crate::__support::SyncUnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE);
                 );
@@ -402,6 +411,57 @@ pub mod __support {
             compile_error!("Only const items are supported in mutable sections");
         };
 
+        // movable static items expose a MovableRef and submit hidden value/backref records.
+        (@typed[movable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
+            $($meta)*
+            $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = const {
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
+                type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    $crate::__add_section_link_attribute!(
+                        item data section $section $($aux)?
+                        #[link_section = __]
+                        static __LINK_SECTION_CONST_ITEM: $crate::__support::SyncUnsafeCell<__InSecStoredTy> =
+                            $crate::__support::SyncUnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE);
+                    );
+
+                    $crate::__add_section_link_attribute!(
+                        backref data section $section $($aux)?
+                        #[link_section = __]
+                        static __LINK_SECTION_MOVABLE_BACKREF: $crate::__support::SyncUnsafeCell<
+                            $crate::MovableBackref<__InSecStoredTy>
+                        > = $crate::__support::SyncUnsafeCell::new(
+                            $crate::MovableBackref::new(
+                                $crate::MovableRef::slot_ptr(&raw const $ident),
+                            )
+                        );
+                    );
+
+                    $crate::MovableRef::new(
+                        (&raw const __LINK_SECTION_CONST_ITEM)
+                            .cast::<__InSecStoredTy>(),
+                    )
+                }
+
+                #[cfg(target_family = "wasm")]
+                {
+                    $crate::__register_wasm_item!(
+                        movable,
+                        value=__LINK_SECTION_CONST_ITEM_VALUE,
+                        slot=$crate::MovableRef::slot_ptr(&raw const $ident),
+                        section=$section $($aux)?
+                    );
+
+                    $crate::MovableRef::new(::core::ptr::null())
+                }
+            };
+        };
+
+        (@typed[movable] $($rest:tt)*) => {
+            compile_error!("Only static items are supported in movable sections");
+        };
+
         // const items are the same across all other types
         (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
@@ -409,11 +469,11 @@ pub mod __support {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
+                $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
 
                 #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
-                    data section $section $($aux)?
+                    item data section $section $($aux)?
                     #[link_section = __]
                     static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
@@ -428,14 +488,14 @@ pub mod __support {
             $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
-                $crate::__register_wasm_item!(value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section $($aux)?);
+                $crate::__register_wasm_item!(reference, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section $($aux)?);
                 $crate::reference::Ref::new()
             };
 
             // On non-WASM platforms, we can store the value directly (repr(transparent) allows this).
             #[cfg(not(target_family="wasm"))]
             $crate::__add_section_link_attribute!(
-                data section $section $($aux)?
+                item data section $section $($aux)?
                 #[link_section = __]
                 $($meta)*
                 $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = $crate::reference::Ref::new($value);

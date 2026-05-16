@@ -3,10 +3,14 @@
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
+pub mod referenced_slice;
 pub mod slice;
+pub mod sorted_referenced_slice;
 pub mod sorted_slice;
 
+pub use referenced_slice::ScatteredReferencedSlice;
 pub use slice::ScatteredSlice;
+pub use sorted_referenced_slice::ScatteredSortedReferencedSlice;
 pub use sorted_slice::ScatteredSortedSlice;
 
 #[doc(hidden)]
@@ -20,7 +24,6 @@ macro_rules! __scatter_parse {
             $($item)*
         );
     };
-
     (#[scatter] $($rest:tt)* ) => {
         compile_error!("Unknown collection type");
     };

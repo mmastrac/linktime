@@ -5,11 +5,25 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_apple {
+    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+        {
+            $crate::__support::MovableBounds::new(
+                $crate::__support::PtrBounds::new(
+                    $crate::__address_of_symbol!(item data start $ident $($aux)?),
+                    $crate::__address_of_symbol!(item data end $ident $($aux)?),
+                ),
+                $crate::__support::PtrBounds::new(
+                    $crate::__address_of_symbol!(backref data start $ident $($aux)?),
+                    $crate::__address_of_symbol!(backref data end $ident $($aux)?),
+                ),
+            )
+        }
+    };
     ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
         {
             $crate::__support::PtrBounds::new(
-                $crate::__address_of_symbol!(data start $ident $($aux)?),
-                $crate::__address_of_symbol!(data end $ident $($aux)?),
+                $crate::__address_of_symbol!(item data start $ident $($aux)?),
+                $crate::__address_of_symbol!(item data end $ident $($aux)?),
             )
         }
     }
@@ -29,6 +43,7 @@ crate::__def_section_name! {
         data end =>     ("\x01section$end$__DATA$") __ ();
     }
     AUXILIARY = "_";
+    REFS = "_r_";
     MAX_LENGTH = 16;
     HASH_LENGTH = 6;
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
