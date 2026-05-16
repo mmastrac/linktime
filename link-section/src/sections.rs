@@ -1,4 +1,8 @@
-use core::sync::atomic::{AtomicU8, Ordering};
+use core::{
+    cell::UnsafeCell,
+    ptr,
+    sync::atomic::{AtomicU8, Ordering},
+};
 
 use crate::__support::{Bounds, MovableBounds, SyncUnsafeCell};
 
@@ -57,7 +61,7 @@ unsafe impl Send for Section {}
 /// Marker: untyped [`Section`] handle.
 pub trait IsUntypedSection {}
 
-macro_rules! impl_bounds_fns {
+macro_rules! impl_section_new {
     ($generic:ident) => {
         #[doc(hidden)]
         pub const unsafe fn new(name: &'static str, bounds: Bounds) -> Self {
@@ -71,7 +75,11 @@ macro_rules! impl_bounds_fns {
                 _phantom: ::core::marker::PhantomData,
             }
         }
+    };
+}
 
+macro_rules! impl_bounds_fns {
+    ($generic:ident) => {
         /// The start address of the section.
         #[inline(always)]
         pub fn start_ptr(&self) -> *const T {
@@ -183,6 +191,7 @@ pub struct TypedSection<T: 'static> {
 }
 
 impl<T: 'static> TypedSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -211,6 +220,7 @@ pub struct TypedMutableSection<T: 'static> {
 }
 
 impl<T: 'static> TypedMutableSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
@@ -283,55 +293,7 @@ impl<T: 'static> TypedMovableSection<T> {
         }
     }
 
-    /// The start address of the section.
-    #[inline(always)]
-    pub fn start_ptr(&self) -> *const T {
-        self.bounds.values.start_ptr() as *const T
-    }
-
-    /// The end address of the section.
-    #[inline(always)]
-    pub fn end_ptr(&self) -> *const T {
-        self.bounds.values.end_ptr() as *const T
-    }
-
-    /// The stride of the typed section.
-    #[inline(always)]
-    pub const fn stride(&self) -> usize {
-        assert!(
-            ::core::mem::size_of::<T>() > 0
-                && ::core::mem::size_of::<T>() * 2 == ::core::mem::size_of::<[T; 2]>()
-        );
-        ::core::mem::size_of::<T>()
-    }
-
-    /// The byte length of the section.
-    #[inline]
-    pub fn byte_len(&self) -> usize {
-        self.bounds.values.byte_len()
-    }
-
-    /// The number of elements in the section.
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.byte_len() / self.stride()
-    }
-
-    /// True if the section is empty.
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// The section as a slice.
-    #[inline]
-    pub fn as_slice(&self) -> &[T] {
-        if self.is_empty() {
-            &[]
-        } else {
-            unsafe { ::core::slice::from_raw_parts(self.start_ptr(), self.len()) }
-        }
-    }
+    impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.
     #[inline]
@@ -342,18 +304,6 @@ impl<T: 'static> TypedMovableSection<T> {
         } else {
             Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
         }
-    }
-
-    /// The start address of the section.
-    #[inline]
-    pub fn start_ptr_mut(&self) -> *mut T {
-        self.bounds.values.start_ptr() as *mut T
-    }
-
-    /// The end address of the section.
-    #[inline]
-    pub fn end_ptr_mut(&self) -> *mut T {
-        self.bounds.values.end_ptr() as *mut T
     }
 
     /// The section as a mutable slice.
@@ -383,42 +333,20 @@ impl<T: 'static> TypedMovableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
-        let backrefs = if self.backrefs_is_empty() {
+        let backrefs_len =
+            self.bounds.backrefs_byte_len() / ::core::mem::size_of::<MovableBackref<T>>();
+        let backrefs = if backrefs_len == 0 {
             &mut []
         } else {
             unsafe {
                 ::core::slice::from_raw_parts_mut(
-                    self.backrefs_start_ptr() as *mut MovableBackref<T>,
-                    self.backrefs_len(),
+                    self.bounds.backrefs_start_ptr() as *mut MovableBackref<T>,
+                    backrefs_len,
                 )
             }
         };
         unsafe { self.fixup_backrefs(backrefs) };
         backrefs
-    }
-
-    /// The start address of the backref section.
-    #[inline(always)]
-    pub fn backrefs_start_ptr(&self) -> *const MovableBackref<T> {
-        self.bounds.refs.start_ptr() as *const MovableBackref<T>
-    }
-
-    /// The end address of the backref section.
-    #[inline(always)]
-    pub fn backrefs_end_ptr(&self) -> *const MovableBackref<T> {
-        self.bounds.refs.end_ptr() as *const MovableBackref<T>
-    }
-
-    /// The number of backref records in the section.
-    #[inline]
-    pub fn backrefs_len(&self) -> usize {
-        self.bounds.refs.byte_len() / ::core::mem::size_of::<MovableBackref<T>>()
-    }
-
-    /// True if there are no backrefs.
-    #[inline]
-    pub fn backrefs_is_empty(&self) -> bool {
-        self.backrefs_len() == 0
     }
 
     unsafe fn fixup_backrefs(&self, backrefs: &mut [MovableBackref<T>]) {
@@ -435,7 +363,7 @@ impl<T: 'static> TypedMovableSection<T> {
             panic!("movable section backref count does not match item count");
         }
 
-        backrefs.sort_unstable_by_key(|backref| backref.original);
+        backrefs.sort_unstable_by_key(|backref| backref.current_ptr());
         self.backref_state.store(2, Ordering::Release);
     }
 }
@@ -445,25 +373,27 @@ impl_bounds_traits!(TypedMovableSection<T>);
 /// A reference to a movable item through a stable pointer slot.
 #[repr(transparent)]
 pub struct MovableRef<T: 'static> {
-    slot: &'static SyncUnsafeCell<*const T>,
+    slot: SyncUnsafeCell<*const T>,
 }
 
 impl<T> MovableRef<T> {
     #[doc(hidden)]
-    pub const fn new(slot: &'static SyncUnsafeCell<*const T>) -> Self {
-        Self { slot }
+    pub const fn new(ptr: *const T) -> Self {
+        Self {
+            slot: SyncUnsafeCell::new(ptr),
+        }
+    }
+
+    /// Get a raw pointer to the stable pointer slot inside this handle. Note
+    /// that both this and the SyncUnsafeCell are transparent.
+    #[doc(hidden)]
+    pub const fn slot_ptr(this: *const Self) -> *const UnsafeCell<*const T> {
+        this.cast::<UnsafeCell<*const T>>()
     }
 
     /// Raw pointer to the value currently referenced by this slot.
     pub fn as_ptr(&self) -> *const T {
         unsafe { *self.slot.get() }
-    }
-
-    #[doc(hidden)]
-    pub unsafe fn set(&self, ptr: *const T) {
-        unsafe {
-            *self.slot.get() = ptr;
-        }
     }
 }
 
@@ -478,37 +408,41 @@ unsafe impl<T> Send for MovableRef<T> where T: Send {}
 unsafe impl<T> Sync for MovableRef<T> where T: Sync {}
 
 /// A backref record submitted alongside each item in a [`TypedMovableSection`].
+/// This points to a [`MovableRef`] that lives outside of the section.
 #[repr(C)]
 pub struct MovableBackref<T: 'static> {
-    original: *const T,
-    slot: *const SyncUnsafeCell<*const T>,
+    slot: *const UnsafeCell<*const T>,
 }
 
 impl<T> MovableBackref<T> {
     #[doc(hidden)]
-    pub const fn new(original: *const T, slot: *const SyncUnsafeCell<*const T>) -> Self {
-        Self { original, slot }
-    }
-
-    /// Original value-section cell for this backref.
-    pub fn original_ptr(&self) -> *const T {
-        self.original
+    pub const fn new(slot: *const UnsafeCell<*const T>) -> Self {
+        Self { slot }
     }
 
     /// Current value of the stable pointer slot.
-    pub fn current_ptr(&self) -> *const T {
-        unsafe { *(*self.slot).get() }
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure no other threads are accessing the movable slice.
+    /// No references must be live to any of the static items.
+    ///
+    /// It is recommended to only use this in a `ctor`.
+    pub unsafe fn current_ptr(&self) -> *const T {
+        unsafe { ptr::read(UnsafeCell::raw_get(self.slot)) }
     }
 
     /// Update the stable pointer slot.
     ///
     /// # Safety
     ///
-    /// The caller must ensure `ptr` points to the logical item associated with
-    /// this backref.
+    /// The caller must ensure no other threads are accessing the movable slice.
+    /// No references must be live to any of the static items.
+    ///
+    /// It is recommended to only use this in a `ctor`.
     pub unsafe fn set_current_ptr(&self, ptr: *const T) {
         unsafe {
-            *(*self.slot).get() = ptr;
+            ptr::write(UnsafeCell::raw_get(self.slot), ptr);
         }
     }
 }
@@ -526,6 +460,7 @@ pub struct TypedReferenceSection<T: 'static> {
 }
 
 impl<T: 'static> TypedReferenceSection<T> {
+    impl_section_new!(T);
     impl_bounds_fns!(T);
 
     /// The offset of the item in the section, if it is in the section.

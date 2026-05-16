@@ -18,24 +18,9 @@ pub use windows::{get_section, section_name};
 
 // Select the appropriate bounds type for the platform.
 #[cfg(target_family = "wasm")]
-pub use wasm::Bounds;
+pub use {wasm::Bounds, wasm::MovableBounds};
 #[cfg(not(target_family = "wasm"))]
-pub use PtrBounds as Bounds;
-
-/// Bounds for a movable section and its associated backref section.
-pub struct MovableBounds {
-    /// Bounds for the submitted values.
-    pub values: Bounds,
-    /// Bounds for the submitted backrefs.
-    pub refs: Bounds,
-}
-
-impl MovableBounds {
-    /// Create movable-section bounds.
-    pub const fn new(values: Bounds, refs: Bounds) -> Self {
-        Self { values, refs }
-    }
-}
+pub use {PtrBounds as Bounds, PtrMovableBounds as MovableBounds};
 
 /// Rejects section names that cannot be represented on the current target.
 pub const fn validate_section_name(name: &str) {
@@ -100,6 +85,46 @@ impl PtrBounds {
     /// Length in bytes (`end - start`).
     pub fn byte_len(&self) -> usize {
         self.end as usize - self.start as usize
+    }
+}
+
+/// Bounds for a movable section and its associated backref section.
+pub struct PtrMovableBounds {
+    /// Bounds for the submitted values.
+    values: PtrBounds,
+    /// Bounds for the submitted backrefs.
+    refs: PtrBounds,
+}
+
+impl PtrMovableBounds {
+    /// Create movable-section bounds.
+    pub const fn new(values: PtrBounds, refs: PtrBounds) -> Self {
+        Self { values, refs }
+    }
+
+    #[inline(always)]
+    pub fn start_ptr(&self) -> *const () {
+        self.values.start_ptr()
+    }
+    #[inline(always)]
+    pub fn end_ptr(&self) -> *const () {
+        self.values.end_ptr()
+    }
+    #[inline(always)]
+    pub fn byte_len(&self) -> usize {
+        self.values.byte_len()
+    }
+    #[inline(always)]
+    pub fn backrefs_start_ptr(&self) -> *const () {
+        self.refs.start_ptr()
+    }
+    #[inline(always)]
+    pub fn backrefs_end_ptr(&self) -> *const () {
+        self.refs.end_ptr()
+    }
+    #[inline(always)]
+    pub fn backrefs_byte_len(&self) -> usize {
+        self.refs.byte_len()
     }
 }
 

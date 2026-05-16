@@ -60,6 +60,7 @@ mod link_section {
     mod movable {
         use linktime::ctor;
         use linktime::link_section::{section, in_section, TypedMovableSection};
+        use libc_print::*;
 
         #[section(movable)]
         pub static MOVABLE_LINK_SECTION: TypedMovableSection<u32>;
@@ -75,20 +76,22 @@ mod link_section {
 
         #[ctor(unsafe, priority = 1)]
         pub fn ctor() {
-            let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
-            let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
+            {
+                let movable_backrefs = unsafe { MOVABLE_LINK_SECTION.as_mut_backrefs() };
+                let movable_section = unsafe { MOVABLE_LINK_SECTION.as_mut_slice() };
 
-            for i in 0..movable_section.len() {
-                for j in i + 1..movable_section.len() {
-                    if movable_section[i] > movable_section[j] {
-                        movable_section.swap(i, j);
-                        movable_backrefs.swap(i, j);
+                for i in 0..movable_section.len() {
+                    for j in i + 1..movable_section.len() {
+                        if movable_section[i] > movable_section[j] {
+                            movable_section.swap(i, j);
+                            movable_backrefs.swap(i, j);
+                        }
                     }
                 }
-            }
-            for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
-                unsafe {
-                    backref.set_current_ptr(item as *const u32);
+                for (item, backref) in movable_section.iter().zip(movable_backrefs.iter()) {
+                    unsafe {
+                        backref.set_current_ptr(item as *const u32);
+                    }
                 }
             }
 
@@ -96,6 +99,8 @@ mod link_section {
             assert_eq!(*MOVABLE_20, 20);
             assert_eq!(*MOVABLE_10, 10);
             assert_eq!(*MOVABLE_30, 30);
+
+            libc_println!("MOVABLE_LINK_SECTION: {:?}", MOVABLE_LINK_SECTION.as_slice());
         }
     }
 
