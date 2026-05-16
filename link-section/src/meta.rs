@@ -41,8 +41,8 @@ macro_rules! __add_asan {
 macro_rules! __add_export_name {
     (@entry next=$next:path[$next_args:tt], input=(all=$all:tt export=($($input:tt)*)), args=[$dollar:tt]) => {
         $next!($next_args, (all=$all export=((
-            "_P", env!("CARGO_PKG_NAME"), 
-            "_M", ::core::module_path!(), 
+            "_P", env!("CARGO_PKG_NAME"),
+            "_M", ::core::module_path!(),
             "_L", line!(),
             "_C", column!()
         ))));
