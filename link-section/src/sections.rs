@@ -1,8 +1,6 @@
-use core::{
-    cell::UnsafeCell,
-    ptr,
-    sync::atomic::{AtomicU8, Ordering},
-};
+#[cfg(not(target_family = "wasm"))]
+use core::sync::atomic::{AtomicU8, Ordering};
+use core::{cell::UnsafeCell, ptr};
 
 use crate::__support::{Bounds, MovableBounds, SyncUnsafeCell};
 
@@ -269,11 +267,14 @@ impl_bounds_traits!(TypedMutableSection<T>);
 /// underlying data is (unsafely) mutable, enumerable, and expected to be
 /// relocated or reordered during startup initialization.
 ///
-/// Only `const` items may be submitted to a [`TypedMovableSection`].
+///
+///
+/// Only `static` items may be submitted to a [`TypedMovableSection`].
 #[repr(C)]
 pub struct TypedMovableSection<T: 'static> {
     name: &'static str,
     bounds: MovableBounds,
+    #[cfg(not(target_family = "wasm"))]
     backref_state: AtomicU8,
     _phantom: ::core::marker::PhantomData<T>,
 }
@@ -288,6 +289,7 @@ impl<T: 'static> TypedMovableSection<T> {
         Self {
             name,
             bounds,
+            #[cfg(not(target_family = "wasm"))]
             backref_state: AtomicU8::new(0),
             _phantom: ::core::marker::PhantomData,
         }
@@ -345,10 +347,19 @@ impl<T: 'static> TypedMovableSection<T> {
                 )
             }
         };
-        unsafe { self.fixup_backrefs(backrefs) };
+        #[cfg(not(target_family = "wasm"))]
+        unsafe {
+            self.fixup_backrefs(backrefs)
+        };
         backrefs
     }
 
+    /// As we cannot guarantee that the linker placed the items and backrefs in
+    /// the same order, we need to sort the backrefs to match the items.
+    ///
+    /// The exception, of course, is WASM where we placed both of them
+    /// ourselves.
+    #[cfg(not(target_family = "wasm"))]
     unsafe fn fixup_backrefs(&self, backrefs: &mut [MovableBackref<T>]) {
         match self
             .backref_state
@@ -365,6 +376,70 @@ impl<T: 'static> TypedMovableSection<T> {
 
         backrefs.sort_unstable_by_key(|backref| backref.current_ptr());
         self.backref_state.store(2, Ordering::Release);
+    }
+
+    /// Sort the section and backrefs in place.
+    ///
+    /// This algorithm is currently implemented as a quicksort.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure no other threads are accessing the movable slice.
+    /// It is recommended to only use this in a `ctor`.
+    pub unsafe fn sort_unstable(&self)
+    where
+        T: Ord,
+    {
+        // Trivial case.
+        let main = self.as_mut_slice();
+        if main.len() <= 1 {
+            return;
+        }
+
+        let refs = self.as_mut_backrefs();
+        debug_assert_eq!(main.len(), refs.len());
+
+        fn partition<T: Ord, R>(main: &mut [T], refs: &mut [R]) -> usize {
+            let n = main.len();
+            if n == 0 {
+                return 0;
+            }
+            let pivot = n - 1;
+            let mut i = 0;
+            for j in 0..pivot {
+                if main[j] <= main[pivot] {
+                    main.swap(i, j);
+                    refs.swap(i, j);
+                    i += 1;
+                }
+            }
+            main.swap(i, pivot);
+            refs.swap(i, pivot);
+            i
+        }
+
+        fn recurse<T: Ord, R>(main: &mut [T], refs: &mut [R]) {
+            let n = main.len();
+            if n <= 1 {
+                return;
+            }
+            let p = partition(main, refs);
+            let (ml, mr) = main.split_at_mut(p);
+            let (rl, rr) = refs.split_at_mut(p);
+            recurse(ml, rl);
+            if mr.len() > 1 {
+                recurse(&mut mr[1..], &mut rr[1..]);
+            }
+        }
+
+        recurse(main, refs);
+
+        // TODO: could we avoid the fixup if no changes are made?
+        for (item, backref) in main.iter().zip(refs.iter()) {
+            unsafe {
+                backref.set_current_ptr(item as *const T);
+            }
+        }
     }
 }
 

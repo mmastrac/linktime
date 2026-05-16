@@ -11,57 +11,43 @@ static OPERATIONS: link_section::TypedMovableSection<Operation>;
 #[derive(Debug, PartialEq, Eq, Ord, PartialOrd)]
 struct Operation(u32);
 
-mod operations {
+pub(crate) mod operations {
     use super::Operation;
     use link_section::in_section;
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_1: Operation = Operation(1);
+    pub static OPERATION_A: Operation = Operation(1);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_3: Operation = Operation(3);
+    pub static OPERATION_B: Operation = Operation(3);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_6: Operation = Operation(6);
+    pub static OPERATION_C: Operation = Operation(6);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_7: Operation = Operation(7);
+    pub static OPERATION_D: Operation = Operation(10);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_8: Operation = Operation(8);
+    pub static OPERATION_E: Operation = Operation(8);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_2: Operation = Operation(2);
+    pub static OPERATION_F: Operation = Operation(2);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_4: Operation = Operation(4);
+    pub static OPERATION_G: Operation = Operation(4);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_5: Operation = Operation(5);
+    pub static OPERATION_H: Operation = Operation(5);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_9: Operation = Operation(9);
+    pub static OPERATION_I: Operation = Operation(9);
 
     #[in_section(super::OPERATIONS)]
-    static OPERATION_10: Operation = Operation(10);
+    pub static OPERATION_J: Operation = Operation(7);
 }
 
 fn sort_operations() {
-    let section = unsafe { OPERATIONS.as_mut_slice() };
-    section.sort_unstable();
-
-    let movable_section = unsafe { OPERATIONS.as_mut_slice() };
-    let movable_backrefs = unsafe { OPERATIONS.as_mut_backrefs() };
-    assert_eq!(movable_section.len(), movable_backrefs.len());
-
-    for i in 0..movable_section.len() {
-        for j in i + 1..movable_section.len() {
-            if movable_section[i] > movable_section[j] {
-                movable_section.swap(i, j);
-                movable_backrefs.swap(i, j);
-            }
-        }
-    }
+    unsafe { OPERATIONS.sort_unstable() };
 }
 
 #[allow(unsafe_code)]
@@ -73,4 +59,15 @@ fn main() {
     for op in OPERATIONS {
         println!("Operation: {op:?}");
     }
+
+    println!("OPERATION_A: {:?}", *operations::OPERATION_A);
+    println!("OPERATION_B: {:?}", *operations::OPERATION_B);
+    println!("OPERATION_C: {:?}", *operations::OPERATION_C);
+    println!("OPERATION_D: {:?}", *operations::OPERATION_D);
+    println!("OPERATION_E: {:?}", *operations::OPERATION_E);
+    println!("OPERATION_F: {:?}", *operations::OPERATION_F);
+    println!("OPERATION_G: {:?}", *operations::OPERATION_G);
+    println!("OPERATION_H: {:?}", *operations::OPERATION_H);
+    println!("OPERATION_I: {:?}", *operations::OPERATION_I);
+    println!("OPERATION_J: {:?}", *operations::OPERATION_J);
 }
