@@ -1,4 +1,5 @@
 //! Generate a macro to add the various `used` and other attributes to a static.
+#![allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 
 use crate::{__chain, __perform};
 
@@ -60,7 +61,6 @@ macro_rules! __generate_macro {
     (@entry next=$next:path[$next_args:tt], input=(all=($($all:tt)*) export=($(($($export:tt)*))?)), args=[$dollar:tt]) => {
         #[doc(hidden)]
         #[macro_export]
-        #[allow(edition_2024_expr_fragment_specifier)]
         macro_rules! __add_linktime_attributes_to_static {
             (
                 #[link_section = $link_section:expr]

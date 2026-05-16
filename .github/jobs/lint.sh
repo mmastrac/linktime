@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+. $(dirname "$0")/_init.sh
+
 cargo clippy --examples --bins --all --target "$TARGET" -- ${CLIPPY_LINTS}
 cargo fmt --check --all
 

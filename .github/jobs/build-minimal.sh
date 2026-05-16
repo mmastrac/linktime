@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+. $(dirname "$0")/_init.sh
+
 # Remove Cargo.lock for testing down-level Rust versions
 rm Cargo.lock || true
 

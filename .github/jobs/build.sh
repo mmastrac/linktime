@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+. $(dirname "$0")/_init.sh
+
 cargo build
 
 ctor_examples=(ctor-example ctor-advanced)
