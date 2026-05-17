@@ -47,10 +47,10 @@ jobs:
               linux:
                 os:
                   ubuntu-latest:
-                    job: [test, test-used-linker, miri, wasm]
+                    job: [test, test-used-linker, miri, wasm, build, build-minimal, build-ctor-minimal]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
-                    job: [build, build-minimal, lint, sanitize]
+                    job: [lint, sanitize]
                     target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
                 target: x86_64-unknown-linux-musl
               macos:
                 os: macOS-latest
-                job: [lint, test, test-used-linker, miri, zigbuild, sanitize]
+                job: [lint, test, test-used-linker, miri, zigbuild, sanitize, build-minimal, build-ctor-minimal]
                 target: aarch64-apple-darwin
               windows:
                 os: windows-latest

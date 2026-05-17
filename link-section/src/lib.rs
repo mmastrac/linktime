@@ -163,7 +163,9 @@ pub mod __support {
                     }
                 );
                 // TODO: black_box when hint is stable
-                unsafe { &raw const __SYMBOL as *const () }
+                // TODO: MSRV: we can use &raw const once we bump MSRV
+                // unsafe { &raw const __SYMBOL as *const () }
+                unsafe { ::core::ptr::addr_of!(__SYMBOL) as *const () }
             }
         };
     }
@@ -331,7 +333,7 @@ pub mod __support {
         // mutable const items live in SyncUnsafeCell
         (@typed[mutable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis const $ident: $ty = const {
+            $vis const $ident: $ty = /*const*/ {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
@@ -355,7 +357,7 @@ pub mod __support {
         // movable static items expose a MovableRef and submit hidden value/backref records.
         (@typed[movable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = const {
+            $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = {
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 #[cfg(not(target_family = "wasm"))]
@@ -406,7 +408,7 @@ pub mod __support {
         // const items are the same across all other types
         (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis const $ident: $ty = const {
+            $vis const $ident: $ty = /*const*/ {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
@@ -426,7 +428,7 @@ pub mod __support {
         (@typed[reference] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             #[cfg(target_family="wasm")]
             $($meta)*
-            $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = const {
+            $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
                 $crate::__register_wasm_item!(reference, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section $($aux)?);

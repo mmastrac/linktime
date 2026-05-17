@@ -68,18 +68,18 @@ impl ::core::iter::IntoIterator for FOO {
 }
 fn foo() {
     const _: fn() =
-        const {
-                type __InSecStoredTy =
-                    <FOO as ::link_section::__support::SectionItemType>::Item;
-                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
-                ;
-                #[used]
-                #[export_name =
-                "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L11_C1"]
-                #[link_section = "_data_link_section_FOO"]
-                static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
-                    __LINK_SECTION_CONST_ITEM_VALUE;
-                __LINK_SECTION_CONST_ITEM_VALUE
-            };
+        {
+            type __InSecStoredTy =
+                <FOO as ::link_section::__support::SectionItemType>::Item;
+            const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
+            ;
+            #[used]
+            #[export_name =
+            "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L11_C1"]
+            #[link_section = "_data_link_section_FOO"]
+            static __LINK_SECTION_CONST_ITEM: __InSecStoredTy =
+                __LINK_SECTION_CONST_ITEM_VALUE;
+            __LINK_SECTION_CONST_ITEM_VALUE
+        };
 }
 fn main() {}
