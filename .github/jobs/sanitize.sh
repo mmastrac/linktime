@@ -11,6 +11,7 @@ sanitize_runs=(
   "link-section:link-section-ref"
   "link-section:link-section-mut"
   "link-section:link-section-movable"
+  "link-section:link-section-movable-no-macro"
 )
 
 for spec in "${sanitize_runs[@]}"; do
