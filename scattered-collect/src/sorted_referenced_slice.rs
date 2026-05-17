@@ -68,7 +68,7 @@ impl<T: Ord + 'static> ScatteredSortedReferencedSlice<T> {
     ///
     /// This is O(1), as it performs direct pointer arithmetic.
     pub fn offset_of(&self, item: &Ref<T>) -> Option<usize> {
-        TypedMovableSection::offset_of(self.data, &*item)
+        TypedMovableSection::offset_of(self.data, item)
     }
 }
 
