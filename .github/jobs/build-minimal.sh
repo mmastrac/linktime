@@ -10,6 +10,8 @@ minimal_crates=(
   tests/ctor/edition-2018
   tests/ctor/edition-2021
   tests/dtor/link-section
+  tests/dtor/no-default-features
+  
   tests/link_section/basic
   tests/link_section/interior_mut
   tests/link_section/mut

@@ -509,6 +509,24 @@ impl<T> ::core::ops::Deref for MovableRef<T> {
     }
 }
 
+impl<T> ::core::fmt::Debug for MovableRef<T>
+where
+    T: ::core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
+impl<T> ::core::fmt::Display for MovableRef<T>
+where
+    T: ::core::fmt::Display,
+{
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
 unsafe impl<T> Send for MovableRef<T> where T: Send {}
 unsafe impl<T> Sync for MovableRef<T> where T: Sync {}
 
@@ -635,6 +653,24 @@ impl<T> ::core::ops::Deref for Ref<T> {
         }
         #[cfg(not(target_family = "wasm"))]
         &self.t
+    }
+}
+
+impl<T> ::core::fmt::Debug for Ref<T>
+where
+    T: ::core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
+impl<T> ::core::fmt::Display for Ref<T>
+where
+    T: ::core::fmt::Display,
+{
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        (**self).fmt(f)
     }
 }
 

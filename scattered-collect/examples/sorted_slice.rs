@@ -3,18 +3,21 @@
 
 use scattered_collect::{gather, scatter, sorted_slice::ScatteredSortedSlice};
 
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
+struct MyId(u32);
+
 /// A scattered sorted slice of `u32`.
 #[gather]
-pub static COLLECTION: ScatteredSortedSlice<u32>;
+static COLLECTION: ScatteredSortedSlice<MyId>;
 
 #[scatter(COLLECTION)]
-const _: u32 = 1;
+const _: MyId = MyId(1);
 
 #[scatter(COLLECTION)]
-const _: u32 = 2;
+const _: MyId = MyId(2);
 
 #[scatter(COLLECTION)]
-const _: u32 = 3;
+const _: MyId = MyId(3);
 
 fn main() {
     println!("COLLECTION: {:?}", &*COLLECTION);

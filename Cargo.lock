@@ -373,7 +373,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "linktime-proc-macro",
  "macrotest",
@@ -597,7 +597,7 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ctor",
  "link-section",
