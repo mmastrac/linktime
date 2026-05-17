@@ -9,6 +9,7 @@
     all(target_vendor = "apple", linktime_used_linker),
     feature(used_with_arg)
 )]
+#![cfg_attr(all(target_vendor = "apple", linktime_asan), feature(sanitize))]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 #[cfg(feature = "std")]
@@ -139,10 +140,9 @@ pub mod collect {
     // Note: The section names must be <= 16 characters long to fit in the mach-o limits.
     // These sections are shared between multiple versions of the ctor crate.
 
-    #[doc(hidden)]
     link_section::declarative::section!(
         #[section(mutable, no_macro)]
-        pub static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
+        static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
     );
 
     #[macro_export]
@@ -202,10 +202,9 @@ pub mod collect {
         };
     }
 
-    #[doc(hidden)]
     link_section::declarative::section!(
         #[section(typed)]
-        pub static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
+        static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
     );
 
     link_section::declarative::in_section!(

@@ -26,7 +26,8 @@ proc_macro = ["dep:linktime-proc-macro"]
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_no_fail_on_missing_unsafe)',
-    'cfg(linktime_used_linker)'
+    'cfg(linktime_used_linker)',
+    'cfg(linktime_asan)'
 ] }
 
 [dependencies]

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+. $(dirname "$0")/_init.sh
+
 # pkg:example pairs for address-sanitizer smoke runs
 sanitize_runs=(
   "ctor:ctor-example"
@@ -14,5 +16,8 @@ sanitize_runs=(
 for spec in "${sanitize_runs[@]}"; do
   pkg="${spec%%:*}"
   example="${spec#*:}"
-  RUSTFLAGS="-Z sanitizer=address" cargo +nightly run -p "$pkg" --example "$example" --target "$TARGET"
+  RUSTFLAGS="--cfg linktime_asan" \
+    cargo +nightly rustc -p "$pkg" --example "$example" --target "$TARGET" -- \
+    -Z sanitizer=address -Z "crate-attr=feature(sanitize)"
+  "target/${TARGET}/debug/examples/${example}"
 done

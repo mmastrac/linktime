@@ -11,19 +11,17 @@ impl FOO {
             let section = {
                 ::link_section::__support::PtrBounds::new(
                     {
+                        #[allow(missing_unsafe_on_extern)]
                         extern "C" {
                             #[link_name = "\u{1}section$start$__DATA$FOO"]
-                            #[allow(unsafe_code)]
-                            #[allow(unsafe_code)]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
                     },
                     {
+                        #[allow(missing_unsafe_on_extern)]
                         extern "C" {
                             #[link_name = "\u{1}section$end$__DATA$FOO"]
-                            #[allow(unsafe_code)]
-                            #[allow(unsafe_code)]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -71,9 +69,8 @@ fn foo() {
     const _: fn() = const {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
-        #[link_section = "__DATA,FOO,regular,no_dead_strip"]
-        #[allow(unsafe_code)]
         #[used]
+        #[link_section = "__DATA,FOO,regular,no_dead_strip"]
         static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
         __LINK_SECTION_CONST_ITEM_VALUE
     };

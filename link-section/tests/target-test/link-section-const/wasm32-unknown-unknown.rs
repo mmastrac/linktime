@@ -76,12 +76,12 @@ const DRIVER: Driver =
                 <FOO as ::link_section::__support::SectionItemType>::Item;
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
                 Driver::new("driver", || ());
-            #[link_section = ".data.link_section.FOO"]
             #[used]
+            #[link_section = ".data.link_section.FOO"]
             static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+            #[allow(missing_unsafe_on_extern)]
             extern "C" {
                 #[link_name = ".data.link_section.FOO.bounds"]
-                #[allow(unsafe_code)]
                 static __LINK_SECTION_INFO:
                     ::link_section::__support::wasm::LinkSectionInfoLock<::link_section::__support::wasm::LinkSectionInfo>;
             }

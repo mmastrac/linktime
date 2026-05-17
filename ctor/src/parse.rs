@@ -809,7 +809,7 @@ macro_rules! __ctor_parse_impl {
         item = ($vis:vis static $ident:ident : &[fn()] = const $body:block;)
     ) ) => {
         $($meta)*
-        $vis static $ident: &[fn()] = const {
+        $vis static $ident: &[fn()] = /*const*/ {
             const __EXTERN_C_FNS: [extern "C" fn(); $ident.len()] = {
                 use ::core::mem::MaybeUninit;
                 let mut array: MaybeUninit<[extern "C" fn(); $ident.len()]> = MaybeUninit::uninit();

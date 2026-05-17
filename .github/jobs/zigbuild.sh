@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
+. $(dirname "$0")/_init.sh
+
 cargo zigbuild --workspace --bins --examples --target "$TARGET"
 
 zig_examples=(

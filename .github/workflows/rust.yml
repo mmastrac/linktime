@@ -31,7 +31,8 @@ jobs:
                 "this.job == 'lint'": [stable, nightly]
                 "this.job == 'test-used-linker'": nightly
                 "this.job == 'build'": [stable, beta, nightly]
-                "this.job == 'build-minimal'": ["1.65"]
+                "this.job == 'build-minimal'": ["1.85"]
+                "this.job == 'build-ctor-minimal'": ["1.65"]
                 "this.job == 'wasm'": ["1.85"]
                 "true": "stable"
             rust-extra-target:
@@ -47,10 +48,10 @@ jobs:
               linux:
                 os:
                   ubuntu-latest:
-                    job: [test, test-used-linker, miri, wasm]
+                    job: [test, test-used-linker, miri, wasm, build, build-minimal, build-ctor-minimal]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
-                    job: [build, build-minimal, lint, sanitize]
+                    job: [lint, sanitize]
                     target: x86_64-unknown-linux-gnu
               linux-musl:
                 os: ubuntu-latest
@@ -58,7 +59,7 @@ jobs:
                 target: x86_64-unknown-linux-musl
               macos:
                 os: macOS-latest
-                job: [lint, test, test-used-linker, miri, zigbuild]
+                job: [lint, test, test-used-linker, miri, zigbuild, sanitize, build-minimal]
                 target: aarch64-apple-darwin
               windows:
                 os: windows-latest

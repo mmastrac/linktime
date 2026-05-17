@@ -107,9 +107,9 @@ macro_rules! __sorted_referenced_slice {
             );
         }
 
-        $vis static $name: $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice<$ty> = unsafe {
+        $vis static $name: $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice<$ty> = const {unsafe {
             $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice::new(self::$name::$name.const_deref())
-        };
+        } };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
         $collection ! (( $collection => $vis $name: $ty = $expr ));
