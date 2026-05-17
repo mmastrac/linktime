@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Bumped MSRV to 1.85.0.
 - Significant rewrite to link-section's internal implementation.
 - Sections require a type: `#[section(typed)]`, `#[section(untyped)]`,
   `#[section(mutable)]`, `#[section(movable)]`, or `#[section(reference)]`.

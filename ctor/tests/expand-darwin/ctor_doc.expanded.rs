@@ -18,7 +18,7 @@ unsafe fn foo() {
         extern "C" fn __ctor_private() {
             { unsafe { __ctor_private_inner() } }
         }
-        const _: ::ctor::collect::Constructor = const {
+        const _: ::ctor::collect::Constructor = {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
             > as ::link_section::__support::SectionItemType>::Item;

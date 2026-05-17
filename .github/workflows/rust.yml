@@ -31,7 +31,8 @@ jobs:
                 "this.job == 'lint'": [stable, nightly]
                 "this.job == 'test-used-linker'": nightly
                 "this.job == 'build'": [stable, beta, nightly]
-                "this.job == 'build-minimal'": ["1.65"]
+                "this.job == 'build-minimal'": ["1.85"]
+                "this.job == 'build-ctor-minimal'": ["1.65"]
                 "this.job == 'wasm'": ["1.85"]
                 "true": "stable"
             rust-extra-target:
