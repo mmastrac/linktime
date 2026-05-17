@@ -202,10 +202,9 @@ pub mod collect {
         };
     }
 
-    #[doc(hidden)]
     link_section::declarative::section!(
         #[section(typed)]
-        pub static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
+        static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
     );
 
     link_section::declarative::in_section!(
