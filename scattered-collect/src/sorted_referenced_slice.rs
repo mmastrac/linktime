@@ -1,5 +1,27 @@
 //! A collection of sized items available both as a sorted slice and as stable
 //! handles at each declaration site.
+//!
+//! ```
+//! use scattered_collect::{
+//!     gather, scatter, sorted_referenced_slice::ScatteredSortedReferencedSlice,
+//! };
+//!
+//! #[gather]
+//! static HANDLERS: ScatteredSortedReferencedSlice<u32>;
+//!
+//! #[scatter(HANDLERS)]
+//! static HIGH: u32 = 30;
+//!
+//! #[scatter(HANDLERS)]
+//! static LOW: u32 = 10;
+//!
+//! fn main() {
+//! # if cfg!(miri) { return; }
+//!     assert_eq!(&*HANDLERS, [10, 30].as_slice());
+//!     assert_eq!(*HIGH, 30);
+//!     assert_eq!(*LOW, 10);
+//! }
+//! ```
 
 use link_section::TypedMovableSection;
 
@@ -64,6 +86,7 @@ impl<T: Ord + 'static> ::core::iter::IntoIterator for &'static ScatteredSortedRe
 macro_rules! __sorted_referenced_slice_decl_rslot {
     (
         $collection:ident,
+        ($(#[$imeta:meta])*),
         $vis:vis,
         $name:ident,
         $ty:ty,
@@ -71,6 +94,7 @@ macro_rules! __sorted_referenced_slice_decl_rslot {
     ) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section($collection::$collection)]
+            $(#[$imeta])*
             $vis static $name: $ty = $expr;
         );
     };
@@ -80,8 +104,10 @@ macro_rules! __sorted_referenced_slice_decl_rslot {
 #[macro_export]
 macro_rules! __sorted_referenced_slice {
     (gather $vis:vis $name:ident: $ty:ty) => {
-        #[doc(hidden)]
-        $crate::__support::ident_concat!((#[macro_export] macro_rules!) (__ $name __sorted_referenced_slice_private_macro__) ({
+        $crate::__sorted_referenced_slice!(@gather $vis static $name: ScatteredSortedReferencedSlice<$ty>;);
+    };
+    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
+        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __sorted_referenced_slice_private_macro__) ({
             ($passthru:tt) => {
                 $crate::__sorted_referenced_slice!(@scatter $passthru);
             };
@@ -107,16 +133,35 @@ macro_rules! __sorted_referenced_slice {
             );
         }
 
-        $vis static $name: $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice<$ty> = const {unsafe {
+        $(#[$meta])*
+        $vis static $name: $collection<$ty> = const {unsafe {
             $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice::new(self::$name::$name.const_deref())
         } };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
         $collection ! (( $collection => $vis $name: $ty = $expr ));
     };
+    (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+        $crate::__sorted_referenced_slice!(
+            @scatter [$collection]
+            $(#[$imeta])*
+            $vis static $name: $ty = $expr;
+        );
+    };
+    (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
+        $crate::__sorted_referenced_slice_decl_rslot!(
+            $collection,
+            ($(#[$imeta])*),
+            $vis,
+            $name,
+            $ty,
+            $expr
+        );
+    };
     (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
         $crate::__sorted_referenced_slice_decl_rslot!(
             $collection,
+            (),
             $vis,
             $name,
             $ty,
@@ -127,6 +172,8 @@ macro_rules! __sorted_referenced_slice {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
+    use crate::sorted_referenced_slice::ScatteredSortedReferencedSlice;
+
     __sorted_referenced_slice!(gather pub TEST_SORT_REF: u32);
     __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_A: u32 = 1);
     __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_B: u32 = 3);
