@@ -3,27 +3,24 @@
 use crate::{MovableRef, Ref};
 
 /// Argument to [`crate::TypedSection::offset_of`] and related section lookup APIs.
-///
-/// Implemented for any [`Deref`] target, including `&T`, [`crate::Ref`], and
-/// [`crate::MovableRef`].
 pub trait SectionItemLocation<T: ?Sized> {
     /// Address of the item's storage in the link section (not the wrapper).
     fn item_ptr(&self) -> *const T;
 }
 
-impl<'a, T: ?Sized> SectionItemLocation<T> for &'a T {
+impl<T: ?Sized> SectionItemLocation<T> for &T {
     fn item_ptr(&self) -> *const T {
         *self as *const T
     }
 }
 
-impl<'a, T> SectionItemLocation<T> for &'a Ref<T> {
+impl<T> SectionItemLocation<T> for Ref<T> {
     fn item_ptr(&self) -> *const T {
         Ref::as_ptr(self)
     }
 }
 
-impl<'a, T> SectionItemLocation<T> for &'a MovableRef<T> {
+impl<T> SectionItemLocation<T> for MovableRef<T> {
     fn item_ptr(&self) -> *const T {
         MovableRef::as_ptr(self)
     }
