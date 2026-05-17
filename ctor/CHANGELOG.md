@@ -12,8 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `link-section` dependency to 0.17.0.
 - MSRV bumped to 1.85.0 (if `priority` feature is enabled), otherwise remains at
   1.60.0.
-  - To restore MSRV to 1.60.0, use `ctor = { version = "1.0.6", default-features
-    = false, features = ["proc_macro", "std"] }` in your Cargo.toml.
+  - To restore MSRV to 1.60.0, use `ctor = { version = "1.0.6", default-features = false, features = ["proc_macro", "std"] }` in your Cargo.toml.
 
 ### Fixed
 
