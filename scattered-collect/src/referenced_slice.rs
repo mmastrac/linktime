@@ -13,8 +13,8 @@
 //! #[scatter(REFERENCED_PLUGINS)]
 //! static YAML: &str = "yaml";
 //!
-//! # #[cfg(not(miri))]
 //! fn main() {
+//! # if cfg(miri) { return; }
 //!     assert_eq!(REFERENCED_PLUGINS.len(), 2);
 //!     assert!(REFERENCED_PLUGINS.contains(&"json"));
 //!     assert_eq!(*JSON, "json");
