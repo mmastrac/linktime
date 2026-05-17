@@ -7,11 +7,12 @@ license.workspace = true
 repository.workspace = true
 description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
+rust-version = "1.85"
 
 [dependencies]
 link-section = { workspace = true, features = ["proc_macro"] }
 ctor = { workspace = true, features = ["proc_macro", "priority", "std"] }
-scattered-collect-proc-macro = { path = "../scattered-collect-proc-macro" }
+scattered-collect-proc-macro.workspace = true
 xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 

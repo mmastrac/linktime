@@ -5,11 +5,19 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.6] - Unreleased
+## [1.0.6] - 2026-05-16
 
 ### Changed
 
 - Bump `link-section` dependency to 0.17.0.
+- MSRV bumped to 1.85.0 (if `priority` feature is enabled), otherwise remains at
+  1.60.0.
+  - To restore MSRV to 1.60.0, use `ctor = { version = "1.0.6", default-features
+    = false, features = ["proc_macro", "std"] }` in your Cargo.toml.
+
+### Fixed
+
+- `#[ctor]` requires significantly less macro recursion.
 
 ## [1.0.5] - 2026-05-11
 
