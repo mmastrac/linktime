@@ -8,10 +8,10 @@
 //! static SLICE_PLUGINS: ScatteredSlice<&'static str>;
 //!
 //! #[scatter(SLICE_PLUGINS)]
-//! const _: &str = "json";
+//! const _: &'static str = "json";
 //!
 //! #[scatter(SLICE_PLUGINS)]
-//! const _: &str = "yaml";
+//! const _: &'static str = "yaml";
 //!
 //! fn main() {
 //! # if cfg!(miri) { return; }

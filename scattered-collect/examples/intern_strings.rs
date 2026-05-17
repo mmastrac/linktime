@@ -1,3 +1,6 @@
+//! Example for `ScatteredSortedReferencedSlice`.
+#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
+
 use std::{
     cmp::Ordering,
     fmt::{self, Debug, Display},
@@ -20,7 +23,7 @@ impl Str {
         INTERNED_STRINGS
             .binary_search(&Str::Static(s))
             .ok()
-            .map(|i| Str::Interned(i))
+            .map(Str::Interned)
     }
 }
 
