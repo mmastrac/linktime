@@ -85,37 +85,32 @@ macro_rules! __sorted_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
         #[allow(unused)]
-        $vis use $crate::__slice as $name;
-
-        #[allow(unused)]
-        #[allow(non_snake_case)]
-        #[doc(hidden)]
-        $vis mod $name {
-            $crate::__support::link_section::declarative::section!(
-                #[section(mutable)]
-                pub static $name: $crate::__support::link_section::TypedMutableSection<$ty>;
-            );
-        }
+        $vis use $crate::__sorted_slice as $name;
 
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
+            $crate::__support::link_section::declarative::section!(
+                #[section(mutable, no_macro)]
+                static $name: $crate::__support::link_section::TypedMutableSection<$ty>;
+            );
+
+            $crate::__support::ctor::declarative::ctor!(
+                // Run as soon as possible, before any other constructors.
+                #[ctor(unsafe, anonymous, priority = 0)]
+                fn initialize_scattered_sorted_slice() {
+                    unsafe { $crate::sorted_slice::initialize_scattered_sorted_slice($name.as_mut_slice()) };
+                }
+            );
+
             unsafe { $crate::sorted_slice::ScatteredSortedSlice::new(
-                self::$name::$name.const_deref()
+                $name.const_deref()
             ) }
         };
-
-        $crate::__support::ctor::declarative::ctor!(
-            // Run as soon as possible, before any other constructors.
-            #[ctor(unsafe, anonymous, priority = 0)]
-            fn initialize_scattered_sorted_slice() {
-                unsafe { $crate::sorted_slice::initialize_scattered_sorted_slice(self::$name::$name.as_mut_slice()) };
-            }
-        );
     };
 
     (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section($($meta)*::$($meta)*)]
+            #[in_section(unsafe, name = $($meta)*, type = mutable)]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );

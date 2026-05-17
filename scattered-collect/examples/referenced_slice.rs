@@ -3,20 +3,23 @@
 
 use scattered_collect::{gather, referenced_slice::ScatteredReferencedSlice, scatter};
 
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
+struct MyId(u32);
+
 /// A scattered referenced slice of `u32`.
 #[gather]
-static COLLECTION: ScatteredReferencedSlice<u32>;
+static COLLECTION: ScatteredReferencedSlice<MyId>;
 
 #[scatter(COLLECTION)]
-static ITEM_ONE: u32 = 1;
+static ITEM_ONE: MyId = MyId(1);
 
 #[scatter(COLLECTION)]
-static ITEM_TWO: u32 = 2;
+static ITEM_TWO: MyId = MyId(2);
 
 #[scatter(COLLECTION)]
-static ITEM_THREE: u32 = 3;
+static ITEM_THREE: MyId = MyId(3);
 
 fn main() {
     println!("COLLECTION: {:?}", &*COLLECTION);
-    println!("ITEM_ONE: {}", *ITEM_ONE);
+    println!("ITEM_ONE: {:?}", ITEM_ONE);
 }

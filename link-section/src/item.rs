@@ -1,5 +1,31 @@
 //! Item handling.
 
+use crate::{MovableRef, Ref};
+
+/// Argument to [`crate::TypedSection::offset_of`] and related section lookup APIs.
+pub trait SectionItemLocation<T: ?Sized> {
+    /// Address of the item's storage in the link section (not the wrapper).
+    fn item_ptr(&self) -> *const T;
+}
+
+impl<T: ?Sized> SectionItemLocation<T> for &T {
+    fn item_ptr(&self) -> *const T {
+        *self as *const T
+    }
+}
+
+impl<T> SectionItemLocation<T> for &Ref<T> {
+    fn item_ptr(&self) -> *const T {
+        Ref::as_ptr(self)
+    }
+}
+
+impl<T> SectionItemLocation<T> for &MovableRef<T> {
+    fn item_ptr(&self) -> *const T {
+        MovableRef::as_ptr(self)
+    }
+}
+
 /// Element type for this section handle ([`crate::TypedSection`], etc.).
 pub trait SectionItemType {
     /// Item type stored or referenced in the section.

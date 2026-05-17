@@ -15,12 +15,14 @@ mod platform;
 mod section_parse;
 mod sections;
 
+pub use item::SectionItemLocation;
 pub use sections::{
-    MovableBackref, MovableRef, Section, TypedMovableSection, TypedMutableSection,
+    MovableBackref, MovableRef, Ref, Section, TypedMovableSection, TypedMutableSection,
     TypedReferenceSection, TypedSection,
 };
 
 /// Types for [`TypedReferenceSection`].
+#[deprecated(since = "0.17.1", note = "Use [`Ref`] from the crate root instead.")]
 pub mod reference {
     pub use crate::sections::Ref;
 }

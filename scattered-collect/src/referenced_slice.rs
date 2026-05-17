@@ -23,7 +23,7 @@
 
 use link_section::TypedReferenceSection;
 
-pub use link_section::reference::Ref;
+pub use link_section::Ref;
 
 /// A collection of sized items available both as a slice over the gathered
 /// section and as `static` handles at each declaration site.
@@ -52,6 +52,16 @@ impl<T: 'static> ScatteredReferencedSlice<T> {
     pub fn is_empty(&self) -> bool {
         self.section.is_empty()
     }
+
+    /// The offset of the item in the slice, if it is from this slice.
+    ///
+    /// This is O(1), as it performs direct pointer arithmetic.
+    pub fn offset_of(
+        this: &Self,
+        item: impl link_section::SectionItemLocation<T>,
+    ) -> Option<usize> {
+        TypedReferenceSection::offset_of(this.section, item)
+    }
 }
 
 impl<T: 'static> ::core::ops::Deref for ScatteredReferencedSlice<T> {
@@ -77,21 +87,16 @@ macro_rules! __referenced_slice {
 
         $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __referenced_slice_private_macro__) (as $name;));
 
-        #[allow(unused)]
-        #[allow(non_snake_case)]
-        #[doc(hidden)]
-        $vis mod $name {
-            $crate::__support::link_section::declarative::section!(
-                #[section(reference)]
-                pub static $name: $crate::__support::link_section::TypedReferenceSection<$ty>;
-            );
-        }
-
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
+            $crate::__support::link_section::declarative::section!(
+                #[section(reference, no_macro)]
+                static $name: $crate::__support::link_section::TypedReferenceSection<$ty>;
+            );
+
             unsafe {
                 $crate::referenced_slice::ScatteredReferencedSlice::new(
-                    self::$name::$name.const_deref(),
+                    $name.const_deref(),
                 )
             }
         };
@@ -108,14 +113,14 @@ macro_rules! __referenced_slice {
     };
     (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section($collection::$collection)]
+            #[in_section(unsafe, name = $collection, type = reference)]
             $(#[$imeta])*
             $vis static $name: $ty = $expr;
         );
     };
     (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section($collection::$collection)]
+            #[in_section(unsafe, name = $collection, type = reference)]
             $vis static $name: $ty = $expr;
         );
     };

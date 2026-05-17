@@ -8,10 +8,10 @@
 //! static SLICE_PLUGINS: ScatteredSlice<&'static str>;
 //!
 //! #[scatter(SLICE_PLUGINS)]
-//! const _: &str = "json";
+//! const _: &'static str = "json";
 //!
 //! #[scatter(SLICE_PLUGINS)]
-//! const _: &str = "yaml";
+//! const _: &'static str = "yaml";
 //!
 //! fn main() {
 //! # if cfg!(miri) { return; }
@@ -52,27 +52,22 @@ macro_rules! __slice {
         #[allow(unused)]
         $vis use $crate::__slice as $name;
 
-        #[allow(unused)]
-        #[allow(non_snake_case)]
-        #[doc(hidden)]
-        $vis mod $name {
-            $crate::__support::link_section::declarative::section!(
-                #[section(typed)]
-                pub static $name: $crate::__support::link_section::TypedSection<$ty>;
-            );
-        }
-
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
+            $crate::__support::link_section::declarative::section!(
+                #[section(typed)]
+                static $name: $crate::__support::link_section::TypedSection<$ty>;
+            );
+
             unsafe { $crate::slice::ScatteredSlice::new(
-                self::$name::$name.const_deref()
+                $name.const_deref()
             ) }
         };
     };
 
     (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section($($meta)*::$($meta)*)]
+            #[in_section(unsafe, name = $($meta)*, type = typed)]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );

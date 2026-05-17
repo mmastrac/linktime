@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.1] - 2026-05-17
+
+### Added
+
+- `MovableRef` and `Ref` implement `Debug` and `Display` if the referenced type does.
+
+### Changed
+
+- Deprecated `reference` module in favor of `Ref` from the crate root.
+
 ## [0.17.0] - 2026-05-16
 
 ### Added

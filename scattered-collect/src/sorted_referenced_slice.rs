@@ -63,6 +63,16 @@ impl<T: Ord + 'static> ScatteredSortedReferencedSlice<T> {
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
+
+    /// The offset of the item in the slice, if it is from this slice.
+    ///
+    /// This is O(1), as it performs direct pointer arithmetic.
+    pub fn offset_of(
+        this: &Self,
+        item: impl link_section::SectionItemLocation<T>,
+    ) -> Option<usize> {
+        TypedMovableSection::offset_of(this.data, item)
+    }
 }
 
 impl<T: Ord + 'static> ::core::ops::Deref for ScatteredSortedReferencedSlice<T> {
@@ -93,7 +103,7 @@ macro_rules! __sorted_referenced_slice_decl_rslot {
         $expr:expr
     ) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section($collection::$collection)]
+            #[in_section(unsafe, name = $collection, type = movable)]
             $(#[$imeta])*
             $vis static $name: $ty = $expr;
         );
@@ -115,12 +125,11 @@ macro_rules! __sorted_referenced_slice {
 
         $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __sorted_referenced_slice_private_macro__) (as $name;));
 
-        #[allow(unused, non_snake_case, unsafe_code)]
-        #[doc(hidden)]
-        $vis mod $name {
+        $(#[$meta])*
+        $vis static $name: $collection<$ty> = const {
             $crate::__support::link_section::declarative::section!(
-                #[section(movable)]
-                pub static $name: $crate::__support::link_section::TypedMovableSection<$ty>;
+                #[section(movable, no_macro)]
+                static $name: $crate::__support::link_section::TypedMovableSection<$ty>;
             );
 
             $crate::__support::ctor::declarative::ctor!(
@@ -131,12 +140,11 @@ macro_rules! __sorted_referenced_slice {
                     }
                 }
             );
-        }
 
-        $(#[$meta])*
-        $vis static $name: $collection<$ty> = const {unsafe {
-            $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice::new(self::$name::$name.const_deref())
-        } };
+            unsafe {
+                $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice::new($name.const_deref())
+            }
+        };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
         $collection ! (( $collection => $vis $name: $ty = $expr ));
@@ -172,7 +180,7 @@ macro_rules! __sorted_referenced_slice {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
-    use crate::sorted_referenced_slice::ScatteredSortedReferencedSlice;
+    use crate::sorted_referenced_slice::{Ref, ScatteredSortedReferencedSlice};
 
     __sorted_referenced_slice!(gather pub TEST_SORT_REF: u32);
     __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_A: u32 = 1);
@@ -183,7 +191,8 @@ mod tests {
     fn test_scattered_sorted_referenced_slice() {
         assert_eq!(TEST_SORT_REF.len(), 3);
         assert_eq!(&*TEST_SORT_REF, [1, 2, 3].as_slice());
-        assert_eq!(*SORT_REF_ITEM_A, 1);
+        let a: &Ref<u32> = &SORT_REF_ITEM_A;
+        assert_eq!(**a, 1);
         assert_eq!(*SORT_REF_ITEM_B, 3);
         assert_eq!(*SORT_REF_ITEM_C, 2);
     }

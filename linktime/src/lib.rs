@@ -25,7 +25,7 @@ pub mod link_section {
 
     #[doc(inline)]
     pub use link_section::{
-        reference, MovableBackref, MovableRef, Section, TypedMovableSection, TypedMutableSection,
+        MovableBackref, MovableRef, Ref, Section, TypedMovableSection, TypedMutableSection,
         TypedReferenceSection, TypedSection,
     };
 
