@@ -140,10 +140,9 @@ pub mod collect {
     // Note: The section names must be <= 16 characters long to fit in the mach-o limits.
     // These sections are shared between multiple versions of the ctor crate.
 
-    #[doc(hidden)]
     link_section::declarative::section!(
         #[section(mutable, no_macro)]
-        pub static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
+        static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
     );
 
     #[macro_export]
