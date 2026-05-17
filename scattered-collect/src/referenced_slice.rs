@@ -23,7 +23,7 @@
 
 use link_section::TypedReferenceSection;
 
-pub use link_section::reference::Ref;
+pub use link_section::Ref;
 
 /// A collection of sized items available both as a slice over the gathered
 /// section and as `static` handles at each declaration site.
