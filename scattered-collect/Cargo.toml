@@ -18,19 +18,23 @@ xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 
 [[example]]
-name = "slice"
+name = "scattered-collect-intern-strings"
+path = "examples/intern_strings.rs"
+
+[[example]]
+name = "scattered-collect-slice"
 path = "examples/slice.rs"
 
 [[example]]
-name = "sorted_slice"
+name = "scattered-collect-sorted-slice"
 path = "examples/sorted_slice.rs"
 
 [[example]]
-name = "referenced_slice"
+name = "scattered-collect-referenced-slice"
 path = "examples/referenced_slice.rs"
 
 [[example]]
-name = "sorted_referenced_slice"
+name = "scattered-collect-sorted-referenced-slice"
 path = "examples/sorted_referenced_slice.rs"
 
 [lints.rust]

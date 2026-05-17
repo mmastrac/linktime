@@ -14,6 +14,11 @@ sanitize_runs=(
   "link-section:link-section-movable"
   "link-section:link-section-movable-no-macro"
   "link-section:link-section-ref"
+  "scattered-collect:scattered-collect-intern-strings"
+  "scattered-collect:scattered-collect-slice"
+  "scattered-collect:scattered-collect-sorted-slice"
+  "scattered-collect:scattered-collect-referenced-slice"
+  "scattered-collect:scattered-collect-sorted-referenced-slice"
 )
 
 for spec in "${sanitize_runs[@]}"; do
