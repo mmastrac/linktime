@@ -12,6 +12,7 @@
 //! #[scatter(PRIORITIES)]
 //! const _: u32 = 10;
 //!
+//! # #[cfg(not(miri))]
 //! fn main() {
 //!     assert_eq!(&*PRIORITIES, [10, 30].as_slice());
 //! }

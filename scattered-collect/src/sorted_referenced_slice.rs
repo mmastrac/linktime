@@ -15,6 +15,7 @@
 //! #[scatter(HANDLERS)]
 //! static LOW: u32 = 10;
 //!
+//! # #[cfg(not(miri))]
 //! fn main() {
 //!     assert_eq!(&*HANDLERS, [10, 30].as_slice());
 //!     assert_eq!(*HIGH, 30);

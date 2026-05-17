@@ -13,6 +13,7 @@
 //! #[scatter(SLICE_PLUGINS)]
 //! const _: &str = "yaml";
 //!
+//! # #[cfg(not(miri))]
 //! fn main() {
 //!     assert_eq!(SLICE_PLUGINS.len(), 2);
 //!     assert!(SLICE_PLUGINS.contains(&"json"));
