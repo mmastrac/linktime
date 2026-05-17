@@ -13,7 +13,7 @@
 //! const _: u32 = 10;
 //!
 //! fn main() {
-//! # if cfg(miri) { return; }
+//! # if cfg!(miri) { return; }
 //!     assert_eq!(&*PRIORITIES, [10, 30].as_slice());
 //! }
 //! ```

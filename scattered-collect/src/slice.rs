@@ -14,7 +14,7 @@
 //! const _: &str = "yaml";
 //!
 //! fn main() {
-//! # if cfg(miri) { return; }
+//! # if cfg!(miri) { return; }
 //!     assert_eq!(SLICE_PLUGINS.len(), 2);
 //!     assert!(SLICE_PLUGINS.contains(&"json"));
 //! }
