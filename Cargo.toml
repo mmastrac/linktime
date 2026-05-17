@@ -30,8 +30,9 @@ repository = "https://github.com/mmastrac/linktime"
 
 [workspace.dependencies]
 ctor = { path = "ctor", version = "1.0.6", default-features = false }
-dtor = { path = "dtor", version = "1.0.2", default-features = false }
+dtor = { path = "dtor", version = "1.0.3", default-features = false }
 link-section = { path = "link-section", version = "0.17.0", default-features = false }
+linktime = { path = "linktime", version = "0.16.0", default-features = false }
 
 linktime-proc-macro = { path = "linktime-proc-macro", version = "0.1.0" }
 
