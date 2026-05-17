@@ -85,7 +85,7 @@ macro_rules! __sorted_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
         #[allow(unused)]
-        $vis use $crate::__slice as $name;
+        $vis use $crate::__sorted_slice as $name;
 
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {

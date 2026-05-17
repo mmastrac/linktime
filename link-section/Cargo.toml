@@ -55,5 +55,9 @@ name = "link-section-mut"
 path = "examples/mut.rs"
 
 [[example]]
+name = "link-section-mut-no-macro"
+path = "examples/mut-no-macro.rs"
+
+[[example]]
 name = "link-section-ref"
 path = "examples/ref.rs"
