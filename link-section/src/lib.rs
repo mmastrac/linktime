@@ -15,6 +15,7 @@ mod platform;
 mod section_parse;
 mod sections;
 
+pub use item::SectionItemLocation;
 pub use sections::{
     MovableBackref, MovableRef, Ref, Section, TypedMovableSection, TypedMutableSection,
     TypedReferenceSection, TypedSection,

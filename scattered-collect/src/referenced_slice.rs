@@ -56,8 +56,8 @@ impl<T: 'static> ScatteredReferencedSlice<T> {
     /// The offset of the item in the slice, if it is from this slice.
     ///
     /// This is O(1), as it performs direct pointer arithmetic.
-    pub fn offset_of(&self, item: &Ref<T>) -> Option<usize> {
-        TypedReferenceSection::offset_of(self.section, item)
+    pub fn offset_of(this: &Self, item: impl ::core::ops::Deref<Target = T>) -> Option<usize> {
+        TypedReferenceSection::offset_of(this.section, item)
     }
 }
 

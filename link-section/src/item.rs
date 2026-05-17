@@ -1,5 +1,25 @@
 //! Item handling.
 
+use core::ops::Deref;
+
+/// Argument to [`crate::TypedSection::offset_of`] and related section lookup APIs.
+///
+/// Implemented for any [`Deref`] target, including `&T`, [`crate::Ref`], and
+/// [`crate::MovableRef`].
+pub trait SectionItemLocation<T: ?Sized> {
+    /// Address of the item's storage in the link section (not the wrapper).
+    fn item_ptr(&self) -> *const T;
+}
+
+impl<P, T: ?Sized> SectionItemLocation<T> for P
+where
+    P: Deref<Target = T>,
+{
+    fn item_ptr(&self) -> *const T {
+        self.deref() as *const T
+    }
+}
+
 /// Element type for this section handle ([`crate::TypedSection`], etc.).
 pub trait SectionItemType {
     /// Item type stored or referenced in the section.

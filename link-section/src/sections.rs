@@ -135,6 +135,19 @@ macro_rules! impl_bounds_fns {
                 unsafe { ::core::slice::from_raw_parts(self.start_ptr(), self.len()) }
             }
         }
+
+        /// The offset of the item in the section, if it is in the section.
+        ///
+        /// This is O(1), as it performs direct pointer arithmetic.
+        #[inline]
+        pub fn offset_of(&self, item: impl ::core::ops::Deref<Target = T>) -> Option<usize> {
+            let ptr = item.deref() as *const T;
+            if ptr < self.start_ptr() || ptr >= self.end_ptr() {
+                None
+            } else {
+                Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
+            }
+        }
     };
 }
 
@@ -199,17 +212,6 @@ pub struct TypedSection<T: 'static> {
 impl<T: 'static> TypedSection<T> {
     impl_section_new!(T);
     impl_bounds_fns!(T);
-
-    /// The offset of the item in the section, if it is in the section.
-    #[inline]
-    pub fn offset_of(&self, item: &T) -> Option<usize> {
-        let ptr = item as *const T;
-        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
-            None
-        } else {
-            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
-        }
-    }
 }
 
 impl_bounds_traits!(TypedSection<T>);
@@ -232,17 +234,6 @@ pub struct TypedMutableSection<T: 'static> {
 impl<T: 'static> TypedMutableSection<T> {
     impl_section_new!(T);
     impl_bounds_fns!(T);
-
-    /// The offset of the item in the section, if it is in the section.
-    #[inline]
-    pub fn offset_of(&self, item: &T) -> Option<usize> {
-        let ptr = item as *const T;
-        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
-            None
-        } else {
-            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
-        }
-    }
 
     /// The start address of the section.
     #[inline]
@@ -317,17 +308,6 @@ impl<T: 'static> TypedMovableSection<T> {
     }
 
     impl_bounds_fns!(T);
-
-    /// The offset of the item in the section, if it is in the section.
-    #[inline]
-    pub fn offset_of(&self, item: &T) -> Option<usize> {
-        let ptr = item as *const T;
-        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
-            None
-        } else {
-            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
-        }
-    }
 
     /// The section as a mutable slice.
     ///
@@ -497,7 +477,7 @@ impl<T> MovableRef<T> {
     }
 
     /// Raw pointer to the value currently referenced by this slot.
-    pub fn as_ptr(&self) -> *const T {
+    pub const fn as_ptr(&self) -> *const T {
         unsafe { *self.slot.get() }
     }
 }
@@ -577,17 +557,6 @@ pub struct TypedReferenceSection<T: 'static> {
 impl<T: 'static> TypedReferenceSection<T> {
     impl_section_new!(T);
     impl_bounds_fns!(T);
-
-    /// The offset of the item in the section, if it is in the section.
-    #[inline]
-    pub fn offset_of(&self, item: &Ref<T>) -> Option<usize> {
-        let ptr = item.as_ptr();
-        if ptr < self.start_ptr() || ptr >= self.end_ptr() {
-            None
-        } else {
-            Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
-        }
-    }
 }
 
 impl_bounds_traits!(TypedReferenceSection<T>);
