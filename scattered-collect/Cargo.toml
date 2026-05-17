@@ -1,6 +1,6 @@
 [package]
 name = "scattered-collect"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
@@ -10,6 +10,7 @@ categories = ["data-structures", "development-tools::build-utils", "no-std"]
 rust-version = "1.85"
 
 [dependencies]
+linktime = { workspace = true , features = ["std", "ctor", "link-section", "dtor"] }
 link-section = { workspace = true, features = ["proc_macro"] }
 ctor = { workspace = true, features = ["proc_macro", "priority", "std"] }
 scattered-collect-proc-macro.workspace = true
@@ -23,6 +24,14 @@ path = "examples/slice.rs"
 [[example]]
 name = "sorted_slice"
 path = "examples/sorted_slice.rs"
+
+[[example]]
+name = "referenced_slice"
+path = "examples/referenced_slice.rs"
+
+[[example]]
+name = "sorted_referenced_slice"
+path = "examples/sorted_referenced_slice.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

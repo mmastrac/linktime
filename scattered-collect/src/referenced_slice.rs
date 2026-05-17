@@ -1,5 +1,24 @@
 //! A collection of items collected into a slice (link order), with each entry
 //! wrapped as [`Ref`] so `static` items work on targets such as WASM.
+//!
+//! ```
+//! use scattered_collect::{gather, referenced_slice::ScatteredReferencedSlice, scatter};
+//!
+//! #[gather]
+//! static REFERENCED_PLUGINS: ScatteredReferencedSlice<&'static str>;
+//!
+//! #[scatter(REFERENCED_PLUGINS)]
+//! static JSON: &str = "json";
+//!
+//! #[scatter(REFERENCED_PLUGINS)]
+//! static YAML: &str = "yaml";
+//!
+//! fn main() {
+//!     assert_eq!(REFERENCED_PLUGINS.len(), 2);
+//!     assert!(REFERENCED_PLUGINS.contains(&"json"));
+//!     assert_eq!(*JSON, "json");
+//! }
+//! ```
 
 use link_section::TypedReferenceSection;
 
@@ -43,8 +62,12 @@ impl<T: 'static> ::core::ops::Deref for ScatteredReferencedSlice<T> {
 
 /// Declare a scattered referenced slice.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! __referenced_slice {
     (gather $vis:vis $name:ident: $ty:ty) => {
+        $crate::__referenced_slice!(@gather $vis static $name: ScatteredReferencedSlice<$ty>;);
+    };
+    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
         $crate::__support::ident_concat!((#[macro_export] macro_rules!) (__ $name __referenced_slice_private_macro__) ({
             ($passthru:tt) => {
@@ -64,7 +87,8 @@ macro_rules! __referenced_slice {
             );
         }
 
-        $vis static $name: $crate::referenced_slice::ScatteredReferencedSlice<$ty> = {
+        $(#[$meta])*
+        $vis static $name: $collection<$ty> = {
             unsafe {
                 $crate::referenced_slice::ScatteredReferencedSlice::new(
                     self::$name::$name.const_deref(),
@@ -74,6 +98,20 @@ macro_rules! __referenced_slice {
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
         $collection ! (( $collection => $vis $name: $ty = $expr ));
+    };
+    (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+        $crate::__referenced_slice!(
+            @scatter [$collection]
+            $(#[$imeta])*
+            $vis static $name: $ty = $expr;
+        );
+    };
+    (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
+        $crate::__support::link_section::declarative::in_section!(
+            #[in_section($collection::$collection)]
+            $(#[$imeta])*
+            $vis static $name: $ty = $expr;
+        );
     };
     (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
         $crate::__support::link_section::declarative::in_section!(
@@ -85,6 +123,8 @@ macro_rules! __referenced_slice {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
+    use crate::referenced_slice::ScatteredReferencedSlice;
+
     __referenced_slice!(gather pub TEST_REF_SLICE: u32);
     __referenced_slice!(scatter TEST_REF_SLICE => pub REF_SLICE_ITEM_A: u32 = 1);
     __referenced_slice!(scatter TEST_REF_SLICE => pub REF_SLICE_ITEM_B: u32 = 3);

@@ -19,9 +19,10 @@ macro_rules! __scatter_parse {
     // Send the #[scatter]'d item into the collection's private macro.
     (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $($item:tt)*) => {
         $($meta)* ! (
-            @scatter [$($meta)*]
+            ($($meta)* =>
             $(#[$imeta])*
             $($item)*
+            )
         );
     };
     (#[scatter] $($rest:tt)* ) => {
@@ -60,6 +61,22 @@ macro_rules! __gather_parse {
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >; ) => {
         $crate::__sorted_slice ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $collection < $ty >;
+        );
+    };
+
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredReferencedSlice < $ty:ty >; ) => {
+        $crate::__referenced_slice ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $collection < $ty >;
+        );
+    };
+
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedReferencedSlice < $ty:ty >; ) => {
+        $crate::__sorted_referenced_slice ! (
             @gather
             $(#[$imeta])*
             $vis static $name: $collection < $ty >;

@@ -1,4 +1,21 @@
 //! A collection of items that are available via slice, in sorted order.
+//!
+//! ```
+//! use scattered_collect::{gather, scatter, sorted_slice::ScatteredSortedSlice};
+//!
+//! #[gather]
+//! static PRIORITIES: ScatteredSortedSlice<u32>;
+//!
+//! #[scatter(PRIORITIES)]
+//! const _: u32 = 30;
+//!
+//! #[scatter(PRIORITIES)]
+//! const _: u32 = 10;
+//!
+//! fn main() {
+//!     assert_eq!(&*PRIORITIES, [10, 30].as_slice());
+//! }
+//! ```
 
 use link_section::TypedMutableSection;
 
@@ -61,6 +78,7 @@ pub fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
 }
 
 /// Declare a scattered sorted slice.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! __sorted_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
@@ -97,6 +115,13 @@ macro_rules! __sorted_slice {
     (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section($($meta)*::$($meta)*)]
+            $(#[$imeta])*
+            $vis $type $name: $ty = $expr;
+        );
+    };
+    (($collection:ident => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
+        $crate::__sorted_slice!(
+            @scatter [$collection]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );

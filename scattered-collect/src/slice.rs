@@ -1,5 +1,23 @@
 //! A collection of sized items that collected into a slice in an arbitrary
 //! order.
+//!
+//! ```
+//! use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+//!
+//! #[gather]
+//! static SLICE_PLUGINS: ScatteredSlice<&'static str>;
+//!
+//! #[scatter(SLICE_PLUGINS)]
+//! const _: &str = "json";
+//!
+//! #[scatter(SLICE_PLUGINS)]
+//! const _: &str = "yaml";
+//!
+//! fn main() {
+//!     assert_eq!(SLICE_PLUGINS.len(), 2);
+//!     assert!(SLICE_PLUGINS.contains(&"json"));
+//! }
+//! ```
 
 use link_section::TypedSection;
 
@@ -26,6 +44,7 @@ impl<T> ::core::ops::Deref for ScatteredSlice<T> {
 
 /// Declare a scattered slice.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! __slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         #[doc(hidden)]
@@ -53,6 +72,13 @@ macro_rules! __slice {
     (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section($($meta)*::$($meta)*)]
+            $(#[$imeta])*
+            $vis $type $name: $ty = $expr;
+        );
+    };
+    (($collection:ident => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
+        $crate::__slice!(
+            @scatter [$collection]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );
