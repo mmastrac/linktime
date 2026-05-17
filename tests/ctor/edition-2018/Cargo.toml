@@ -7,7 +7,8 @@ publish = false
 [features]
 
 [dependencies]
-ctor = { path = "../../../ctor" }
+# When we bump the MSRV, can probably re-add priority feature.
+ctor = { path = "../../../ctor", default-features = false, features = ["proc_macro", "std"] }
 libc-print = "0.3"
 
 [workspace]
