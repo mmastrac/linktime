@@ -14,13 +14,13 @@ impl<T: ?Sized> SectionItemLocation<T> for &T {
     }
 }
 
-impl<T> SectionItemLocation<T> for Ref<T> {
+impl<T> SectionItemLocation<T> for &Ref<T> {
     fn item_ptr(&self) -> *const T {
         Ref::as_ptr(self)
     }
 }
 
-impl<T> SectionItemLocation<T> for MovableRef<T> {
+impl<T> SectionItemLocation<T> for &MovableRef<T> {
     fn item_ptr(&self) -> *const T {
         MovableRef::as_ptr(self)
     }
