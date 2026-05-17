@@ -1,5 +1,5 @@
 # This actually fails on older rustc
-DEFAULT_TARGET=`rustc --print host-tuple || echo x86_64-unknown-linux-gnu`
+DEFAULT_TARGET=`rustc --print host-tuple || echo invalid-tuple-specify-one-explicitly`
 TARGET="${TARGET:-$DEFAULT_TARGET}"
 
 CLIPPY_LINTS=$(cat <<EOF

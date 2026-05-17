@@ -26,6 +26,8 @@ fn foo() {
 
 For most platforms, this library currently has a MSRV of **Rust >= 1.60**.
 
+The priority feature requires a MSRV of **Rust >= 1.85** on macOS targets.
+
 MSRV for WASM targets is **Rust >= 1.85**.
 
 ## Lightweight
