@@ -140,8 +140,8 @@ macro_rules! impl_bounds_fns {
         ///
         /// This is O(1), as it performs direct pointer arithmetic.
         #[inline]
-        pub fn offset_of(&self, item: impl ::core::ops::Deref<Target = T>) -> Option<usize> {
-            let ptr = item.deref() as *const T;
+        pub fn offset_of(&self, item: impl $crate::SectionItemLocation<T>) -> Option<usize> {
+            let ptr = item.item_ptr();
             if ptr < self.start_ptr() || ptr >= self.end_ptr() {
                 None
             } else {

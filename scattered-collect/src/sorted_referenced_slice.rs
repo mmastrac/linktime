@@ -67,7 +67,10 @@ impl<T: Ord + 'static> ScatteredSortedReferencedSlice<T> {
     /// The offset of the item in the slice, if it is from this slice.
     ///
     /// This is O(1), as it performs direct pointer arithmetic.
-    pub fn offset_of(this: &Self, item: impl ::core::ops::Deref<Target = T>) -> Option<usize> {
+    pub fn offset_of(
+        this: &Self,
+        item: impl link_section::SectionItemLocation<T>,
+    ) -> Option<usize> {
         TypedMovableSection::offset_of(this.data, item)
     }
 }

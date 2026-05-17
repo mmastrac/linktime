@@ -1,6 +1,6 @@
 //! Item handling.
 
-use core::ops::Deref;
+use crate::{MovableRef, Ref};
 
 /// Argument to [`crate::TypedSection::offset_of`] and related section lookup APIs.
 ///
@@ -11,12 +11,21 @@ pub trait SectionItemLocation<T: ?Sized> {
     fn item_ptr(&self) -> *const T;
 }
 
-impl<P, T: ?Sized> SectionItemLocation<T> for P
-where
-    P: Deref<Target = T>,
-{
+impl<'a, T: ?Sized> SectionItemLocation<T> for &'a T {
     fn item_ptr(&self) -> *const T {
-        self.deref() as *const T
+        *self as *const T
+    }
+}
+
+impl<'a, T> SectionItemLocation<T> for &'a Ref<T> {
+    fn item_ptr(&self) -> *const T {
+        Ref::as_ptr(self)
+    }
+}
+
+impl<'a, T> SectionItemLocation<T> for &'a MovableRef<T> {
+    fn item_ptr(&self) -> *const T {
+        MovableRef::as_ptr(self)
     }
 }
 
