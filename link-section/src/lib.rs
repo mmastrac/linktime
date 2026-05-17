@@ -317,7 +317,7 @@ pub mod __support {
                 item data section $section $($aux)?
                 #[link_section = __]
                 $($meta)*
-                $vis static $ident: $crate::__in_section_crate!(@type_select $path) = const{
+                $vis static $ident: $crate::__in_section_crate!(@type_select $path) = const {
                     const _: () = {
                         let _: *const <$path as $crate::__support::SectionItemTyped<$ty>>::Item = ::core::ptr::null();
                     };
@@ -357,7 +357,7 @@ pub mod __support {
         // movable static items expose a MovableRef and submit hidden value/backref records.
         (@typed[movable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = {
+            $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = const {
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 #[cfg(not(target_family = "wasm"))]
@@ -408,7 +408,7 @@ pub mod __support {
         // const items are the same across all other types
         (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
-            $vis const $ident: $ty = /*const*/ {
+            $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 

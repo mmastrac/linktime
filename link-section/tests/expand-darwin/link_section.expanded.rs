@@ -66,7 +66,7 @@ impl ::core::iter::IntoIterator for FOO {
     }
 }
 fn foo() {
-    const _: fn() = {
+    const _: fn() = const {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[used]
