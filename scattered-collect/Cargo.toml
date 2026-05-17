@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
+rust-version = "1.85"
 
 [dependencies]
 link-section = { workspace = true, features = ["proc_macro"] }

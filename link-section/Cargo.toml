@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 readme = "README.md"
 categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
+rust-version = "1.85"
 
 [features]
 default = ["proc_macro", "std"]
