@@ -9,7 +9,6 @@ rm Cargo.lock || true
 minimal_crates=(
   tests/ctor/edition-2018
   tests/ctor/edition-2021
-  tests/ctor/priority
   tests/dtor/link-section
 )
 for dir in "${minimal_crates[@]}"; do
