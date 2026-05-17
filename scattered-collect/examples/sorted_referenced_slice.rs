@@ -5,16 +5,16 @@ use scattered_collect::{gather, scatter, sorted_referenced_slice::ScatteredSorte
 
 /// A scattered sorted referenced slice of `u32`.
 #[gather]
-pub static COLLECTION: ScatteredSortedReferencedSlice<u32>;
+static COLLECTION: ScatteredSortedReferencedSlice<u32>;
 
 #[scatter(COLLECTION)]
-pub static ITEM_ONE: u32 = 1;
+static ITEM_ONE: u32 = 1;
 
 #[scatter(COLLECTION)]
-pub static ITEM_TWO: u32 = 2;
+static ITEM_TWO: u32 = 2;
 
 #[scatter(COLLECTION)]
-pub static ITEM_THREE: u32 = 3;
+static ITEM_THREE: u32 = 3;
 
 fn main() {
     println!("COLLECTION: {:?}", &*COLLECTION);

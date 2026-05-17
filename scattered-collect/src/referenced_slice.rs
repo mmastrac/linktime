@@ -68,8 +68,7 @@ macro_rules! __referenced_slice {
         $crate::__referenced_slice!(@gather $vis static $name: ScatteredReferencedSlice<$ty>;);
     };
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
-        #[doc(hidden)]
-        $crate::__support::ident_concat!((#[macro_export] macro_rules!) (__ $name __referenced_slice_private_macro__) ({
+        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __referenced_slice_private_macro__) ({
             ($passthru:tt) => {
                 $crate::__referenced_slice!(@scatter $passthru);
             };
