@@ -7,6 +7,12 @@ referenced variants allow you to access the items as `static` handles at the
 declaration site, while the unreferenced variants allow you to access the items
 as a slice only. The latter, unreferenced variants may be more efficient.
 
+## Zero-allocation collections
+
+The collections are all zero-allocation. This means that they can be used in
+`no-std`/`no-alloc` environments, and that they do not contribute to heap usage
+whatsoever.
+
 ## Collections
 
 - [`ScatteredSlice`]: A collection of sized items that collected into a slice in
@@ -18,3 +24,5 @@ as a slice only. The latter, unreferenced variants may be more efficient.
   targets such as WASM.
 - [`ScatteredSortedReferencedSlice`]: A collection of sized items that are
   available both via sorted slice and via reference at the declaration site.
+- [`ScatteredMap`]: A collection of key-value pairs that are available via
+  slice, as well as indexed by key.
