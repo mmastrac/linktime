@@ -143,10 +143,10 @@ impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredMap<K, V> {
 ///
 /// ## Performance notes
 ///
-/// The map is only ever written to once, and then becomes read-only. This means
-/// that we can avoid tombstone logic.
+/// The map's metadata section is only ever written to once, and then becomes
+/// read-only. This means that we can avoid tombstone logic.
 ///
-/// Metadata is arranged in 16-slot SIMD groups; see [`initialize_scattered_map`].
+/// Metadata is arranged in 16-slot SIMD groups for optimal performance.
 pub struct ScatteredMap<K: 'static, V: 'static> {
     state: &'static __ScatteredMapState<K, V>,
 }
