@@ -17,6 +17,9 @@ scattered-collect-proc-macro.workspace = true
 xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 
+[dev-dependencies]
+divan = "0.1.21"
+
 [[example]]
 name = "scattered-collect-intern-strings"
 path = "examples/intern_strings.rs"
@@ -36,6 +39,11 @@ path = "examples/referenced_slice.rs"
 [[example]]
 name = "scattered-collect-sorted-referenced-slice"
 path = "examples/sorted_referenced_slice.rs"
+
+[[bench]]
+name = "map"
+harness = false
+path = "benches/map.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

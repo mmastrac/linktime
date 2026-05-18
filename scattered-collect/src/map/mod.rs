@@ -1,4 +1,3 @@
-use hash::ConstHash;
 use link_section::{TypedMutableSection, TypedSection};
 use std::{
     mem::MaybeUninit,
@@ -6,7 +5,9 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
 };
 
-use crate::map::table::ScatteredMapTable;
+pub use crate::map::table::ScatteredMapTable;
+pub use build::{initialize_scattered_map, safe_byte_count_for_capacity};
+pub use hash::{ConstHash, ConstHasher};
 
 mod build;
 mod hash;

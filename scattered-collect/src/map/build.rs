@@ -10,6 +10,10 @@ pub const fn safe_record_count_for_capacity(capacity: usize) -> usize {
     (capacity * 100 / ((SAFE_CAPACITY * 100.0) as usize)) / MetadataStride::CAPACITY as usize + 2
 }
 
+pub const fn safe_byte_count_for_capacity(capacity: usize) -> usize {
+    safe_record_count_for_capacity(capacity) * std::mem::size_of::<MetadataStride>()
+}
+
 pub const fn pack_hash(index_bits: u8, hash: u64, index: usize) -> u64 {
     let hash_mask: u64 = (-1_i64 as u64) << (index_bits as usize);
     let index_mask = !hash_mask;
@@ -74,7 +78,7 @@ pub fn initialize_scattered_map<K, V>(
 
         loop {
             let Some(g) = probe.next() else {
-                panic!("no empty slot found (table full)");
+                panic!("no empty slot found: table full after inserting {row} record(s)");
             };
 
             let group_stride = g / BUCKET_STRIDE;
