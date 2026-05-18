@@ -219,7 +219,7 @@ macro_rules! __map {
             );
 
             $crate::__support::link_section::declarative::in_section!(
-                #[in_section(unsafe, name = MAP_META, aux = $name, type = mutable)]
+                #[in_section(unsafe, name = MAP_META, aux(main = $name), type = mutable)]
                 const _: $crate::map::MapMetadataChunkBase = $crate::map::MAP_METADATA_CHUNK_BASE_ZERO;
             );
 
@@ -264,7 +264,7 @@ macro_rules! __map {
             );
         );
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = MAP_META, aux = $collection, type = mutable)]
+            #[in_section(unsafe, name = MAP_META, aux(main = $collection), type = mutable)]
             const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
