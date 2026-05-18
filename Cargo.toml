@@ -36,5 +36,5 @@ linktime = { path = "linktime", version = "0.16.0", default-features = false }
 
 linktime-proc-macro = { path = "linktime-proc-macro", version = "0.1.0" }
 
-scattered-collect = { path = "scattered-collect", version = "0.1.0" }
+scattered-collect = { path = "scattered-collect", version = "0.3.0" }
 scattered-collect-proc-macro = { path = "scattered-collect-proc-macro", version = "0.1.0" }
