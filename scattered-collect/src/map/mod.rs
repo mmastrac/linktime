@@ -153,8 +153,8 @@ macro_rules! __map {
             );
 
             $crate::__support::link_section::declarative::section!(
-                #[section(mutable, aux(main = $name))]
-                $vis static MAP_META: $crate::__support::link_section::TypedMutableSection<u8>;
+                #[section(mutable, no_macro, aux(main = $name))]
+                static MAP_META: $crate::__support::link_section::TypedMutableSection<u8>;
             );
 
             $crate::__support::link_section::declarative::in_section!(
@@ -228,20 +228,20 @@ mod link_tests {
 
     struct Record {
         key: &'static str,
-        f: fn(),
+        f: fn(&'static str),
     }
 
     impl Record {
-        pub const fn new(key: &'static str, f: fn()) -> Self {
+        pub const fn new(key: &'static str, f: fn(&'static str)) -> Self {
             Self { key, f }
         }
 
         pub fn call(&self) {
-            (self.f)();
+            (self.f)(self.key);
         }
     }
 
-    __map!(@gather pub static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
+    __map!(@gather static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
 
     macro_rules! make_test {
         ($($name:ident)*) => {
@@ -249,7 +249,7 @@ mod link_tests {
             __map!(scatter TEST_MAP_2 => [&'static str] [Record]
                 $name: (&'static str, Record) = (
                     stringify!($name),
-                    Record::new(stringify!($name), || println!(stringify!($name)))
+                    Record::new(stringify!($name), |_key| println!(stringify!($name)))
                 )
             );
             )*
