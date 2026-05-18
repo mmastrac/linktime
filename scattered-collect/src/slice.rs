@@ -1,29 +1,15 @@
-//! A collection of sized items that collected into a slice in an arbitrary
-//! order.
-//!
-//! ```
-//! use scattered_collect::{gather, scatter, slice::ScatteredSlice};
-//!
-//! #[gather]
-//! static SLICE_PLUGINS: ScatteredSlice<&'static str>;
-//!
-//! #[scatter(SLICE_PLUGINS)]
-//! const _: &'static str = "json";
-//!
-//! #[scatter(SLICE_PLUGINS)]
-//! const _: &'static str = "yaml";
-//!
-//! fn main() {
-//! # if cfg!(miri) { return; }
-//!     assert_eq!(SLICE_PLUGINS.len(), 2);
-//!     assert!(SLICE_PLUGINS.contains(&"json"));
-//! }
-//! ```
+//! A collection of sized items gathered into a slice in arbitrary link order.
+#![doc = concat!("```rust\n", include_str!("../examples/slice.rs"), "\n```\n")]
 
 use link_section::TypedSection;
 
-/// A collection of sized items that collected into a slice in an arbitrary
-/// order.
+/// A collection of sized items gathered into a slice in arbitrary link order.
+///
+/// For a sorted slice without per-item handles, use [`crate::ScatteredSortedSlice`]. For
+/// arbitrary link order with `static` handles at each scatter site, use
+/// [`crate::ScatteredReferencedSlice`]. For sorted data with stable per-item references,
+/// use [`crate::ScatteredSortedReferencedSlice`]. For key lookup, use [`crate::ScatteredMap`].
+#[doc = concat!("```rust\n", include_str!("../examples/slice.rs"), "\n```\n")]
 pub struct ScatteredSlice<T: 'static> {
     section: &'static TypedSection<T>,
 }

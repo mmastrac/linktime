@@ -20,9 +20,10 @@ whatsoever.
 - [`ScatteredSortedSlice`]: A collection of items that are available via slice,
   in sorted order.
 - [`ScatteredReferencedSlice`]: A collection of items collected into a slice
-  (link order), with each entry wrapped as [`Ref`] so `static` items work on
-  targets such as WASM.
+  (link order), with each `static` item auto-wrapped as
+  [`referenced_slice::Ref`].
 - [`ScatteredSortedReferencedSlice`]: A collection of sized items that are
-  available both via sorted slice and via reference at the declaration site.
+  available both via sorted slice and via reference at the declaration site
+  (auto-wrapped as [`sorted_referenced_slice::Ref`]).
 - [`ScatteredMap`]: A collection of key-value pairs that are available via
   slice, as well as indexed by key.

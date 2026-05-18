@@ -1,4 +1,5 @@
 //! A swiss-table-style lookup table initialized with link-time data.
+#![doc = concat!("```rust\n", include_str!("../../examples/map.rs"), "\n```\n")]
 
 use link_section::{TypedMutableSection, TypedSection};
 use std::{
@@ -141,12 +142,20 @@ impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredMap<K, V> {
 /// A swiss-table-style lookup table initialized with link-time data. Each item
 /// in the map must have a unique hash.
 ///
+/// For a flat list in arbitrary link order, use [`crate::ScatteredSlice`]. For a sorted
+/// list without per-item handles, use [`crate::ScatteredSortedSlice`]. For `static`
+/// handles at scatter sites, use [`crate::ScatteredReferencedSlice`]; when sorted order
+/// is required as well, use [`crate::ScatteredSortedReferencedSlice`].
+///
 /// ## Performance notes
 ///
 /// The map's metadata section is only ever written to once, and then becomes
 /// read-only. This means that we can avoid tombstone logic.
 ///
 /// Metadata is arranged in 16-slot SIMD groups for optimal performance.
+/// ```rust
+#[doc = include_str!("../../examples/map.rs")]
+/// ```
 pub struct ScatteredMap<K: 'static, V: 'static> {
     state: &'static __ScatteredMapState<K, V>,
 }

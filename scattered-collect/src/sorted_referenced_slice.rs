@@ -1,27 +1,6 @@
 //! A collection of sized items available both as a sorted slice and as stable
 //! handles at each declaration site.
-//!
-//! ```
-//! use scattered_collect::{
-//!     gather, scatter, sorted_referenced_slice::ScatteredSortedReferencedSlice,
-//! };
-//!
-//! #[gather]
-//! static HANDLERS: ScatteredSortedReferencedSlice<u32>;
-//!
-//! #[scatter(HANDLERS)]
-//! static HIGH: u32 = 30;
-//!
-//! #[scatter(HANDLERS)]
-//! static LOW: u32 = 10;
-//!
-//! fn main() {
-//! # if cfg!(miri) { return; }
-//!     assert_eq!(&*HANDLERS, [10, 30].as_slice());
-//!     assert_eq!(*HIGH, 30);
-//!     assert_eq!(*LOW, 10);
-//! }
-//! ```
+#![doc = concat!("```rust\n", include_str!("../examples/sorted_referenced_slice.rs"), "\n```\n")]
 
 use link_section::TypedMovableSection;
 
@@ -30,15 +9,20 @@ use link_section::TypedMovableSection;
 /// requires an indirect load.
 pub type Ref<T> = link_section::MovableRef<T>;
 
-/// A collection of sized items that are available both via sorted slice and via
+/// A collection of sized items available both via sorted slice and via
 /// reference at the declaration site.
 ///
 /// The gathered items are accessed via `&'static` references; the main section
 /// is sorted by `T` before `main()` and declaration-site handles are fixed up
 /// in place.
 ///
-/// If the reference to the individual items is not required, a sorted slice may
-/// be used instead.
+/// For a sorted slice without per-item handles, use [`crate::ScatteredSortedSlice`]. For
+/// arbitrary link order without handles, use [`crate::ScatteredSlice`]. For arbitrary
+/// order with `static` handles, use [`crate::ScatteredReferencedSlice`]. For key lookup,
+/// use [`crate::ScatteredMap`].
+/// ```rust
+#[doc = include_str!("../examples/sorted_referenced_slice.rs")]
+/// ```
 pub struct ScatteredSortedReferencedSlice<T: Ord + 'static> {
     data: &'static TypedMovableSection<T>,
     _marker: core::marker::PhantomData<T>,

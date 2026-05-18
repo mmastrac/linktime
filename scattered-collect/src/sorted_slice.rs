@@ -1,32 +1,18 @@
-//! A collection of items that are available via slice, in sorted order.
+//! A collection of items available via sorted slice.
 //!
-//! ```
-//! use scattered_collect::{gather, scatter, sorted_slice::ScatteredSortedSlice};
-//!
-//! #[gather]
-//! static PRIORITIES: ScatteredSortedSlice<u32>;
-//!
-//! #[scatter(PRIORITIES)]
-//! const _: u32 = 30;
-//!
-//! #[scatter(PRIORITIES)]
-//! const _: u32 = 10;
-//!
-//! fn main() {
-//! # if cfg!(miri) { return; }
-//!     assert_eq!(&*PRIORITIES, [10, 30].as_slice());
-//! }
-//! ```
+#![doc = concat!("```rust\n", include_str!("../examples/sorted_slice.rs"), "\n```\n")]
 
 use link_section::TypedMutableSection;
 
-/// A collection of sized items that are available via sorted slice.
+/// A collection of sized items available via sorted slice.
 ///
-/// The gathered items are accessed via `&'static` references; the main section
-/// is sorted by `T` before `main()`.
+/// The main section is sorted by `T` in a priority-0 constructor before `main()`.
 ///
-/// If the reference to the individual items is required, a sorted referenced
-/// slice may be used instead.
+/// For arbitrary link order without per-item handles, use [`crate::ScatteredSlice`]. For
+/// arbitrary order with `static` handles, use [`crate::ScatteredReferencedSlice`]. For
+/// sorted data with stable per-item references, use
+/// [`crate::ScatteredSortedReferencedSlice`]. For key lookup, use [`crate::ScatteredMap`].
+#[doc = concat!("```rust\n", include_str!("../examples/sorted_slice.rs"), "\n```\n")]
 pub struct ScatteredSortedSlice<T: Ord + 'static> {
     data: &'static TypedMutableSection<T>,
     _marker: core::marker::PhantomData<T>,

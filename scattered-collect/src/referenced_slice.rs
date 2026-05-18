@@ -1,25 +1,6 @@
-//! A collection of items collected into a slice (link order), with each entry
+//! A collection of items gathered into a slice (link order), with each entry
 //! wrapped as [`Ref`] so `static` items work on targets such as WASM.
-//!
-//! ```
-//! use scattered_collect::{gather, referenced_slice::ScatteredReferencedSlice, scatter};
-//!
-//! #[gather]
-//! static REFERENCED_PLUGINS: ScatteredReferencedSlice<&'static str>;
-//!
-//! #[scatter(REFERENCED_PLUGINS)]
-//! static JSON: &str = "json";
-//!
-//! #[scatter(REFERENCED_PLUGINS)]
-//! static YAML: &str = "yaml";
-//!
-//! fn main() {
-//! # if cfg!(miri) { return; }
-//!     assert_eq!(REFERENCED_PLUGINS.len(), 2);
-//!     assert!(REFERENCED_PLUGINS.contains(&"json"));
-//!     assert_eq!(*JSON, "json");
-//! }
-//! ```
+#![doc = concat!("```rust\n", include_str!("../examples/referenced_slice.rs"), "\n```\n")]
 
 use link_section::TypedReferenceSection;
 
@@ -29,9 +10,13 @@ pub use link_section::Ref;
 /// section and as `static` handles at each declaration site.
 ///
 /// The slice is in an arbitrary link order which is platform-dependent. For a
-/// sorted slice without per-item handles, use [`crate::ScatteredSlice`]. For
+/// sorted slice without per-item handles, use [`crate::ScatteredSortedSlice`]. For
+/// arbitrary link order without per-item handles, use [`crate::ScatteredSlice`]. For
 /// sorted data with stable per-item references, use
-/// [`crate::ScatteredSortedReferencedSlice`].
+/// [`crate::ScatteredSortedReferencedSlice`]. For key lookup, use [`crate::ScatteredMap`].
+/// ```rust
+#[doc = include_str!("../examples/referenced_slice.rs")]
+/// ```
 pub struct ScatteredReferencedSlice<T: 'static> {
     section: &'static TypedReferenceSection<T>,
 }
