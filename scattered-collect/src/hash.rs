@@ -6,8 +6,12 @@ use std::marker::PhantomData;
 pub trait ConstHash {
     /// The hasher for the type.
     type Hasher;
+
+    /// An instance of the hasher for the type.
     const HASHER: Self::Hasher;
 
+    /// Hash the value in a non-`const` context. It is recommended to implement
+    /// this function with the body: `(Self::HASHER).const_hash(*self)`.
     fn hash(&self) -> u64;
 }
 
@@ -16,10 +20,11 @@ impl ConstHash for &'static str {
     const HASHER: Self::Hasher = StrHasher;
 
     fn hash(&self) -> u64 {
-        (Self::HASHER).const_hash(*self)
+        (Self::HASHER).const_hash(self)
     }
 }
 
+#[doc(hidden)]
 pub struct StrHasher;
 
 impl StrHasher {
@@ -29,6 +34,7 @@ impl StrHasher {
     }
 }
 
+#[doc(hidden)]
 pub struct NumericHasher<T: 'static>(PhantomData<T>);
 
 macro_rules! const_hash_numeric {
@@ -43,6 +49,7 @@ macro_rules! const_hash_numeric {
             }
 
             impl NumericHasher<$ty> {
+                /// Hash a numeric value at compile time.
                 pub const fn const_hash(self, val: $ty) -> u64 {
                     if ::core::mem::size_of::<$ty>() <= ::core::mem::size_of::<u64>() {
                         let arr = val.to_le_bytes();
@@ -66,6 +73,8 @@ const_hash_numeric!(u8 u16 u32 u64 u128 usize);
 const_hash_numeric!(i8 i16 i32 i64 i128 isize);
 const_hash_numeric!(f32 f64);
 
+/// Hash a value at compile time. To implement `ConstHash` for a type, you must
+/// provide a type that has a `const fn const_hash()` method.
 #[macro_export]
 macro_rules! const_hash {
     ($val:expr) => {{

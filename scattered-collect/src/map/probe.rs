@@ -1,3 +1,5 @@
+#![allow(unreachable_pub)]
+
 pub type Bucket = wide::u8x16;
 
 pub const BUCKET_SIZE: usize = std::mem::size_of::<Bucket>();

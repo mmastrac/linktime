@@ -22,12 +22,16 @@ mod table;
 /// only needs to place rows into metadata slots.
 #[repr(C)]
 pub struct MapRecord<K, V> {
+    /// The key of the record.
     pub key: K,
+    /// The value of the record.
     pub value: V,
+    /// The hash of the record.
     pub hash: u64,
 }
 
 impl<K, V> MapRecord<K, V> {
+    /// Create a new map record with a key, value and known `const` hash.
     pub const fn new(key: K, value: V, hash: u64) -> Self {
         Self { key, value, hash }
     }
@@ -74,9 +78,7 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
         let this = self.state;
         let table = this.ensure_initialized();
         let hash = ConstHash::hash(key);
-        let Some(offset) = (table.lookup_fn)(table, hash) else {
-            return None;
-        };
+        let offset = (table.lookup_fn)(table, hash)?;
         let record = &this.records[offset as usize];
         if record.key == *key {
             Some(&record.value)

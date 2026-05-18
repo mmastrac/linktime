@@ -1,4 +1,4 @@
-#![allow(clippy::modulo_one)]
+#![allow(clippy::modulo_one, unreachable_pub)]
 
 use crate::map::MapRecord;
 use crate::map::probe::{
@@ -11,9 +11,11 @@ pub const BASE_CAPACITY: usize = 512;
 pub const PER_ITEM_CAPACITY: usize = 14;
 
 pub const fn safe_record_count_for_capacity(capacity: usize) -> usize {
-    (capacity * 100 / ((SAFE_CAPACITY * 100.0) as usize)) / MetadataStride::CAPACITY as usize + 2
+    (capacity * 100 / ((SAFE_CAPACITY * 100.0) as usize)) / MetadataStride::CAPACITY + 2
 }
 
+/// The number of bytes required to store a scattered map table with the given
+/// capacity and a safe fill ratio.
 pub const fn safe_byte_count_for_capacity(capacity: usize) -> usize {
     safe_record_count_for_capacity(capacity) * std::mem::size_of::<MetadataStride>()
 }
@@ -36,6 +38,8 @@ pub fn first_empty_lane(buckets: &Bucket) -> Option<usize> {
 }
 
 /// Initialize a scattered map table from a slice of records.
+#[allow(unsafe_code)]
+#[doc(hidden)]
 pub fn initialize_scattered_map<K, V>(
     records: &[MapRecord<K, V>],
     refs: &'static mut [u8],

@@ -1,4 +1,4 @@
-#![allow(clippy::modulo_one)]
+#![allow(clippy::modulo_one, unreachable_pub)]
 
 use crate::map::probe::{BUCKET_SIZE, Bucket, ProbeStrategy, control_byte_from_hash, match_mask};
 
