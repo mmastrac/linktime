@@ -10,12 +10,14 @@ pub const SAFE_CAPACITY: f32 = 0.70;
 pub const BASE_CAPACITY: usize = 512;
 pub const PER_ITEM_CAPACITY: usize = 14;
 
+#[allow(unused)]
 pub const fn safe_record_count_for_capacity(capacity: usize) -> usize {
     (capacity * 100 / ((SAFE_CAPACITY * 100.0) as usize)) / MetadataStride::CAPACITY + 2
 }
 
 /// The number of bytes required to store a scattered map table with the given
 /// capacity and a safe fill ratio.
+#[allow(unused)]
 pub const fn safe_byte_count_for_capacity(capacity: usize) -> usize {
     safe_record_count_for_capacity(capacity) * std::mem::size_of::<MetadataStride>()
 }
