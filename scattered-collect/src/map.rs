@@ -451,9 +451,7 @@ macro_rules! __map {
                         $crate::map::num_groups_for_records(records.len()),
                     );
 
-                    ::paste::paste! {
-                        let chunks = unsafe { MAP_META.as_mut_slice() };
-                    }
+                    let chunks = unsafe { MAP_META.as_mut_slice() };
                     let table = unsafe {
                         let meta_len =
                             chunks.len() * core::mem::size_of::<MapMetadataChunk>();

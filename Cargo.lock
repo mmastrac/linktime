@@ -485,12 +485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "paste"
-version = "1.0.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
-
-[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -608,7 +602,6 @@ dependencies = [
  "ctor",
  "link-section",
  "linktime",
- "paste",
  "scattered-collect-proc-macro",
  "wide",
  "xxhash-rust",
