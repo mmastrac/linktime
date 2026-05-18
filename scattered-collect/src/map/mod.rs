@@ -74,8 +74,33 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
         let this = self.state;
         let table = this.ensure_initialized();
         let hash = ConstHash::hash(key);
-        let offset = (table.lookup_fn)(table, hash);
-        offset.map(|offset| &this.records[offset as usize].value)
+        let Some(offset) = (table.lookup_fn)(table, hash) else {
+            return None;
+        };
+        let record = &this.records[offset as usize];
+        if record.key == *key {
+            Some(&record.value)
+        } else {
+            None
+        }
+    }
+
+    /// Iterate over the entries in the map.
+    pub fn entries(&self) -> impl Iterator<Item = (&K, &V)> {
+        self.state
+            .records
+            .iter()
+            .map(|record| (&record.key, &record.value))
+    }
+
+    /// Iterate over the keys in the map.
+    pub fn keys(&self) -> impl Iterator<Item = &K> {
+        self.state.records.iter().map(|record| &record.key)
+    }
+
+    /// Iterate over the values in the map.
+    pub fn values(&self) -> impl Iterator<Item = &V> {
+        self.state.records.iter().map(|record| &record.value)
     }
 
     /// True when a key is present in the map.
@@ -94,6 +119,20 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.state.records.is_empty()
+    }
+}
+
+impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredMap<K, V> {
+    type Item = (&'static K, &'static V);
+    type IntoIter = ::std::iter::Map<
+        ::std::slice::Iter<'static, MapRecord<K, V>>,
+        fn(&MapRecord<K, V>) -> (&K, &V),
+    >;
+    fn into_iter(self) -> Self::IntoIter {
+        self.state
+            .records
+            .iter()
+            .map(|record| (&record.key, &record.value))
     }
 }
 

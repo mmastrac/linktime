@@ -6,6 +6,8 @@ use scattered_collect::{
     map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity},
 };
 
+const NUM_RECORDS: usize = 5000;
+
 const fn make_static_string(i: usize) -> [u8; 7] {
     let mut s = [0u8; 7];
     s[0] = b'k';
@@ -21,24 +23,24 @@ const fn make_static_string(i: usize) -> [u8; 7] {
     s
 }
 
-static STRINGS: [[u8; 7]; 1000] = const {
-    let mut strings = [[0u8; 7]; 1000];
+static STRINGS: [[u8; 7]; NUM_RECORDS] = const {
+    let mut strings = [[0u8; 7]; NUM_RECORDS];
     let mut i = 0;
-    while i < 1000 {
+    while i < NUM_RECORDS {
         strings[i] = make_static_string(i);
         i += 1;
     }
     strings
 };
 
-static MAP_RECORDS: [MapRecord<&'static str, u32>; 1000] = const {
-    let mut records: [MaybeUninit<MapRecord<&'static str, u32>>; 1000] = unsafe {
+static MAP_RECORDS: [MapRecord<&'static str, u32>; NUM_RECORDS] = const {
+    let mut records: [MaybeUninit<MapRecord<&'static str, u32>>; NUM_RECORDS] = unsafe {
         std::mem::transmute(MaybeUninit::<
-            [MaybeUninit<MapRecord<&'static str, u32>>; 1000],
+            [MaybeUninit<MapRecord<&'static str, u32>>; NUM_RECORDS],
         >::uninit())
     };
     let mut i = 0;
-    while i < 1000 {
+    while i < NUM_RECORDS {
         let Ok(s) = str::from_utf8(STRINGS[i].as_slice()) else {
             panic!("invalid string");
         };

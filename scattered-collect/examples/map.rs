@@ -22,4 +22,9 @@ fn main() {
     println!("APPLE: {:?}", APPLE);
     println!("BANANA: {:?}", BANANA);
     println!("ORANGE: {:?}", ORANGE);
+
+    println!("Entries:");
+    for (key, value) in &MAP {
+        println!(" - {}: {:?}", key, value);
+    }
 }
