@@ -147,29 +147,12 @@ macro_rules! __sorted_referenced_slice {
         };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis $name: $ty = $expr ));
+        $collection ! (( $collection => $vis static $name: $ty = $expr; ));
     };
     (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
-        $crate::__sorted_referenced_slice!(
-            @scatter [$collection]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-    (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
         $crate::__sorted_referenced_slice_decl_rslot!(
             $collection,
             ($(#[$imeta])*),
-            $vis,
-            $name,
-            $ty,
-            $expr
-        );
-    };
-    (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
-        $crate::__sorted_referenced_slice_decl_rslot!(
-            $collection,
-            (),
             $vis,
             $name,
             $ty,
