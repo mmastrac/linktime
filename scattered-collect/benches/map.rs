@@ -1,10 +1,8 @@
 use std::{collections::HashMap, mem::MaybeUninit};
 
 use divan::Bencher;
-use scattered_collect::{
-    ScatteredMap,
-    map::{ConstHasher, MapRecord, initialize_scattered_map, safe_byte_count_for_capacity},
-};
+use scattered_collect::hash::ConstHasher;
+use scattered_collect::map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity};
 
 const fn make_static_string(i: usize) -> [u8; 7] {
     let mut s = [0u8; 7];

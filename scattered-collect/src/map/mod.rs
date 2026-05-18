@@ -5,12 +5,11 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
 };
 
+use crate::hash::ConstHash;
 pub use crate::map::table::ScatteredMapTable;
 pub use build::{initialize_scattered_map, safe_byte_count_for_capacity};
-pub use hash::{ConstHash, ConstHasher};
 
 mod build;
-mod hash;
 mod probe;
 mod table;
 
@@ -28,6 +27,19 @@ pub struct MapRecord<K, V> {
 impl<K, V> MapRecord<K, V> {
     pub const fn new(key: K, value: V, hash: u64) -> Self {
         Self { key, value, hash }
+    }
+}
+
+impl<K, V> ::core::fmt::Debug for MapRecord<K, V>
+where
+    K: ::core::fmt::Debug,
+    V: ::core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("MapRecord")
+            .field("key", &self.key)
+            .field("value", &self.value)
+            .finish()
     }
 }
 

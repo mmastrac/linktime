@@ -103,7 +103,8 @@ pub fn initialize_scattered_map<K, V>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map::{hash::ConstHasher, probe::split_hash, table::HASH_STRIDE};
+    use crate::hash::ConstHasher;
+    use crate::map::{probe::split_hash, table::HASH_STRIDE};
 
     #[test]
     fn initialize_table() {

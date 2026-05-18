@@ -3,7 +3,7 @@
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
-mod hash;
+pub mod hash;
 pub mod map;
 pub mod referenced_slice;
 pub mod slice;
