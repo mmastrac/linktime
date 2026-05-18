@@ -5,7 +5,6 @@
 
 mod hash;
 pub mod map;
-mod ref_impl;
 pub mod referenced_slice;
 pub mod slice;
 pub mod sorted_referenced_slice;
@@ -84,6 +83,14 @@ macro_rules! __gather_parse {
             @gather
             $(#[$imeta])*
             $vis static $name: $collection < $ty >;
+        );
+    };
+
+    (@done ($map:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredMap < $key:ty, $value:ty >; ) => {
+        $crate::__map ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $map < $key, $value >;
         );
     };
 

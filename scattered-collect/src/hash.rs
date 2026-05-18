@@ -24,43 +24,43 @@ impl ConstHash for i32 {
     type Hasher = I32Hasher;
 }
 
-struct ConstHasher<T>(T);
+pub(crate) struct ConstHasher<T>(pub(crate) T);
 
 // Specialized impls return type-specific hashers
 impl ConstHasher<&str> {
-    const fn hasher(&self) -> StrHasher {
+    pub(crate) const fn hasher(&self) -> StrHasher {
         StrHasher(self.0)
     }
 }
 impl ConstHasher<u64> {
-    const fn hasher(&self) -> U64Hasher {
+    pub(crate) const fn hasher(&self) -> U64Hasher {
         U64Hasher(self.0)
     }
 }
 impl ConstHasher<i32> {
-    const fn hasher(&self) -> I32Hasher {
+    pub(crate) const fn hasher(&self) -> I32Hasher {
         I32Hasher(self.0)
     }
 }
 
 // Each hasher has a const fn hash()
-struct StrHasher<'a>(&'a str);
+pub(crate) struct StrHasher<'a>(pub(crate) &'a str);
 impl StrHasher<'_> {
-    const fn hash(self) -> u64 {
+    pub(crate) const fn hash(self) -> u64 {
         const_hash_str(self.0)
     }
 }
 
-struct U64Hasher(u64);
+pub(crate) struct U64Hasher(pub(crate) u64);
 impl U64Hasher {
-    const fn hash(self) -> u64 {
+    pub(crate) const fn hash(self) -> u64 {
         const_hash_u64(self.0)
     }
 }
 
-struct I32Hasher(i32);
+pub(crate) struct I32Hasher(pub(crate) i32);
 impl I32Hasher {
-    const fn hash(self) -> u64 {
+    pub(crate) const fn hash(self) -> u64 {
         const_hash_i32(self.0)
     }
 }
@@ -73,16 +73,17 @@ impl<T> ::core::ops::Deref for ConstHasher<T> {
     }
 }
 
-struct UnsupportedHasher;
+pub(crate) struct UnsupportedHasher;
 impl UnsupportedHasher {
     fn hasher(&self) -> ! {
         panic!("type not supported for const hashing")
     }
 }
 
+#[macro_export]
 macro_rules! const_hash {
     ($val:expr) => {
-        const { ConstHasher($val).hasher().hash() }
+        const { $crate::hash::ConstHasher($val).hasher().hash() }
     };
 }
 

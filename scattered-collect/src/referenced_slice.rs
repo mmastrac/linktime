@@ -102,23 +102,9 @@ macro_rules! __referenced_slice {
         };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis $name: $ty = $expr ));
+        $collection ! (( $collection => $vis static $name: $ty = $expr; ));
     };
     (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
-        $crate::__referenced_slice!(
-            @scatter [$collection]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-    (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
-        $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection, type = reference)]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-    (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection, type = reference)]
             $vis static $name: $ty = $expr;

@@ -90,26 +90,6 @@ impl<T: Ord + 'static> ::core::iter::IntoIterator for &'static ScatteredSortedRe
     }
 }
 
-/// Used by [`__sorted_referenced_slice!`] scatter arm; do not call directly.
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __sorted_referenced_slice_decl_rslot {
-    (
-        $collection:ident,
-        ($(#[$imeta:meta])*),
-        $vis:vis,
-        $name:ident,
-        $ty:ty,
-        $expr:expr
-    ) => {
-        $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection, type = movable)]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-}
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __sorted_referenced_slice {
@@ -150,13 +130,10 @@ macro_rules! __sorted_referenced_slice {
         $collection ! (( $collection => $vis static $name: $ty = $expr; ));
     };
     (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
-        $crate::__sorted_referenced_slice_decl_rslot!(
-            $collection,
-            ($(#[$imeta])*),
-            $vis,
-            $name,
-            $ty,
-            $expr
+        $crate::__support::link_section::declarative::in_section!(
+            #[in_section(unsafe, name = $collection, type = movable)]
+            $(#[$imeta])*
+            $vis static $name: $ty = $expr;
         );
     };
 }

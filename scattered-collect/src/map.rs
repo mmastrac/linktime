@@ -1,12 +1,8 @@
 use core::marker::PhantomData;
 use core::mem::{align_of, size_of};
 
+use link_section::TypedSection;
 use wide::u8x16;
-
-/// Each item needs a u64 for a hash and a u32 for the index. We add an extra four
-/// bytes for slack.
-pub type PerItemMetadata = [u8; 16];
-pub const PER_ITEM_METADATA_DEFAULT: PerItemMetadata = [0; 16];
 
 /// One SIMD group: 16 control bytes (`0` = empty; occupied uses **7-bit fingerprint** in the low
 /// bits with **bit `0x80` set** so a used slot is never byte `0`) plus parallel hash / row index
@@ -18,8 +14,25 @@ pub struct MetadataSlice {
     pub indexes: [u32; 16],
 }
 
+/// One gathered map entry.
+///
+/// Scatter sites store the hash next to the key and value so map initialization
+/// only needs to place rows into metadata slots.
+#[repr(C)]
+pub struct MapRecord<K, V> {
+    pub key: K,
+    pub value: V,
+    pub hash: u64,
+}
+
+impl<K, V> MapRecord<K, V> {
+    pub const fn new(key: K, value: V, hash: u64) -> Self {
+        Self { key, value, hash }
+    }
+}
+
 /// How many SIMD groups (each 16 slots) are needed for `n` inserts at ~70% load.
-pub fn num_groups_for_records(n: usize) -> usize {
+pub const fn num_groups_for_records(n: usize) -> usize {
     if n == 0 {
         return 0;
     }
@@ -30,11 +43,16 @@ pub fn num_groups_for_records(n: usize) -> usize {
 
 /// Bytes required for `refs` passed to [`initialize_scattered_map`], including alignment padding
 /// before the first [`MetadataSlice`].
-pub fn scattered_map_refs_min_bytes(num_groups: usize) -> usize {
+pub const fn scattered_map_refs_min_bytes(num_groups: usize) -> usize {
     if num_groups == 0 {
         return 0;
     }
     (align_of::<MetadataSlice>() - 1) + num_groups * size_of::<MetadataSlice>()
+}
+
+/// Conservative metadata bytes reserved in each map's aux section at gather time.
+pub const fn scattered_map_metadata_reserve_bytes() -> usize {
+    scattered_map_refs_min_bytes(num_groups_for_records(256))
 }
 
 /// Pluggable probe strategy for the scattered map.
@@ -99,8 +117,107 @@ impl ConstHasher<&'static str> {
     }
 }
 
-/// A swiss-table-style map initialized with link-time data. Each item in the
-/// map must have a unique hash.
+/// Mutable state filled by the map initialization constructor.
+pub struct ScatteredMapState<K, V, P: ProbeStrategy = LinearProbe> {
+    table: core::cell::UnsafeCell<Option<ScatteredMapTable<K, V, P>>>,
+}
+
+unsafe impl<K: Sync, V: Sync, P: ProbeStrategy> Sync for ScatteredMapState<K, V, P> {}
+
+impl<K, V, P: ProbeStrategy> ScatteredMapState<K, V, P> {
+    pub const fn new() -> Self {
+        Self {
+            table: core::cell::UnsafeCell::new(None),
+        }
+    }
+
+    /// # Safety
+    ///
+    /// This must be called at most once, before concurrent access to the map
+    /// can happen.
+    pub unsafe fn initialize(&self, table: ScatteredMapTable<K, V, P>) {
+        unsafe {
+            *self.table.get() = Some(table);
+        }
+    }
+
+    fn table(&self) -> &ScatteredMapTable<K, V, P> {
+        unsafe {
+            (*self.table.get())
+                .as_ref()
+                .expect("ScatteredMap used before its initialization constructor ran")
+        }
+    }
+}
+
+impl<K, V, P: ProbeStrategy> Default for ScatteredMapState<K, V, P> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// User-facing scattered map wrapper.
+///
+/// The gathered records are kept in arbitrary link order; lookup uses metadata
+/// prepared by a priority-0 constructor.
+pub struct ScatteredMap<K: 'static, V: 'static, P: ProbeStrategy + 'static = LinearProbe> {
+    section: &'static TypedSection<MapRecord<K, V>>,
+    state: &'static ScatteredMapState<K, V, P>,
+}
+
+impl<K: 'static, V: 'static, P: ProbeStrategy + 'static> ScatteredMap<K, V, P> {
+    #[doc(hidden)]
+    #[allow(unsafe_code)]
+    pub const unsafe fn new(
+        section: &'static TypedSection<MapRecord<K, V>>,
+        state: &'static ScatteredMapState<K, V, P>,
+    ) -> Self {
+        Self { section, state }
+    }
+
+    /// The number of records in the map.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.section.len()
+    }
+
+    /// True if the map has no records.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.section.is_empty()
+    }
+
+    /// Gathered records in arbitrary link order.
+    #[inline]
+    pub fn entries(&self) -> &[MapRecord<K, V>] {
+        self.section.as_slice()
+    }
+}
+
+impl<K: ConstHash + PartialEq + 'static, V: 'static, P: ProbeStrategy + 'static>
+    ScatteredMap<K, V, P>
+{
+    /// Lookup a value by key.
+    #[inline]
+    pub fn find(&self, key: &K) -> Option<&V> {
+        self.state.table().find(key)
+    }
+
+    /// Alias for [`Self::find`].
+    #[inline]
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.find(key)
+    }
+
+    /// True when a key is present in the map.
+    #[inline]
+    pub fn contains_key(&self, key: &K) -> bool {
+        self.find(key).is_some()
+    }
+}
+
+/// A swiss-table-style lookup table initialized with link-time data. Each item
+/// in the map must have a unique hash.
 ///
 /// ## Performance notes
 ///
@@ -108,22 +225,22 @@ impl ConstHasher<&'static str> {
 /// that we can avoid tombstone logic.
 ///
 /// Metadata is arranged in 16-slot SIMD groups; see [`initialize_scattered_map`].
-pub struct ScatteredMap<K, V, P: ProbeStrategy = LinearProbe> {
+pub struct ScatteredMapTable<K, V, P: ProbeStrategy = LinearProbe> {
     metadata: *const MetadataSlice,
     num_groups: usize,
-    entries: *const (K, V, u64),
+    entries: *const MapRecord<K, V>,
     n_entries: usize,
     _marker: PhantomData<(K, V, P)>,
 }
 
-impl<K, V, P: ProbeStrategy> ScatteredMap<K, V, P> {
+impl<K, V, P: ProbeStrategy> ScatteredMapTable<K, V, P> {
     /// # Safety
     /// `metadata` must point to `num_groups` contiguous [`MetadataSlice`] written by
     /// [`initialize_scattered_map`] using the same `entries` slice and probe strategy `P`.
     pub const unsafe fn from_raw(
         metadata: *const MetadataSlice,
         num_groups: usize,
-        entries: *const (K, V, u64),
+        entries: *const MapRecord<K, V>,
         n_entries: usize,
     ) -> Self {
         Self {
@@ -151,7 +268,7 @@ impl<K, V, P: ProbeStrategy> ScatteredMap<K, V, P> {
     }
 }
 
-impl<K: ConstHash + PartialEq, V, P: ProbeStrategy> ScatteredMap<K, V, P> {
+impl<K: ConstHash + PartialEq, V, P: ProbeStrategy> ScatteredMapTable<K, V, P> {
     /// SIMD fingerprint match on each group's control bytes, then full hash + key equality.
     ///
     /// Walks the same group sequence as insertion ([`LinearProbe`] by default). There is no early
@@ -176,8 +293,8 @@ impl<K: ConstHash + PartialEq, V, P: ProbeStrategy> ScatteredMap<K, V, P> {
                     if group.hashes[lane] == h {
                         let row = group.indexes[lane] as usize;
                         let entry = &*self.entries.add(row);
-                        if entry.0 == *key {
-                            return Some(&entry.1);
+                        if entry.key == *key {
+                            return Some(&entry.value);
                         }
                     }
                     bits &= bits - 1;
@@ -230,14 +347,15 @@ fn write_slot(group: &mut MetadataSlice, lane: usize, ctrl_byte: u8, hash: u64, 
 ///
 /// `refs` must be zeroed before calling this function.
 ///
-/// Returned [`ScatteredMap`] aliases `records` and `refs`; keep both alive and unchanged after init.
+/// Returned [`ScatteredMapTable`] aliases `records` and `refs`; keep both alive and unchanged after
+/// init.
 pub fn initialize_scattered_map<K, V, P: ProbeStrategy>(
-    records: &[(K, V, u64)],
+    records: &[MapRecord<K, V>],
     refs: &mut [u8],
-) -> ScatteredMap<K, V, P> {
+) -> ScatteredMapTable<K, V, P> {
     let n = records.len();
     if n == 0 {
-        return unsafe { ScatteredMap::from_raw(core::ptr::null(), 0, records.as_ptr(), 0) };
+        return unsafe { ScatteredMapTable::from_raw(core::ptr::null(), 0, records.as_ptr(), 0) };
     }
 
     let num_groups = num_groups_for_records(n);
@@ -256,7 +374,8 @@ pub fn initialize_scattered_map<K, V, P: ProbeStrategy>(
     let meta_ptr = unsafe { refs.as_mut_ptr().add(offset) as *mut MetadataSlice };
     let metadata = unsafe { core::slice::from_raw_parts_mut(meta_ptr, num_groups) };
 
-    for (row, &(.., hash)) in records.iter().enumerate() {
+    for (row, record) in records.iter().enumerate() {
+        let hash = record.hash;
         let ctrl_byte = control_byte_from_hash(hash);
 
         let mut probe = P::new(num_groups, hash);
@@ -280,7 +399,7 @@ pub fn initialize_scattered_map<K, V, P: ProbeStrategy>(
     // cross-group mirror needed for insertion correctness.
 
     unsafe {
-        ScatteredMap::from_raw(
+        ScatteredMapTable::from_raw(
             meta_ptr as *const MetadataSlice,
             num_groups,
             records.as_ptr(),
@@ -290,66 +409,106 @@ pub fn initialize_scattered_map<K, V, P: ProbeStrategy>(
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! __map {
-    (gather $vis:vis $name:ident: $ty:ty) => {
-        #[doc(hidden)]
-        $crate::__support::ident_concat!(($vis mod) (__ $name _sorted_referenced_slice) ({
+    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $map:ident < $key:ty, $value:ty >;) => {
+        $crate::__map!(@declare_scatter_macro $name, $key, $value, $vis);
+
+        $(#[$meta])*
+        $vis static $name: $map<$key, $value> = {
             $crate::__support::link_section::declarative::section!(
-                #[section(no_macro)]
-                pub static $name: $crate::__support::link_section::TypedSection<$ty>;
-            );
-            $crate::__support::link_section::declarative::section!(
-                #[section(aux = $name, no_macro)]
-                pub static REFS: $crate::__support::link_section::TypedSection<
-                    $crate::map::PerItemMetadata
+                #[section(typed, no_macro)]
+                static $name: $crate::__support::link_section::TypedSection<
+                    $crate::map::MapRecord<$key, $value>
                 >;
             );
-            $crate::__support::ctor::declarative::ctor!(#[ctor(unsafe)] unsafe fn __sorted_referenced_slice_init() {
-                let main = unsafe { $name.as_mut_slice() };
-                let refs = unsafe {
-                    let start = REFS.start_ptr_mut();
-                    let end = REFS.end_ptr_mut();
-                    ::core::slice::from_raw_parts_mut(start, ptr::byte_distance(start, end))
-                };
-                unsafe {
-                    $crate::map::initialize_scattered_map(main, refs);
+
+            const __MAP_META_BUF_LEN: usize = $crate::map::scattered_map_metadata_reserve_bytes();
+            static mut __MAP_META_BUF: [u8; __MAP_META_BUF_LEN] = [0; __MAP_META_BUF_LEN];
+
+            static __MAP_STATE: $crate::map::ScatteredMapState<$key, $value> =
+                $crate::map::ScatteredMapState::new();
+
+            $crate::__support::ctor::declarative::ctor!(
+                #[ctor(unsafe, anonymous, priority = 0)]
+                fn __map_init() {
+                    let records = $name.as_slice();
+                    let min_bytes = $crate::map::scattered_map_refs_min_bytes(
+                        $crate::map::num_groups_for_records(records.len()),
+                    );
+
+                    let table = unsafe {
+                        assert!(
+                            min_bytes <= __MAP_META_BUF_LEN,
+                            "map metadata buffer too small: need at least {} bytes, have {}",
+                            min_bytes,
+                            __MAP_META_BUF_LEN,
+                        );
+                        __MAP_META_BUF[..min_bytes].fill(0);
+                        $crate::map::initialize_scattered_map::<_, _, $crate::map::LinearProbe>(
+                            records,
+                            &mut __MAP_META_BUF[..min_bytes],
+                        )
+                    };
+                    unsafe {
+                        __MAP_STATE.initialize(table);
+                    }
                 }
-            });
-        }));
+            );
 
-        #[doc(hidden)]
-        $crate::__support::ident_concat!((#[macro_export] macro_rules!) (__ $name __sorted_referenced_slice_private_macro__) ({
-            ($passthru:tt) => {
-                $crate::__map!(@scatter $passthru);
-            };
-        }));
-
-        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __sorted_referenced_slice_private_macro__) (as $name;));
-
-        $vis static $name: $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice<$ty> = {
-            $crate::__support::ident_concat!((use ) (__ $name _sorted_referenced_slice) ( as private;));
             unsafe {
-                $crate::sorted_referenced_slice::ScatteredSortedReferencedSlice::new(
-                    private::$name.const_deref(),
-                )
+                $crate::map::ScatteredMap::new($name.const_deref(), &__MAP_STATE)
             }
         };
     };
-    (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis $name: $ty = $expr ));
-    };
-    (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
-        $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, type = $crate::sorted_referenced_slice::Ref<$ty>, name = REFS, aux = $collection)]
-            pub static $name: $crate::sorted_referenced_slice::Ref<$ty> = {
-                $crate::__support::link_section::declarative::in_section!(
-                    #[in_section(unsafe, type = $ty, name = $collection)]
-                    pub static $name: $ty = $expr;
-                );
-                $crate::sorted_referenced_slice::Ref::new(core::ptr::from_ref(&$name))
+    (@declare_scatter_macro $name:ident, $key:ty, $value:ty, $vis:vis) => {
+        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (
+            __ $name __map_scatter__
+        ) ({
+            ($passthru:tt) => {
+                $crate::__map!(@scatter [$key] [$value] $passthru);
             };
+        }));
+
+        $crate::__support::ident_concat!(
+            (#[doc(hidden)] $vis use)
+            (__ $name __map_scatter__)
+            (as $name;)
         );
     };
+    (scatter $collection:ident => [$key:ty] [$value:ty] $vis:vis $name:ident: $ty:ty = ($key_expr:expr, $value_expr:expr)) => {
+        $collection ! (( $collection => $vis static $name: $ty = ($key_expr, $value_expr); ));
+    };
+    (@scatter [$key:ty] [$value:ty] ($collection:ident => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = ($key_expr:expr, $value_expr:expr);)) => {
+        $crate::__support::link_section::declarative::in_section!(
+            #[in_section(unsafe, name = $collection, type = typed)]
+            $(#[$imeta])*
+            $vis $kind $name: $crate::map::MapRecord<$key, $value> = $crate::map::MapRecord::new(
+                $key_expr,
+                $value_expr,
+                $crate::const_hash!($key_expr)
+            );
+        );
+    };
+}
+
+#[cfg(all(test, not(miri)))]
+mod link_tests {
+    use super::*;
+    use crate::ScatteredMap;
+
+    __map!(@gather pub static TEST_MAP: ScatteredMap<&'static str, u32>;);
+    __map!(scatter TEST_MAP => [&'static str] [u32] APPLE: (&'static str, u32) = ("apple", 1));
+    __map!(scatter TEST_MAP => [&'static str] [u32] BANANA: (&'static str, u32) = ("banana", 2));
+
+    #[test]
+    fn scattered_map_gather_scatter_find() {
+        assert_eq!(TEST_MAP.len(), 2);
+        assert_eq!(TEST_MAP.find(&"apple"), Some(&1));
+        assert_eq!(TEST_MAP.find(&"banana"), Some(&2));
+        assert_eq!(TEST_MAP.find(&"orange"), None);
+        assert!(TEST_MAP.contains_key(&"apple"));
+    }
 }
 
 #[cfg(test)]
@@ -361,8 +520,8 @@ mod tests {
         let a = "apple";
         let b = "banana";
         let records = [
-            (a, 1u32, ConstHasher::<&'static str>::const_hash(a)),
-            (b, 2u32, ConstHasher::<&'static str>::const_hash(b)),
+            MapRecord::new(a, 1u32, ConstHasher::<&'static str>::const_hash(a)),
+            MapRecord::new(b, 2u32, ConstHasher::<&'static str>::const_hash(b)),
         ];
 
         let num_groups = num_groups_for_records(records.len());
@@ -386,7 +545,7 @@ mod tests {
                 assert_eq!(ctrl[lane], control_byte_from_hash(group.hashes[lane]));
                 let row = group.indexes[lane] as usize;
                 assert!(row < 2, "bad row index");
-                assert_eq!(group.hashes[lane], records[row].2);
+                assert_eq!(group.hashes[lane], records[row].hash);
                 seen[row] = true;
             }
         }
@@ -398,8 +557,8 @@ mod tests {
         let a = "apple";
         let b = "banana";
         let records = [
-            (a, 1u32, ConstHasher::<&'static str>::const_hash(a)),
-            (b, 2u32, ConstHasher::<&'static str>::const_hash(b)),
+            MapRecord::new(a, 1u32, ConstHasher::<&'static str>::const_hash(a)),
+            MapRecord::new(b, 2u32, ConstHasher::<&'static str>::const_hash(b)),
         ];
         let num_groups = num_groups_for_records(records.len());
         let mut refs = vec![0u8; scattered_map_refs_min_bytes(num_groups)];
@@ -407,6 +566,26 @@ mod tests {
         assert_eq!(map.find(&"apple"), Some(&1));
         assert_eq!(map.find(&"banana"), Some(&2));
         assert_eq!(map.find(&"orange"), None);
+    }
+
+    #[test]
+    fn state_exposes_initialized_table() {
+        let a = "apple";
+        let records = [MapRecord::new(
+            a,
+            1u32,
+            ConstHasher::<&'static str>::const_hash(a),
+        )];
+        let num_groups = num_groups_for_records(records.len());
+        let mut refs = vec![0u8; scattered_map_refs_min_bytes(num_groups)];
+        let table = initialize_scattered_map::<_, _, LinearProbe>(&records, &mut refs);
+        let state = ScatteredMapState::new();
+
+        unsafe {
+            state.initialize(table);
+        }
+
+        assert_eq!(state.table().find(&"apple"), Some(&1));
     }
 
     #[test]
