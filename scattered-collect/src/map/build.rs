@@ -1,3 +1,5 @@
+#![allow(clippy::modulo_one)]
+
 use crate::map::MapRecord;
 use crate::map::probe::{BUCKET_SIZE, Bucket, LinearProbe, ProbeStrategy, control_byte_from_hash};
 use crate::map::table::{BUCKET_STRIDE, MetadataStride, ScatteredMapTable, lookup};
@@ -45,7 +47,7 @@ pub fn initialize_scattered_map<K, V>(
         };
     }
 
-    let (lookup_fn, index_bits): (fn(&ScatteredMapTable, h: u64) -> Option<u64>, u8);
+    let (lookup_fn, index_bits): (fn(&ScatteredMapTable, h: u64) -> Option<u64>, _);
     if records.len() < 256 {
         lookup_fn = lookup::<8, LinearProbe>;
         index_bits = 8;
@@ -103,22 +105,16 @@ pub fn initialize_scattered_map<K, V>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hash::ConstHasher;
-    use crate::map::{probe::split_hash, table::HASH_STRIDE};
+    use crate::{
+        const_hash,
+        map::{probe::split_hash, table::HASH_STRIDE},
+    };
 
     #[test]
     fn initialize_table() {
         let records = [
-            MapRecord::new(
-                "apple",
-                1u32,
-                ConstHasher::<&'static str>::const_hash("apple"),
-            ),
-            MapRecord::new(
-                "banana",
-                2u32,
-                ConstHasher::<&'static str>::const_hash("banana"),
-            ),
+            MapRecord::new("apple", 1u32, const_hash!("apple")),
+            MapRecord::new("banana", 2u32, const_hash!("banana")),
         ];
 
         // We know this is only ever used locally

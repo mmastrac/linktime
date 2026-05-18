@@ -672,6 +672,7 @@ dependencies = [
  "divan",
  "link-section",
  "linktime",
+ "scattered-collect",
  "scattered-collect-proc-macro",
  "wide",
  "xxhash-rust",

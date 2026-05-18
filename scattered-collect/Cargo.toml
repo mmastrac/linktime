@@ -9,6 +9,9 @@ description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
 rust-version = "1.85"
 
+[features]
+__internal = []
+
 [dependencies]
 linktime = { workspace = true , features = ["std", "ctor", "link-section", "dtor"] }
 link-section = { workspace = true, features = ["proc_macro"] }
@@ -19,6 +22,7 @@ wide = "1.3"
 
 [dev-dependencies]
 divan = "0.1.21"
+scattered-collect = { path = ".", version = "*", features = ["__internal"] }
 
 [[example]]
 name = "scattered-collect-intern-strings"

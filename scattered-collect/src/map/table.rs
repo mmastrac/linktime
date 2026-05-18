@@ -1,3 +1,5 @@
+#![allow(clippy::modulo_one)]
+
 use crate::map::probe::{BUCKET_SIZE, Bucket, ProbeStrategy, control_byte_from_hash, match_mask};
 
 // Cache line sizes:
@@ -36,6 +38,7 @@ impl MetadataStride {
 ///
 /// Since there is a (miniscule) chance of hash collision, a lookup will return
 /// a continuation key to allow for future probing.
+#[doc(hidden)]
 pub struct ScatteredMapTable {
     pub metadata: &'static [MetadataStride],
     pub lookup_fn: fn(&ScatteredMapTable, h: u64) -> Option<u64>,
@@ -72,10 +75,7 @@ pub fn lookup<const INDEX_BITS: u8, P: ProbeStrategy>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map::{
-        build::pack_hash,
-        probe::{BUCKET_ZERO, LinearProbe},
-    };
+    use crate::map::{build::pack_hash, probe::LinearProbe};
 
     #[test]
     fn test_lookup_one() {
@@ -84,7 +84,7 @@ mod tests {
         static RECORDS: [MetadataStride; 1] = const {
             let mut records = [MetadataStride::ZERO];
 
-            let mut bucket = BUCKET_ZERO;
+            let mut bucket = [0; _];
             bucket[3] = control_byte_from_hash(HASH);
             records[0].buckets[0] = Bucket::new(bucket);
             records[0].hashes[3] = pack_hash(INDEX_BITS, HASH, 15);
@@ -110,7 +110,7 @@ mod tests {
         static RECORDS: [MetadataStride; 128] = const {
             let mut records = [MetadataStride::ZERO; 128];
 
-            let mut bucket = BUCKET_ZERO;
+            let mut bucket = [0; _];
             bucket[7] = control_byte_from_hash(HASH);
             records[99].buckets[0] = Bucket::new(bucket);
             records[99].hashes[7] = pack_hash(INDEX_BITS, HASH, 99);

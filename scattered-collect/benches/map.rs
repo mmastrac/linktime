@@ -1,8 +1,10 @@
 use std::{collections::HashMap, mem::MaybeUninit};
 
 use divan::Bencher;
-use scattered_collect::hash::ConstHasher;
-use scattered_collect::map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity};
+use scattered_collect::{
+    const_hash,
+    map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity},
+};
 
 const fn make_static_string(i: usize) -> [u8; 7] {
     let mut s = [0u8; 7];
@@ -40,11 +42,7 @@ static MAP_RECORDS: [MapRecord<&'static str, u32>; 1000] = const {
         let Ok(s) = str::from_utf8(STRINGS[i].as_slice()) else {
             panic!("invalid string");
         };
-        records[i] = MaybeUninit::new(MapRecord::new(
-            s,
-            i as u32,
-            ConstHasher::<&'static str>::const_hash(s),
-        ));
+        records[i] = MaybeUninit::new(MapRecord::new(s, i as u32, const_hash!(s)));
         i += 1;
     }
     unsafe { std::mem::transmute(records) }
@@ -71,7 +69,7 @@ fn scattered_map_lookup(bencher: Bencher) {
 
     bencher.bench_local(|| {
         for (n, key) in [(500, "key0500"), (100, "key0100"), (254, "key0254")] {
-            let hash = ConstHasher::<&'static str>::const_hash(key);
+            let hash = const_hash!(key);
             let offset = (table.lookup_fn)(&table, hash);
             let value = offset.map(|offset| &MAP_RECORDS[offset as usize].value);
             assert_eq!(value, Some(&n));

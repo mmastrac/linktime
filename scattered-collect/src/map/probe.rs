@@ -1,6 +1,5 @@
 pub type Bucket = wide::u8x16;
 
-pub const BUCKET_ZERO: [u8; BUCKET_SIZE] = [0; BUCKET_SIZE];
 pub const BUCKET_SIZE: usize = std::mem::size_of::<Bucket>();
 
 /// Pluggable probe strategy for the scattered map.

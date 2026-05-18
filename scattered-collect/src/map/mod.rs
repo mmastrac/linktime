@@ -1,3 +1,5 @@
+//! A swiss-table-style lookup table initialized with link-time data.
+
 use link_section::{TypedMutableSection, TypedSection};
 use std::{
     mem::MaybeUninit,
@@ -7,6 +9,7 @@ use std::{
 
 use crate::hash::ConstHash;
 pub use crate::map::table::ScatteredMapTable;
+#[cfg(feature = "__internal")]
 pub use build::{initialize_scattered_map, safe_byte_count_for_capacity};
 
 mod build;
@@ -44,15 +47,19 @@ where
 }
 
 /// One zeroed aux padding block per scatter site.
+#[doc(hidden)]
 pub type MapMetadataChunk = [u8; build::PER_ITEM_CAPACITY];
 
 /// Zero-filled padding chunk for the map metadata aux section.
+#[doc(hidden)]
 pub const MAP_METADATA_CHUNK_ZERO: MapMetadataChunk = [0; _];
 
 /// One zeroed aux padding block per scatter site.
+#[doc(hidden)]
 pub type MapMetadataChunkBase = [u8; build::BASE_CAPACITY];
 
 /// Zero-filled padding chunk for the map metadata aux section.
+#[doc(hidden)]
 pub const MAP_METADATA_CHUNK_BASE_ZERO: MapMetadataChunkBase = [0; _];
 
 impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
@@ -67,7 +74,7 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
         let this = self.state;
         let table = this.ensure_initialized();
         let hash = ConstHash::hash(key);
-        let offset = (table.lookup_fn)(&table, hash);
+        let offset = (table.lookup_fn)(table, hash);
         offset.map(|offset| &this.records[offset as usize].value)
     }
 
@@ -130,6 +137,7 @@ impl<K: 'static, V: 'static> __ScatteredMapState<K, V> {
         self.ensure_initialized();
     }
 
+    #[allow(unsafe_code)]
     fn ensure_initialized(&self) -> &ScatteredMapTable {
         match self
             .state
