@@ -30,14 +30,17 @@ impl<K, V> MapRecord<K, V> {
     }
 }
 
-/// Chunk size for one aux padding submission (must fit [`scattered_map_metadata_bytes_per_entry`]).
-pub const MAP_METADATA_CHUNK_BYTES: usize = 32;
-
 /// One zeroed aux padding block per scatter site.
-pub type MapMetadataChunk = [u8; MAP_METADATA_CHUNK_BYTES];
+pub type MapMetadataChunk = [u8; build::PER_ITEM_CAPACITY];
 
 /// Zero-filled padding chunk for the map metadata aux section.
-pub const MAP_METADATA_CHUNK_ZERO: MapMetadataChunk = [0; MAP_METADATA_CHUNK_BYTES];
+pub const MAP_METADATA_CHUNK_ZERO: MapMetadataChunk = [0; _];
+
+/// One zeroed aux padding block per scatter site.
+pub type MapMetadataChunkBase = [u8; build::BASE_CAPACITY];
+
+/// Zero-filled padding chunk for the map metadata aux section.
+pub const MAP_METADATA_CHUNK_BASE_ZERO: MapMetadataChunkBase = [0; _];
 
 impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
     #[doc(hidden)]
@@ -151,6 +154,11 @@ macro_rules! __map {
             $crate::__support::link_section::declarative::section!(
                 #[section(mutable, aux(main = $name))]
                 $vis static MAP_META: $crate::__support::link_section::TypedMutableSection<u8>;
+            );
+
+            $crate::__support::link_section::declarative::in_section!(
+                #[in_section(unsafe, name = MAP_META, aux = $name, type = mutable)]
+                const _: $crate::map::MapMetadataChunkBase = $crate::map::MAP_METADATA_CHUNK_BASE_ZERO;
             );
 
             static __MAP_STATE: $crate::map::__ScatteredMapState<$key, $value> = $crate::map::__ScatteredMapState::new($name.const_deref(), MAP_META.const_deref());
