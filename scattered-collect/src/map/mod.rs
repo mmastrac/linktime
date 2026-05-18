@@ -224,4 +224,50 @@ mod link_tests {
         assert_eq!(TEST_MAP.find(&"orange"), None);
         assert!(TEST_MAP.contains_key(&"apple"));
     }
+
+    struct Record {
+        key: &'static str,
+        f: fn(),
+    }
+
+    impl Record {
+        pub const fn new(key: &'static str, f: fn()) -> Self {
+            Self { key, f }
+        }
+
+        pub fn call(&self) {
+            (self.f)();
+        }
+    }
+
+    __map!(@gather pub static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
+
+    macro_rules! make_test {
+        ($($name:ident)*) => {
+            $(
+            __map!(scatter TEST_MAP_2 => [&'static str] [Record]
+                $name: (&'static str, Record) = (
+                    stringify!($name),
+                    Record::new(stringify!($name), || println!(stringify!($name)))
+                )
+            );
+            )*
+        }
+    }
+
+    make_test!(
+        A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+        A1 B1 C1 D1 E1 F1 G1 H1 I1 J1 K1 L1 M1 N1 O1 P1 Q1 R1 S1 T1 U1 V1 W1 X1 Y1 Z1
+        A2 B2 C2 D2 E2 F2 G2 H2 I2 J2 K2 L2 M2 N2 O2 P2 Q2 R2 S2 T2 U2 V2 W2 X2 Y2 Z2
+        A3 B3 C3 D3 E3 F3 G3 H3 I3 J3 K3 L3 M3 N3 O3 P3 Q3 R3 S3 T3 U3 V3 W3 X3 Y3 Z3
+        A4 B4 C4 D4 E4 F4 G4 H4 I4 J4 K4 L4 M4 N4 O4 P4 Q4 R4 S4 T4 U4 V4 W4 X4 Y4 Z4
+        A5 B5 C5 D5 E5 F5 G5 H5 I5 J5 K5 L5 M5 N5 O5 P5 Q5 R5 S5 T5 U5 V5 W5 X5 Y5 Z5
+    );
+
+    #[test]
+    fn test_scattered_map_2() {
+        TEST_MAP_2.find(&"A").unwrap().call();
+        TEST_MAP_2.find(&"B").unwrap().call();
+        TEST_MAP_2.find(&"C").unwrap().call();
+    }
 }
