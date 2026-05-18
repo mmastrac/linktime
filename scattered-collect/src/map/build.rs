@@ -1,7 +1,9 @@
 #![allow(clippy::modulo_one)]
 
 use crate::map::MapRecord;
-use crate::map::probe::{BUCKET_SIZE, Bucket, LinearProbe, ProbeStrategy, control_byte_from_hash};
+use crate::map::probe::{
+    BUCKET_SIZE, Bucket, LinearProbe, ProbeStrategy, control_byte_from_hash, match_mask, split_hash,
+};
 use crate::map::table::{BUCKET_STRIDE, MetadataStride, ScatteredMapTable, lookup};
 
 pub const SAFE_CAPACITY: f32 = 0.70;
@@ -86,6 +88,19 @@ pub fn initialize_scattered_map<K, V>(
             let group_stride = g / BUCKET_STRIDE;
             let group_offset = g % BUCKET_STRIDE;
             let group = &mut metadata[group_stride];
+
+            // First, check for duplicate hash
+            let mut bits = match_mask(&group.buckets[group_offset], ctrl_byte);
+            while bits != 0 {
+                let lane = bits.trailing_zeros() as usize;
+                let h2 = group.hashes[group_offset * BUCKET_SIZE + lane];
+                let (hash, index) = split_hash(index_bits, h2);
+                let hash_mask = (-1_i64 as u64) << (index_bits as usize);
+                if h2 == hash & hash_mask {
+                    panic!("duplicate hash found: {hash:x} at index {index}");
+                }
+                bits &= bits - 1;
+            }
 
             if let Some(lane) = first_empty_lane(&group.buckets[group_offset]) {
                 group.buckets[group_offset].as_mut_array()[lane] = ctrl_byte;

@@ -62,7 +62,7 @@ pub fn lookup<const INDEX_BITS: u8, P: ProbeStrategy>(
         let mut bits = match_mask(&group.buckets[group_offset], tag);
         while bits != 0 {
             let lane = bits.trailing_zeros() as usize;
-            let h2 = group.hashes[group_offset * HASH_STRIDE + lane];
+            let h2 = group.hashes[group_offset * BUCKET_SIZE + lane];
             if h2 & hash_mask == masked_hash {
                 return Some(h2 & index_mask);
             }

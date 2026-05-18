@@ -57,7 +57,6 @@ pub fn match_mask(group: &Bucket, tag: u8) -> u32 {
 }
 
 #[inline]
-#[cfg(test)]
 pub fn split_hash(index_bits: u8, hash: u64) -> (u64, usize) {
     let hash_mask: u64 = (-1_i64 as u64) << (index_bits as usize);
     let index_mask = !hash_mask;
