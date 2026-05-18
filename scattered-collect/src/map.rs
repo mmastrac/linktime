@@ -50,10 +50,23 @@ pub const fn scattered_map_refs_min_bytes(num_groups: usize) -> usize {
     (align_of::<MetadataSlice>() - 1) + num_groups * size_of::<MetadataSlice>()
 }
 
-/// Conservative metadata bytes reserved in each map's aux section at gather time.
-pub const fn scattered_map_metadata_reserve_bytes() -> usize {
-    scattered_map_refs_min_bytes(num_groups_for_records(256))
+/// Metadata bytes to submit into the map aux section per scattered entry.
+///
+/// Summed across all scatters, this is always enough for the final table size.
+pub const fn scattered_map_metadata_bytes_per_entry() -> usize {
+    scattered_map_refs_min_bytes(num_groups_for_records(1))
 }
+
+/// Chunk size for one aux padding submission (must fit [`scattered_map_metadata_bytes_per_entry`]).
+pub const MAP_METADATA_CHUNK_BYTES: usize = 512;
+
+/// One zeroed aux padding block per scatter site.
+pub type MapMetadataChunk = [u8; MAP_METADATA_CHUNK_BYTES];
+
+/// Zero-filled padding chunk for the map metadata aux section.
+pub const MAP_METADATA_CHUNK_ZERO: MapMetadataChunk = [0; MAP_METADATA_CHUNK_BYTES];
+
+const _: () = assert!(scattered_map_metadata_bytes_per_entry() <= MAP_METADATA_CHUNK_BYTES);
 
 /// Pluggable probe strategy for the scattered map.
 ///
@@ -423,9 +436,10 @@ macro_rules! __map {
                 >;
             );
 
-            const __MAP_META_BUF_LEN: usize = $crate::map::scattered_map_metadata_reserve_bytes();
-            static mut __MAP_META_BUF: [u8; __MAP_META_BUF_LEN] = [0; __MAP_META_BUF_LEN];
-
+            $crate::__support::link_section::declarative::section!(
+                #[section(mutable, aux(main = $name))]
+                $vis static MAP_META: $crate::__support::link_section::TypedMutableSection<$crate::map::MapMetadataChunk>;
+            );
             static __MAP_STATE: $crate::map::ScatteredMapState<$key, $value> =
                 $crate::map::ScatteredMapState::new();
 
@@ -437,17 +451,26 @@ macro_rules! __map {
                         $crate::map::num_groups_for_records(records.len()),
                     );
 
+                    ::paste::paste! {
+                        let chunks = unsafe { MAP_META.as_mut_slice() };
+                    }
                     let table = unsafe {
+                        let meta_len =
+                            chunks.len() * core::mem::size_of::<MapMetadataChunk>();
                         assert!(
-                            min_bytes <= __MAP_META_BUF_LEN,
-                            "map metadata buffer too small: need at least {} bytes, have {}",
+                            meta_len >= min_bytes,
+                            "map metadata aux section too small: need at least {} bytes, have {}",
                             min_bytes,
-                            __MAP_META_BUF_LEN,
+                            meta_len,
                         );
-                        __MAP_META_BUF[..min_bytes].fill(0);
+                        let meta = core::slice::from_raw_parts_mut(
+                            chunks.as_mut_ptr().cast::<u8>(),
+                            meta_len,
+                        );
+                        meta[..min_bytes].fill(0);
                         $crate::map::initialize_scattered_map::<_, _, $crate::map::LinearProbe>(
                             records,
-                            &mut __MAP_META_BUF[..min_bytes],
+                            &mut meta[..min_bytes],
                         )
                     };
                     unsafe {
@@ -488,6 +511,10 @@ macro_rules! __map {
                 $value_expr,
                 $crate::const_hash!($key_expr)
             );
+        );
+        $crate::__support::link_section::declarative::in_section!(
+            #[in_section(unsafe, name = MAP_META, aux = $collection, type = mutable)]
+            const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
 }
