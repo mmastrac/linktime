@@ -21,7 +21,7 @@ macro_rules! __scatter_parse {
     // Send the #[scatter]'d item into the collection's private macro.
     (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $($item:tt)*) => {
         $($meta)* ! (
-            ($($meta)* =>
+            ([$($meta)*] =>
             $(#[$imeta])*
             $($item)*
             )

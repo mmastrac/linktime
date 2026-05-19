@@ -216,7 +216,7 @@ macro_rules! __iterable {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __iterable_private_macro__) ({
             ($passthru:tt) => {
-                $crate::__iterable!(@scatter $passthru);
+                $crate::__iterable!(@scatter [$name] $passthru);
             };
         }));
 
@@ -229,17 +229,14 @@ macro_rules! __iterable {
             $crate::iterable::ScatteredIterable::new(&$crate::__iterable_state!($name))
         };
     };
-    (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis static $name: $ty = $expr; ));
-    };
-    (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
         $(#[$imeta])*
         $vis static $name: $crate::iterable::Ref<$ty> = $crate::iterable::Ref::new($expr);
 
         $crate::__support::ctor::declarative::ctor!(
             #[ctor(unsafe, anonymous, priority = 0)]
             fn __iterable_submit() {
-                $crate::iterable::submit(&$crate::__iterable_state!($collection), &$name);
+                $crate::iterable::submit(&$crate::__iterable_state!($($meta)*), &$name);
             }
         );
     };
@@ -250,9 +247,9 @@ mod tests {
     use crate::iterable::{Ref, ScatteredIterable};
 
     __iterable!(gather pub TEST_ITERABLE: u32);
-    __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_A: u32 = 1);
-    __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_B: u32 = 3);
-    __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_C: u32 = 2);
+    __iterable!(@scatter [TEST_ITERABLE] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_A: u32 = 1;));
+    __iterable!(@scatter [TEST_ITERABLE] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_B: u32 = 3;));
+    __iterable!(@scatter [TEST_ITERABLE] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_C: u32 = 2;));
 
     fn offset_for_value(value: u32) -> usize {
         match value {
