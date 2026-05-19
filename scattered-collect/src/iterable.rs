@@ -96,12 +96,12 @@ pub fn submit<T: 'static>(state: &__ScatteredIterableState<T>, node: &'static Re
 }
 
 #[inline]
+#[allow(unsafe_code)]
 fn remaining_from_node<T>(node: *const Ref<T>) -> usize {
     if node.is_null() {
         return 0;
     }
     // SAFETY: `node` is a live `static` [`Ref`] for the program lifetime.
-    // Stored as submission index + 1; equals [`Ref::offset_of`] + 1.
     unsafe { (*node).loaded_index() }
 }
 
