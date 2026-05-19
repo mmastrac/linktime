@@ -83,7 +83,7 @@ macro_rules! __sorted_referenced_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __sorted_referenced_slice_private_macro__) ({
             ($passthru:tt) => {
-                $crate::__sorted_referenced_slice!(@scatter $passthru);
+                $crate::__sorted_referenced_slice!(@scatter [$name] $passthru);
             };
         }));
 
@@ -110,12 +110,9 @@ macro_rules! __sorted_referenced_slice {
             }
         };
     };
-    (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis static $name: $ty = $expr; ));
-    };
-    (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection, type = movable)]
+            #[in_section(unsafe, name = $collection_name, type = movable)]
             $(#[$imeta])*
             $vis static $name: $ty = $expr;
         );
@@ -127,9 +124,9 @@ mod tests {
     use crate::sorted_referenced_slice::{Ref, ScatteredSortedReferencedSlice};
 
     __sorted_referenced_slice!(gather pub TEST_SORT_REF: u32);
-    __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_A: u32 = 1);
-    __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_B: u32 = 3);
-    __sorted_referenced_slice!(scatter TEST_SORT_REF => pub SORT_REF_ITEM_C: u32 = 2);
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_A: u32 = 1;));
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_B: u32 = 3;));
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_C: u32 = 2;));
 
     #[test]
     fn test_scattered_sorted_referenced_slice() {

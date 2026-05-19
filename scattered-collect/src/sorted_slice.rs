@@ -69,9 +69,13 @@ pub fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
 #[macro_export]
 macro_rules! __sorted_slice {
     (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
-        #[doc(hidden)]
-        #[allow(unused)]
-        $vis use $crate::__sorted_slice as $name;
+        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __sorted_slice_private_macro__) ({
+            ($passthru:tt) => {
+                $crate::__sorted_slice!(@scatter [$name] $passthru);
+            };
+        }));
+
+        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __sorted_slice_private_macro__) (as $name;));
 
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
@@ -94,16 +98,9 @@ macro_rules! __sorted_slice {
         };
     };
 
-    (@scatter [$($meta:tt)*] $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;) => {
+    (@scatter [$collection_name:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $($meta)*, type = mutable)]
-            $(#[$imeta])*
-            $vis $type $name: $ty = $expr;
-        );
-    };
-    (($collection:ident => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
-        $crate::__sorted_slice!(
-            @scatter [$collection]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );
@@ -115,12 +112,12 @@ mod tests {
     pub use super::ScatteredSortedSlice;
 
     __sorted_slice!(@gather pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 6;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 3;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 2;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 4;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 5;);
-    __sorted_slice!(@scatter [TEST_SORTED_SLICE] const _: u32 = 1;);
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 6;));
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 3;));
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 2;));
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 4;));
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 5;));
+    __sorted_slice!(@scatter [TEST_SORTED_SLICE] ([TEST_SORTED_SLICE] => const _: u32 = 1;));
 
     #[test]
     fn test_scattered_sorted_slice() {

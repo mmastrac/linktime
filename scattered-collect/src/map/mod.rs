@@ -249,7 +249,7 @@ macro_rules! __map {
             __ $name __map_scatter__
         ) ({
             ($passthru:tt) => {
-                $crate::__map!(@scatter [$key] [$value] $passthru);
+                $crate::__map!(@scatter [$name] [$key] [$value] $passthru);
             };
         }));
 
@@ -259,12 +259,12 @@ macro_rules! __map {
             (as $name;)
         );
     };
-    (scatter $collection:ident => [$key:ty] [$value:ty] $vis:vis $name:ident: $ty:ty = ($key_expr:expr, $value_expr:expr)) => {
-        $collection ! (( $collection => $vis static $name: $ty = ($key_expr, $value_expr); ));
+    (scatter [$collection:ident] => [$key:ty] [$value:ty] $vis:vis $name:ident: $ty:ty = ($key_expr:expr, $value_expr:expr)) => {
+        $collection ! (( [$collection] => $vis static $name: $ty = ($key_expr, $value_expr); ));
     };
-    (@scatter [$key:ty] [$value:ty] ($collection:ident => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = ($key_expr:expr, $value_expr:expr);)) => {
+    (@scatter [$collection_name:ident] [$key:ty] [$value:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = ($key_expr:expr, $value_expr:expr);)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection, type = typed)]
+            #[in_section(unsafe, name = $collection_name, type = typed)]
             $(#[$imeta])*
             $vis $kind $name: $crate::map::MapRecord<$key, $value> = $crate::map::MapRecord::new(
                 $key_expr,
@@ -273,7 +273,7 @@ macro_rules! __map {
             );
         );
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = MAP_META, aux(main = $collection), type = mutable)]
+            #[in_section(unsafe, name = MAP_META, aux(main = $collection_name), type = mutable)]
             const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
@@ -284,8 +284,8 @@ mod link_tests {
     use crate::ScatteredMap;
 
     __map!(@gather pub static TEST_MAP: ScatteredMap<&'static str, u32>;);
-    __map!(scatter TEST_MAP => [&'static str] [u32] APPLE: (&'static str, u32) = ("apple", 1));
-    __map!(scatter TEST_MAP => [&'static str] [u32] BANANA: (&'static str, u32) = ("banana", 2));
+    __map!(scatter [TEST_MAP] => [&'static str] [u32] APPLE: (&'static str, u32) = ("apple", 1));
+    __map!(scatter [TEST_MAP] => [&'static str] [u32] BANANA: (&'static str, u32) = ("banana", 2));
 
     #[test]
     fn scattered_map_gather_scatter_find() {
@@ -316,7 +316,7 @@ mod link_tests {
     macro_rules! make_test {
         ($($name:ident)*) => {
             $(
-            __map!(scatter TEST_MAP_2 => [&'static str] [Record]
+            __map!(scatter [TEST_MAP_2] => [&'static str] [Record]
                 $name: (&'static str, Record) = (
                     stringify!($name),
                     Record::new(stringify!($name), |_key| println!(stringify!($name)))

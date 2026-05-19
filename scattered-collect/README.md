@@ -42,3 +42,38 @@ whatsoever.
   (auto-wrapped as [`sorted_referenced_slice::Ref`]).
 - [`ScatteredMap`]: A collection of key-value pairs that are available via
   slice, as well as indexed by key.
+
+## Scatter/Gather syntax
+
+The collections are defined as a single scatter call with multiple gather calls
+that submit items to the collection.
+
+```rust
+# use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+# struct DatabaseDriver(&'static str);
+#[gather]
+static COLLECTION: ScatteredSlice<DatabaseDriver>;
+```
+
+... and then elsewhere in your crate:
+
+```rust
+# mod root { // doctests have weird scope for macros...
+# use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+# struct DatabaseDriver(&'static str);
+# #[gather] static COLLECTION: ScatteredSlice<DatabaseDriver>;
+
+mod postgres {
+    # use super::*;
+    #[scatter(COLLECTION)]
+    static POSTGRES_DRIVER: DatabaseDriver = DatabaseDriver("postgres" /*, ...*/);
+}
+
+mod mysql {
+    # use super::*;
+    # struct DatabaseDriver(&'static str);
+    #[scatter(COLLECTION)]
+    static MYSQL_DRIVER: DatabaseDriver = DatabaseDriver("mysql" /*, ...*/);
+}
+# }
+```

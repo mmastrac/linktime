@@ -18,7 +18,7 @@ enum Str {
 
 impl Str {
     fn try_intern(s: &'static str) -> Option<Self> {
-        INTERNED_STRINGS
+        intern::INTERNED_STRINGS
             .binary_search(&Str::Static(s))
             .ok()
             .map(Str::Interned)
@@ -42,7 +42,7 @@ impl Deref for Str {
     fn deref(&self) -> &Self::Target {
         match self {
             Str::Static(s) => s,
-            Str::Interned(i) => INTERNED_STRINGS[*i].deref(),
+            Str::Interned(i) => crate::intern::INTERNED_STRINGS[*i].deref(),
         }
     }
 }
@@ -71,24 +71,39 @@ impl Ord for Str {
     }
 }
 
-#[gather]
-static INTERNED_STRINGS: ScatteredSortedReferencedSlice<Str>;
+mod intern {
+    use crate::{ScatteredSortedReferencedSlice, Str, gather};
 
-macro_rules! intern_string {
-    ($name:ident, $string:literal) => {
-        #[scatter(INTERNED_STRINGS)]
-        static $name: Str = Str::Static($string);
-    };
+    #[gather]
+    pub(crate) static INTERNED_STRINGS: ScatteredSortedReferencedSlice<Str>;
+
+    macro_rules! intern_string {
+        ($name:ident, $string:literal) => {
+            #[$crate::scatter($crate::intern::INTERNED_STRINGS)]
+            static $name: $crate::Str = $crate::Str::Static($string);
+        };
+    }
+    pub(crate) use intern_string;
 }
 
-intern_string!(HELLO, "hello");
-intern_string!(WORLD, "world");
+use crate::intern::intern_string;
+
+mod another_mod {
+    use crate::intern::intern_string;
+    intern_string!(CUSTOM, "custom");
+}
 
 fn main() {
+    intern_string!(HELLO, "hello");
+    intern_string!(WORLD, "world");
+
     let hello = Str::try_intern("hello").unwrap();
     let world = Str::try_intern("world").unwrap();
     assert!(Str::try_intern("none").is_none());
     assert_eq!(hello, HELLO);
     assert_eq!(world, WORLD);
     println!("{hello} {world}!");
+
+    // Interning works from everywhere.
+    Str::try_intern("custom").expect("custom");
 }
