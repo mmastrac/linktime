@@ -1,6 +1,4 @@
 //! Example for `ScatteredSortedReferencedSlice`.
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-
 use scattered_collect::{gather, scatter, sorted_referenced_slice::ScatteredSortedReferencedSlice};
 
 /// A scattered sorted referenced slice of `u32`.

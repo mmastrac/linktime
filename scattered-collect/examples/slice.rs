@@ -1,6 +1,4 @@
 //! Example for `ScatteredSlice`.
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-
 use scattered_collect::{gather, scatter, slice::ScatteredSlice};
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
