@@ -1,8 +1,6 @@
 //! This example demonstrates the various types of ctor/dtor in an executable
 //! context.
-#![recursion_limit = "90"]
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-
+#![recursion_limit = "60"]
 use dtor::dtor;
 use libc_print::*;
 

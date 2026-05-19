@@ -2,7 +2,6 @@
 //! # link-section
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![allow(unsafe_code)]
-#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 #![no_std]
 
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]

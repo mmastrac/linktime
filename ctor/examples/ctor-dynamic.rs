@@ -1,5 +1,4 @@
 //! Demonstrate dynamic `#[ctor]`s.
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![allow(clippy::incompatible_msrv)]
 
 use ctor::ctor;

@@ -1,6 +1,4 @@
 //! Demonstrate various forms of `#[ctor]` statics.
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-
 use std::mem::MaybeUninit;
 
 use ctor::ctor;
