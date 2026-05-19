@@ -4,7 +4,6 @@
 //! # dtor
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![doc = include_str!("../docs/GENERATED.md")]
-#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 #[cfg(feature = "std")]
 extern crate std;
