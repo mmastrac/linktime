@@ -1,12 +1,14 @@
 #![doc = include_str!("../README.md")]
 
 pub mod hash;
+pub mod iterable;
 pub mod map;
 pub mod referenced_slice;
 pub mod slice;
 pub mod sorted_referenced_slice;
 pub mod sorted_slice;
 
+pub use iterable::ScatteredIterable;
 pub use map::ScatteredMap;
 pub use referenced_slice::ScatteredReferencedSlice;
 pub use slice::ScatteredSlice;
@@ -88,6 +90,14 @@ macro_rules! __gather_parse {
             @gather
             $(#[$imeta])*
             $vis static $name: $map < $key, $value >;
+        );
+    };
+
+    (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredIterable < $ty:ty >; ) => {
+        $crate::__iterable ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $collection < $ty >;
         );
     };
 
