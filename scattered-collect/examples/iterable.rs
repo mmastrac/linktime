@@ -23,7 +23,7 @@ fn main() {
     println!("ITEM_TWO: {:?}", *ITEM_TWO);
     println!("ITEM_THREE: {:?}", *ITEM_THREE);
 
-    println!("Entries (head → tail):");
+    println!("Entries:");
     for item in &COLLECTION {
         println!(" - {:?}", item);
     }

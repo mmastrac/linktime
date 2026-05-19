@@ -4,9 +4,13 @@
 
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 
+/// Index stored in [`Ref::index`] before [`submit`] runs.
+const UNSET_INDEX: usize = 0;
+
 /// One node in a [`ScatteredIterable`], with a `static` handle at each scatter site.
 pub struct Ref<T: 'static> {
     next: AtomicPtr<Ref<T>>,
+    index: AtomicUsize,
     value: T,
 }
 
@@ -15,8 +19,23 @@ impl<T> Ref<T> {
     pub const fn new(value: T) -> Self {
         Self {
             next: AtomicPtr::new(core::ptr::null_mut()),
+            index: AtomicUsize::new(UNSET_INDEX),
             value,
         }
+    }
+
+    /// The offset of this node in its collection's submission order.
+    pub fn offset_of(this: &Self) -> usize {
+        this.loaded_index().saturating_sub(1)
+    }
+
+    #[inline]
+    fn loaded_index(&self) -> usize {
+        let index = self.index.load(Ordering::Acquire);
+        if index == UNSET_INDEX {
+            panic!("node index is unset; was this `Ref` submitted to its collection?");
+        }
+        index
     }
 }
 
@@ -69,10 +88,21 @@ pub fn submit<T: 'static>(state: &__ScatteredIterableState<T>, node: &'static Re
             )
             .is_ok()
         {
-            state.len.fetch_add(1, Ordering::Relaxed);
+            let index = state.len.fetch_add(1, Ordering::Relaxed);
+            node.index.store(index + 1, Ordering::Release);
             return;
         }
     }
+}
+
+#[inline]
+fn remaining_from_node<T>(node: *const Ref<T>) -> usize {
+    if node.is_null() {
+        return 0;
+    }
+    // SAFETY: `node` is a live `static` [`Ref`] for the program lifetime.
+    // Stored as submission index + 1; equals [`Ref::offset_of`] + 1.
+    unsafe { (*node).loaded_index() }
 }
 
 /// Iterator over a [`ScatteredIterable`].
@@ -85,17 +115,18 @@ pub struct Iter<'a, T: 'static> {
 impl<'a, T: 'static> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
+    #[allow(unsafe_code)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.current.is_null() {
             return None;
         }
 
         // SAFETY: Nodes are `static` and remain valid for the program lifetime.
-        // Iteration happens after all priority-0 constructors have finished linking.
         let node = unsafe { &*self.current };
+        let _ = node.loaded_index();
         let item = &node.value;
         self.current = node.next.load(Ordering::Acquire);
-        self.remaining = self.remaining.saturating_sub(1);
+        self.remaining = remaining_from_node(self.current);
         Some(item)
     }
 
@@ -104,7 +135,11 @@ impl<'a, T: 'static> Iterator for Iter<'a, T> {
     }
 }
 
-impl<T: 'static> ExactSizeIterator for Iter<'_, T> {}
+impl<T: 'static> ExactSizeIterator for Iter<'_, T> {
+    fn len(&self) -> usize {
+        self.remaining
+    }
+}
 
 /// A collection of items linked at runtime into a singly-linked list.
 ///
@@ -112,11 +147,20 @@ impl<T: 'static> ExactSizeIterator for Iter<'_, T> {}
 /// Iteration order is the reverse of constructor registration order (each item
 /// is prepended to the list).
 ///
+/// ## Thread safety
+///
+/// This collection is thread-safe: access before initialization completes will
+/// yield fewer items, but will not panic or cause undefined behavior. The count
+/// returned by [`len`] may be stale while constructors are still running; the
+/// [`ExactSizeIterator::len`] on [`Iter`] is derived from each node's [`Ref::offset_of`]
+/// index and stays consistent for the suffix being iterated.
+///
 /// For link-time contiguous storage in arbitrary link order, use
 /// [`crate::ScatteredSlice`]. For `static` handles backed by a link section,
 /// use [`crate::ScatteredReferencedSlice`]. For sorted data, use
-/// [`crate::ScatteredSortedSlice`] or [`crate::ScatteredSortedReferencedSlice`].
-/// For key lookup, use [`crate::ScatteredMap`].
+/// [`crate::ScatteredSortedSlice`] or
+/// [`crate::ScatteredSortedReferencedSlice`]. For key lookup, use
+/// [`crate::ScatteredMap`].
 #[doc = concat!("```rust\n", include_str!("../examples/iterable.rs"), "\n```\n")]
 pub struct ScatteredIterable<T: 'static> {
     state: &'static __ScatteredIterableState<T>,
@@ -144,9 +188,10 @@ impl<T: 'static> ::core::iter::IntoIterator for &'static ScatteredIterable<T> {
     type IntoIter = Iter<'static, T>;
 
     fn into_iter(self) -> Self::IntoIter {
+        let current = self.state.head.load(Ordering::Acquire);
         Iter {
-            current: self.state.head.load(Ordering::Acquire),
-            remaining: self.state.len.load(Ordering::Acquire),
+            remaining: remaining_from_node(current),
+            current,
             _marker: ::core::marker::PhantomData,
         }
     }
@@ -202,12 +247,21 @@ macro_rules! __iterable {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
-    use crate::iterable::ScatteredIterable;
+    use crate::iterable::{Ref, ScatteredIterable};
 
     __iterable!(gather pub TEST_ITERABLE: u32);
     __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_A: u32 = 1);
     __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_B: u32 = 3);
     __iterable!(scatter TEST_ITERABLE => pub ITERABLE_ITEM_C: u32 = 2);
+
+    fn offset_for_value(value: u32) -> usize {
+        match value {
+            1 => Ref::offset_of(&ITERABLE_ITEM_A),
+            3 => Ref::offset_of(&ITERABLE_ITEM_B),
+            2 => Ref::offset_of(&ITERABLE_ITEM_C),
+            _ => panic!("unexpected value: {value}"),
+        }
+    }
 
     #[test]
     fn test_scattered_iterable() {
@@ -218,8 +272,41 @@ mod tests {
         assert_eq!(*ITERABLE_ITEM_B, 3);
         assert_eq!(*ITERABLE_ITEM_C, 2);
 
+        let mut scatter_offsets = [
+            Ref::offset_of(&ITERABLE_ITEM_A),
+            Ref::offset_of(&ITERABLE_ITEM_B),
+            Ref::offset_of(&ITERABLE_ITEM_C),
+        ];
+        scatter_offsets.sort();
+        assert_eq!(scatter_offsets, [0, 1, 2]);
+
+        let total = TEST_ITERABLE.len();
+        let mut it = (&TEST_ITERABLE).into_iter();
+        assert_eq!(it.len(), total);
+
+        let mut collected_offsets = Vec::new();
+        for step in 0..total {
+            let len_before = it.len();
+            let value = it.next().copied().expect("item");
+            let offset = offset_for_value(value);
+
+            assert_eq!(
+                len_before,
+                offset + 1,
+                "ExactSizeIterator::len before consuming offset {offset}"
+            );
+            assert_eq!(it.len(), total - step - 1);
+            collected_offsets.push(offset);
+        }
+
+        assert_eq!(it.len(), 0);
+        assert_eq!(it.next(), None);
+
+        collected_offsets.sort();
+        assert_eq!(collected_offsets, scatter_offsets);
+
         let items: Vec<u32> = (&TEST_ITERABLE).into_iter().copied().collect();
-        assert_eq!(items.len(), 3);
+        assert_eq!(items.len(), total);
         assert!(items.contains(&1));
         assert!(items.contains(&2));
         assert!(items.contains(&3));
