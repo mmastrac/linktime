@@ -22,7 +22,7 @@ wide = "1.3"
 
 [dev-dependencies]
 divan = "0.1.21"
-scattered-collect = { path = ".", version = "*", features = ["__internal"] }
+scattered-collect = { path = ".", features = ["__internal"] }
 
 [[example]]
 name = "scattered-collect-intern-strings"
