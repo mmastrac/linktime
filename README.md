@@ -99,6 +99,41 @@ fn print_numbers() {
 }
 ```
 
+## [`scattered-collect`](scattered-collect/)
+
+A crate for defining zero-allocation,linker-managed scattered collections in Rust.
+
+- [`ScatteredSlice`]: A collection of sized items that collected into a slice in
+  an arbitrary order.
+- [`ScatteredSortedSlice`]: A collection of items that are available via slice,
+  in sorted order.
+- [`ScatteredReferencedSlice`]: A collection of items collected into a slice
+  (link order), with each `static` item auto-wrapped as
+  [`referenced_slice::Ref`].
+- [`ScatteredSortedReferencedSlice`]: A collection of sized items that are
+  available both via sorted slice and via reference at the declaration site
+  (auto-wrapped as [`sorted_referenced_slice::Ref`]).
+- [`ScatteredMap`]: A collection of key-value pairs that are available via
+  slice, as well as indexed by key.
+
+```rust,ignore
+use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+
+#[gather]
+static SLICE_PLUGINS: ScatteredSlice<&'static str>;
+
+#[scatter(SLICE_PLUGINS)]
+const _: &'static str = "json";
+
+#[scatter(SLICE_PLUGINS)]
+const _: &'static str = "yaml";
+
+fn main() {
+    assert_eq!(SLICE_PLUGINS.len(), 2);
+    assert!(SLICE_PLUGINS.contains(&"json"));
+}
+```
+
 ## Contributing
 
 Contributions are welcome! 
