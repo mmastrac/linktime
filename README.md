@@ -1,16 +1,17 @@
 # linktime
 
-Cross-platform libraries for link-time initialization, finalization and collection in Rust.
+Cross-platform libraries for link-time initialization, finalization and
+collection in Rust.
 
 ![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)
 
-| crate          | docs                                                                               | version                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `linktime`     | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)           | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)       |
-| `ctor`         | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                 | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                 |
-| `dtor`         | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                 | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                 |
-| `link-section` | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) |
-| `scattered-collect` | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
+| crate               |                                                          | docs                                                                                         | version                                                                                                           |
+| ------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `linktime`          | Convenience crate for `ctor`, `dtor` and `link-section`. | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)                   | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)                   |
+| `ctor`              | Module initialization functions before main              | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                           | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                           |
+| `dtor`              | Module shutdown functions before main                    | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                           | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                           |
+| `link-section`      | Linker-managed typed (slices) and untyped sections       | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section)           | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section)           |
+| `scattered-collect` | Linker-managed collections: slices, sorted slices, maps  | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
 
 ## Crates
 
@@ -21,7 +22,8 @@ Pick-and-choose, or import the top-level crate to get all three.
 
 ## [`ctor`](ctor/)
 
-Module initialization functions for Rust (like `__attribute__((constructor))` in C/C++).
+Module initialization functions for Rust (like `__attribute__((constructor))` in
+C/C++).
 
 Run code before `main` to initialize data, external resources, or other state.
 
@@ -101,7 +103,8 @@ fn print_numbers() {
 
 ## [`scattered-collect`](scattered-collect/)
 
-A crate for defining zero-allocation,linker-managed scattered collections in Rust.
+A crate for defining zero-allocation,linker-managed scattered collections in
+Rust.
 
 - [`ScatteredSlice`]: A collection of sized items that collected into a slice in
   an arbitrary order.
@@ -136,10 +139,9 @@ fn main() {
 
 ## Contributing
 
-Contributions are welcome! 
+Contributions are welcome!
 
 ## License
 
-These projects are dual-licensed under the Apache License, Version 2.0 and the MIT License.
-
-
+These projects are dual-licensed under the Apache License, Version 2.0 and the
+MIT License.
