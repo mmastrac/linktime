@@ -2,7 +2,8 @@
 
 ![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)
 
-The crate is part of the [`linktime`](https://crates.io/crates/linktime) project.
+The crate is part of the [`linktime`](https://crates.io/crates/linktime)
+project.
 
 | crate               |                                                         | docs                                                                                         | version                                                                                                           |
 | ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -27,6 +28,8 @@ whatsoever.
 
 ## Collections
 
+- [`ScatteredIterable`]: A collection of items that are available only via
+  iterator.
 - [`ScatteredSlice`]: A collection of sized items that collected into a slice in
   an arbitrary order.
 - [`ScatteredSortedSlice`]: A collection of items that are available via slice,

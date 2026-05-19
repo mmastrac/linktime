@@ -25,6 +25,10 @@ divan = "0.1.21"
 scattered-collect = { path = ".", features = ["__internal"] }
 
 [[example]]
+name = "scattered-collect-iterable"
+path = "examples/iterable.rs"
+
+[[example]]
 name = "scattered-collect-intern-strings"
 path = "examples/intern_strings.rs"
 

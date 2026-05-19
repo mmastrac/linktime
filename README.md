@@ -106,13 +106,14 @@ fn print_numbers() {
 A crate for defining zero-allocation,linker-managed scattered collections in
 Rust.
 
-- `ScatteredSlice`]: A collection of sized items that collected into a slice in
+- `ScatteredIterable`: A collection of items that are available only via
+- `ScatteredSlice`: A collection of sized items that collected into a slice in
   an arbitrary order.
-- `ScatteredSortedSlice`]: A collection of items that are available via slice,
+- `ScatteredSortedSlice`: A collection of items that are available via slice,
   in sorted order.
-- `ScatteredReferencedSlice`]: A collection of items collected into a slice
+- `ScatteredReferencedSlice`: A collection of items collected into a slice
   (link order).
-- `ScatteredSortedReferencedSlice`]: A collection of sized items that are
+- `ScatteredSortedReferencedSlice`: A collection of sized items that are
   available both via sorted slice and via reference at the declaration site.
 - `ScatteredMap`: A collection of key-value pairs that are available via
   slice, as well as indexed by key.
