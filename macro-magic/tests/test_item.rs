@@ -114,6 +114,20 @@ __test!(__parse_item[my_macro_parse]:
     item = (fn foo() { /* ... */ })
 ));
 
+__test!(__parse_item[my_macro_parse]:
+(
+    #[other]
+    #[my_macro(unsafe, used(linker))]
+    #[doc]
+    const _: u32 = 1;
+) =>
+(
+    features = (std = std : default, unsafe = unsafe : value, priority = (): default, used_linker = used_linker : value, anonymous = (): default,),
+    self = (my_macro (unsafe, used(linker))),
+    meta = (#[other] #[doc]),
+    item = (const _: u32 = 1;)
+));
+
 __declare_features!(
     section: section_type_parse;
     other {

@@ -426,10 +426,18 @@ macro_rules! __in_section_parse_impl {
 
     (@dispatch features=(
         section = (),
-        raw = (($($aux:ident)?) $name:tt $section_type:tt $unsafe:tt)
+        raw = ($aux:ident $name:tt $section_type:tt $unsafe:tt)
     ) meta=$meta:tt item=$item:tt) => {
         // Raw, feed directly to __in_section_crate!
-        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) $(; (aux=$aux) )? ; (section=$name) ; (meta=$meta) ; (item=$item)));
+        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) ; (aux=$aux) ; (section=$name) ; (meta=$meta) ; (item=$item)));
+    };
+
+    (@dispatch features=(
+        section = (),
+        raw = (() $name:tt $section_type:tt $unsafe:tt)
+    ) meta=$meta:tt item=$item:tt) => {
+        // Raw, feed directly to __in_section_crate!
+        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) ; (section=$name) ; (meta=$meta) ; (item=$item)));
     };
 
     (@dispatch features=(

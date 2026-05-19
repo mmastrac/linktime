@@ -83,8 +83,8 @@ __declare_features!(
         validate: [(($section_path:path))];
     };
     aux {
-        attr: [(aux = $aux_str:ident) => ($aux_str)];
-        example: "aux = MAIN_SECTION";
+        attr: [(aux(main = $aux_str:ident)) => ($aux_str)];
+        example: "aux(main = MAIN_SECTION)";
     };
     name {
         attr: [(name = $name_str:ident) => ($name_str)];
@@ -464,7 +464,7 @@ pub mod __support {
 /// - `no_macro`: Does not generate the submission macro at the definition site.
 ///   This will require any associated [`in_section`] invocations to use the raw
 ///   name of the section.
-/// - `aux = <name>`: Specifies that this section is an auxiliary section, and
+/// - `aux(main = <name>)`: Specifies that this section is an auxiliary section, and
 ///   that the section is named `<name>+<aux>`.
 ///
 /// # Example
@@ -488,5 +488,12 @@ pub use ::linktime_proc_macro::section;
 ///
 /// As a special case, since function declarations by themselves are not sized,
 /// functions in typed sections are split and stored as function pointers.
+///
+/// ## Raw items
+///
+/// This macro can place items into a section that is not normally visible to it
+/// by using `#[in_section(unsafe, type = typed|movable|..., name =
+/// SECTION_NAME, ...)`. Raw items are not validated at compile time, and must
+/// be validated by the author.
 #[cfg(feature = "proc_macro")]
 pub use ::linktime_proc_macro::in_section;

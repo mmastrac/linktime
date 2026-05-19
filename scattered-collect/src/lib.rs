@@ -3,11 +3,14 @@
 #![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 #![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
+pub mod hash;
+pub mod map;
 pub mod referenced_slice;
 pub mod slice;
 pub mod sorted_referenced_slice;
 pub mod sorted_slice;
 
+pub use map::ScatteredMap;
 pub use referenced_slice::ScatteredReferencedSlice;
 pub use slice::ScatteredSlice;
 pub use sorted_referenced_slice::ScatteredSortedReferencedSlice;
@@ -80,6 +83,14 @@ macro_rules! __gather_parse {
             @gather
             $(#[$imeta])*
             $vis static $name: $collection < $ty >;
+        );
+    };
+
+    (@done ($map:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredMap < $key:ty, $value:ty >; ) => {
+        $crate::__map ! (
+            @gather
+            $(#[$imeta])*
+            $vis static $name: $map < $key, $value >;
         );
     };
 

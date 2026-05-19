@@ -1,6 +1,6 @@
 [package]
 name = "link-section"
-version = "0.17.1"
+version = "0.17.2"
 authors.workspace = true
 edition = "2021"
 description = "Link-time initialized slices for Rust, with full support for Linux, macOS, Windows, WASM and many more platforms."

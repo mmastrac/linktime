@@ -1,25 +1,6 @@
-//! A collection of items collected into a slice (link order), with each entry
+//! A collection of items gathered into a slice (link order), with each entry
 //! wrapped as [`Ref`] so `static` items work on targets such as WASM.
-//!
-//! ```
-//! use scattered_collect::{gather, referenced_slice::ScatteredReferencedSlice, scatter};
-//!
-//! #[gather]
-//! static REFERENCED_PLUGINS: ScatteredReferencedSlice<&'static str>;
-//!
-//! #[scatter(REFERENCED_PLUGINS)]
-//! static JSON: &str = "json";
-//!
-//! #[scatter(REFERENCED_PLUGINS)]
-//! static YAML: &str = "yaml";
-//!
-//! fn main() {
-//! # if cfg!(miri) { return; }
-//!     assert_eq!(REFERENCED_PLUGINS.len(), 2);
-//!     assert!(REFERENCED_PLUGINS.contains(&"json"));
-//!     assert_eq!(*JSON, "json");
-//! }
-//! ```
+#![doc = concat!("```rust\n", include_str!("../examples/referenced_slice.rs"), "\n```\n")]
 
 use link_section::TypedReferenceSection;
 
@@ -29,9 +10,13 @@ pub use link_section::Ref;
 /// section and as `static` handles at each declaration site.
 ///
 /// The slice is in an arbitrary link order which is platform-dependent. For a
-/// sorted slice without per-item handles, use [`crate::ScatteredSlice`]. For
+/// sorted slice without per-item handles, use [`crate::ScatteredSortedSlice`]. For
+/// arbitrary link order without per-item handles, use [`crate::ScatteredSlice`]. For
 /// sorted data with stable per-item references, use
-/// [`crate::ScatteredSortedReferencedSlice`].
+/// [`crate::ScatteredSortedReferencedSlice`]. For key lookup, use [`crate::ScatteredMap`].
+/// ```rust
+#[doc = include_str!("../examples/referenced_slice.rs")]
+/// ```
 pub struct ScatteredReferencedSlice<T: 'static> {
     section: &'static TypedReferenceSection<T>,
 }
@@ -102,23 +87,9 @@ macro_rules! __referenced_slice {
         };
     };
     (scatter $collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr) => {
-        $collection ! (( $collection => $vis $name: $ty = $expr ));
+        $collection ! (( $collection => $vis static $name: $ty = $expr; ));
     };
     (@scatter ($collection:ident => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
-        $crate::__referenced_slice!(
-            @scatter [$collection]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-    (@scatter [$collection:ident] $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;) => {
-        $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection, type = reference)]
-            $(#[$imeta])*
-            $vis static $name: $ty = $expr;
-        );
-    };
-    (@scatter ($collection:ident => $vis:vis $name:ident: $ty:ty = $expr:expr)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection, type = reference)]
             $vis static $name: $ty = $expr;

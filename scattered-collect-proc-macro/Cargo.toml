@@ -10,3 +10,4 @@ categories = ["development-tools::procedural-macro-helpers", "development-tools:
 
 [lib]
 proc-macro = true
+

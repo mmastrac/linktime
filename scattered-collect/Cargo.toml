@@ -1,6 +1,6 @@
 [package]
 name = "scattered-collect"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
@@ -8,6 +8,9 @@ repository.workspace = true
 description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
 rust-version = "1.85"
+
+[features]
+__internal = []
 
 [dependencies]
 linktime = { workspace = true , features = ["std", "ctor", "link-section", "dtor"] }
@@ -17,9 +20,17 @@ scattered-collect-proc-macro.workspace = true
 xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 
+[dev-dependencies]
+divan = "0.1.21"
+scattered-collect = { path = ".", version = "*", features = ["__internal"] }
+
 [[example]]
 name = "scattered-collect-intern-strings"
 path = "examples/intern_strings.rs"
+
+[[example]]
+name = "scattered-collect-map"
+path = "examples/map.rs"
 
 [[example]]
 name = "scattered-collect-slice"
@@ -36,6 +47,11 @@ path = "examples/referenced_slice.rs"
 [[example]]
 name = "scattered-collect-sorted-referenced-slice"
 path = "examples/sorted_referenced_slice.rs"
+
+[[bench]]
+name = "map"
+harness = false
+path = "benches/map.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
