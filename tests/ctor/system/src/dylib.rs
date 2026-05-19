@@ -1,6 +1,5 @@
 //! Tests for ctor in dylibs.
 #![allow(dead_code, unused_imports, unused_features, unsafe_code)]
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
 
 use ctor::ctor;
 use dtor::dtor;

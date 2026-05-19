@@ -1,7 +1,4 @@
 #![doc = include_str!("../README.md")]
-#![cfg_attr(linktime_used_linker, allow(unused_features))]
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-#![cfg_attr(linktime_used_linker, doc(test(attr(feature(used_with_arg)))))]
 
 pub mod hash;
 pub mod map;

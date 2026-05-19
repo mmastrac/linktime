@@ -1,7 +1,5 @@
 //! Constructors beyond `ctor-basic` / `ctor-example`: anonymous `#[ctor]`, priorities, nested modules,
 //! inherent `#[ctor]` methods on generic `impl`s, and ctors under a module-level `const`.
-#![cfg_attr(linktime_used_linker, feature(used_with_arg))]
-
 use ctor::ctor;
 use libc_print::*;
 use std::collections::HashMap;
