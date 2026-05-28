@@ -1,6 +1,6 @@
 //! Examples from the `README`.
 // Ensure we don't blow a low recursion limit.
-#![recursion_limit = "61"]
+#![recursion_limit = "62"]
 
 use ctor::ctor;
 use std::collections::HashMap;

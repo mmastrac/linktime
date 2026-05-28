@@ -97,6 +97,7 @@ fn foo() {
                         }
                         __LINK_SECTION_ITEM_FN
                     };
+                ;
                 __LINK_SECTION_CONST_ITEM_VALUE
             };
 }
