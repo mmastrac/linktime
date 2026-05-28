@@ -6,7 +6,7 @@ use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, Span, TokenStream, Tok
 /// ::ctor::__support::ctor_parse!(#[ctor] fn foo() { ... });
 /// ::dtor::__support::dtor_parse!(#[dtor] fn foo() { ... });
 /// ```
-#[allow(unknown_lints, tail_expr_drop_order)]
+#[allow(unknown_lints, tail_expr_drop_order, unused)]
 pub(crate) fn generate(
     macro_crate: &str,
     macro_type: &str,

@@ -276,3 +276,8 @@ fn xxh3_64(data: &[u8]) -> u64 {
 pub(crate) fn xx3hash(s: &str) -> u64 {
     xxh3_64(s.as_bytes())
 }
+
+#[inline]
+pub(crate) fn xx3hash_bytes(s: &[u8]) -> u64 {
+    xxh3_64(s)
+}
