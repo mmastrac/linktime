@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `proc_macro` feature is now required for any non-`unsafe` section.
-- Sections now generate a unique ID for the submission site which allows
-multiple sections to share the same identifier.
+- Non-`unsafe` sections now generate a unique ID for the submission site which
+allows multiple sections to share the same identifier.
 
 ## [0.17.2] - 2026-05-18
 
