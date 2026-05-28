@@ -2,13 +2,13 @@ use link_section::{section, in_section, TypedSection};
 #[allow(non_camel_case_types)]
 struct FOO;
 #[allow(non_snake_case)]
-mod __FOO__link_sectionrs_L4_C8_H12fc1e7efe126199__private_macro {
+mod __FOO__link_sectionrs_L4_C8_H970cb50608f99e49__private_macro {
     #[doc(hidden)]
-    pub use __FOO__link_sectionrs_L4_C8_H12fc1e7efe126199__private_macro as __MACRO;
+    pub use __FOO__link_sectionrs_L4_C8_H970cb50608f99e49__private_macro as __MACRO;
 }
 #[allow(unused_imports)]
 #[doc(hidden)]
-use __FOO__link_sectionrs_L4_C8_H12fc1e7efe126199__private_macro::__MACRO as FOO;
+use __FOO__link_sectionrs_L4_C8_H970cb50608f99e49__private_macro::__MACRO as FOO;
 impl FOO {
     /// Get a `const` reference to the underlying section. In
     /// non-const contexts, `deref` is sufficient.
@@ -19,7 +19,7 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "__start__data_link_section_FOO1vd8YkY8OI2"]
+                            #[link_name = "__start__data_link_section_FOO1cGqclV7HdQ"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -27,14 +27,14 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "__stop__data_link_section_FOO1vd8YkY8OI2"]
+                            #[link_name = "__stop__data_link_section_FOO1cGqclV7HdQ"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
                     },
                 )
             };
-            let name = "_data_link_section_FOO1vd8YkY8OI2";
+            let name = "_data_link_section_FOO1cGqclV7HdQ";
             ::link_section::__support::validate_section_name(name);
             unsafe { <TypedSection<fn()>>::new(name, section) }
         };
@@ -76,7 +76,7 @@ fn foo() {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[used]
-        #[link_section = "_data_link_section_FOO1vd8YkY8OI2"]
+        #[link_section = "_data_link_section_FOO1cGqclV7HdQ"]
         static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
         __LINK_SECTION_CONST_ITEM_VALUE
     };
