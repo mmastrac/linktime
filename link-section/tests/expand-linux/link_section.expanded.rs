@@ -19,7 +19,7 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "__start__data_link_section_FOO1cGqclV7HdQ"]
+                            #[link_name = "__start__data_link_section_FOO3uSVlwHls87"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -27,14 +27,14 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "__stop__data_link_section_FOO1cGqclV7HdQ"]
+                            #[link_name = "__stop__data_link_section_FOO3uSVlwHls87"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
                     },
                 )
             };
-            let name = "_data_link_section_FOO1cGqclV7HdQ";
+            let name = "_data_link_section_FOO3uSVlwHls87";
             ::link_section::__support::validate_section_name(name);
             unsafe { <TypedSection<fn()>>::new(name, section) }
         };
@@ -76,7 +76,7 @@ fn foo() {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[used]
-        #[link_section = "_data_link_section_FOO1cGqclV7HdQ"]
+        #[link_section = "_data_link_section_FOO3uSVlwHls87"]
         static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
         __LINK_SECTION_CONST_ITEM_VALUE
     };
