@@ -305,36 +305,6 @@ pub mod __support {
 
     #[macro_export]
     #[doc(hidden)]
-    macro_rules! __in_section_helper_macro_generic {
-        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=typed) ; $($args)*)); }
-    }
-
-    #[macro_export]
-    #[doc(hidden)]
-    macro_rules! __in_section_helper_macro_generic_mutable {
-        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=mutable) ; $($args)*)); }
-    }
-
-    #[macro_export]
-    #[doc(hidden)]
-    macro_rules! __in_section_helper_macro_generic_movable {
-        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=movable) ; $($args)*)); }
-    }
-
-    #[macro_export]
-    #[doc(hidden)]
-    macro_rules! __in_section_helper_macro_generic_reference {
-        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=reference) ; $($args)*)); }
-    }
-
-    #[macro_export]
-    #[doc(hidden)]
-    macro_rules! __in_section_helper_macro_no_generic {
-        (($($args:tt)*)) => { $crate::__support::in_section_crate!((@v=0 ; (source=section) ; (type=untyped) ; $($args)*)); }
-    }
-
-    #[macro_export]
-    #[doc(hidden)]
     #[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
     macro_rules! __in_section_crate {
         ((@v=0 ; (source=$source:ident) ; (type = untyped) ; (path = $path:path) ; (name = $name:ident) ; (meta = $meta:tt) ; (item = $item:tt))) => {

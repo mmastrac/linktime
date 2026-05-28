@@ -13,12 +13,12 @@ impl Driver {
 }
 
 section! {
-    #[section(typed)]
+    #[section(unsafe, type = typed)]
     static FOO: TypedSection<Driver>;
 }
 
 in_section! {
-    #[in_section(FOO)]
+    #[in_section(unsafe, type = typed, name = FOO)]
     const DRIVER: Driver = Driver::new("driver", || ());
 }
 
