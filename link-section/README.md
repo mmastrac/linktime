@@ -69,6 +69,7 @@ Section definition:
 
  - `#[section(<kind>)]`
  - `#[section(<kind>, aux(main = <path::to::MAIN_SECTION>))]`
+ - `#[section(unsafe, type = <kind>)]`
  - `#[section(unsafe, type = <kind>, name = <name>)]`
 
 Section submission:
