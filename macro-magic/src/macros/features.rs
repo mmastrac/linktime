@@ -1060,7 +1060,7 @@ macro_rules! __make_macros {
             (@validateerror macro=$macro_path:path, test=(
                 $(
                     $dollar(
-                        $feature = [$($validate)*]
+                        $feature = $($validate)*
                     )?
                 )*
                 , $dollar ($dollar rest:tt)*)
@@ -1074,7 +1074,7 @@ macro_rules! __make_macros {
                 $feature_name:ident = [$value_bad:tt],
                 $dollar ($dollar rest:tt)*)
             ) => {
-                compile_error!(concat!("Invalid attribute: ", stringify!($feature_name), " = ", stringify!($value_bad)));
+                compile_error!(concat!("Invalid attribute: ", stringify!($feature_name), " = ", stringify!($value_bad), "\nExpected one of:\n" $($(,"  ",concat! $example,"\n")?)*));
             };
 
             // Extracts all features specified in $all_features and passes them

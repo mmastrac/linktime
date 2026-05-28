@@ -135,6 +135,11 @@ __declare_features!(
         example: "other = N";
         validate: [($numeric:literal)];
     };
+    path {
+        attr: [(path = $($path_segment:tt)*) => (($($path_segment)*))];
+        example: "path = my_crate::SECTION_NAME";
+        validate: [(($path_segment:path))];
+    };
     /// One of `untyped`, `typed`, `reference`, or `movable` (same choices as
     /// `#[section(...)]`).
     section_type {
@@ -152,7 +157,7 @@ __test!(__parse_item[section_type_parse]:
     fn foo() { /* ... */ }
 ) =>
 (
-    features = (other = (): default, section_type = typed : value,),
+    features = (other = (): default, path = (): default, section_type = typed : value,),
     self = (section (typed)),
     meta = (),
     item = (fn foo() { /* ... */ })
@@ -164,70 +169,44 @@ __test!(__parse_item[section_type_parse]:
     fn foo() { /* ... */ }
 ) =>
 (
-    features = (other = 1: value, section_type = typed : value,),
+    features = (other = 1: value, path = (): default, section_type = typed : value,),
     self = (section (typed, other = 1)),
     meta = (),
     item = (fn foo() { /* ... */ })
 ));
 
-__test!(__parse_type: (SomeType) =>
+__test!(__parse_item[section_type_parse]:
 (
-    type = (SomeType)
-    prefix = ()
-    final = SomeType
-    generics = ()
-));
-__test!(__parse_type: (::SomeType) =>
+    #[section(typed, other = 1, path = my_crate::SECTION_NAME)]
+    fn foo() { /* ... */ }
+) =>
 (
-    type = (:: SomeType)
-    prefix = (::)
-    final = SomeType
-    generics = ()
-));
-__test!(__parse_type: (::root::SomeType) =>
-(
-    type = (:: root :: SomeType)
-    prefix = (:: root ::)
-    final = SomeType
-    generics = ()
+    features = (other = 1: value, path = (my_crate::SECTION_NAME): value, section_type = typed : value,),
+    self = (section (typed, other = 1, path = my_crate::SECTION_NAME)),
+    meta = (),
+    item = (fn foo() { /* ... */ })
 ));
 
-__test!(__parse_type: (root::SomeType) =>
+__test_error!($ __parse_item[section_type_parse]:
 (
-    type = (root :: SomeType)
-    prefix = (root ::)
-    final = SomeType
-    generics = ()
-));
+    #[section(typed, other = (1), path = my_crate::SECTION_NAME)]
+    fn foo() { /* ... */ }
+) =>
+r#"Invalid attribute: other = (1)
+Expected one of:
+  other = N
+  path = my_crate::SECTION_NAME
+  untyped | typed | reference | movable
+"#);
 
-__test!(__parse_type: (::root::more::SomeType) =>
+__test_error!($ __parse_item[section_type_parse]:
 (
-    type = (:: root:: more :: SomeType)
-    prefix = (:: root:: more ::)
-    final = SomeType
-    generics = ()
-));
-
-__test!(__parse_type: (root::more::SomeType) =>
-(
-    type = (root:: more :: SomeType)
-    prefix = (root:: more ::)
-    final = SomeType
-    generics = ()
-));
-
-__test!(__parse_type: (SomeType<T, U>) =>
-(
-    type = (SomeType < T, U >)
-    prefix = ()
-    final = SomeType
-    generics = (T, U)
-));
-
-__test!(__parse_type: (::crazy::long::path_to_type::with::generics::SomeType<T, U>) =>
-(
-    type = (:: crazy:: long :: path_to_type :: with :: generics :: SomeType < T, U >)
-    prefix = (:: crazy:: long :: path_to_type :: with :: generics ::)
-    final = SomeType
-    generics = (T, U)
-));
+    #[section(other = (1), typed, path = my_crate::SECTION_NAME)]
+    fn foo() { /* ... */ }
+) =>
+r#"Invalid attribute: other = (1)
+Expected one of:
+    other = N
+    path = my_crate::SECTION_NAME
+    untyped | typed | reference | movable
+"#);

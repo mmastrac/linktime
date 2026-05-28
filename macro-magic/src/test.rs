@@ -55,6 +55,59 @@ macro_rules! __test {
     };
 }
 
+/// Unit test for a macro expecting an error.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __test_error {
+    ($dollar:tt $macro:path $([$($macro_args:tt)*])?: $input:tt => $output:literal) => {
+        const _: () = {
+            macro_rules! compile_error {
+                ($dollar ($tt:tt)*) => {
+                    const INPUT: &str = concat!($dollar ($tt)*);
+                };
+            }
+
+            const INPUT: &str = "Failed to evaluate input";
+            {
+                __perform!(
+                    $input,
+                    __chain[
+                        $macro $([$($macro_args)*])?,
+                    ]
+                );
+
+                const OUTPUT: &str = $output;
+
+                if let Some(index) = $crate::test::const_str_eq_test(
+                    INPUT,
+                    OUTPUT,
+                ) {
+                    const MISMATCH_INDEX: usize = match $crate::test::const_str_eq_test(
+                        INPUT,
+                        OUTPUT,
+                    ) { Some(index) => index, None => 0 };
+                    const MISMATCH: &str = match core::str::from_utf8(INPUT.as_bytes().split_at(MISMATCH_INDEX).1) {
+                        Ok(s) => s,
+                        Err(_) => "<invalid UTF-8>",
+                    };
+                    const SLICE: &[&str] = &[
+                        "Input and output do not match, processed input:\n", INPUT,
+                        "\n... was not equal to expected output:\n", OUTPUT,
+                        "\n... in ",
+                        file!(),
+                        concat!(":", line!()),
+                        " at: '",
+                        MISMATCH,
+                        "'"
+                    ];
+                    let mut out = [0; $crate::test::const_str_slice_len(SLICE)];
+                    panic!("{}", $crate::test::const_str_slice_concat(SLICE, &mut out));
+                }
+            }
+        };
+    };
+}
+
 /// Calculates the length of a slice of strings.
 pub const fn const_str_slice_len(s: &[&str]) -> usize {
     let mut len = 0;
