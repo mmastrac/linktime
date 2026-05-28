@@ -5,25 +5,25 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_standard {
-    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    (movable, name=$name:tt, type=$generic_ty:ty) => {
         {
             $crate::__support::MovableBounds::new(
                 $crate::__support::PtrBounds::new(
-                    $crate::__address_of_symbol!(item data start $ident $($aux)?),
-                    $crate::__address_of_symbol!(item data end $ident $($aux)?),
+                    $crate::__address_of_symbol!(item data start $name),
+                    $crate::__address_of_symbol!(item data end $name),
                 ),
                 $crate::__support::PtrBounds::new(
-                    $crate::__address_of_symbol!(backref data start $ident $($aux)?),
-                    $crate::__address_of_symbol!(backref data end $ident $($aux)?),
+                    $crate::__address_of_symbol!(backref data start $name),
+                    $crate::__address_of_symbol!(backref data end $name),
                 ),
             )
         }
     };
-    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         {
             $crate::__support::PtrBounds::new(
-                $crate::__address_of_symbol!(item data start $ident $($aux)?),
-                $crate::__address_of_symbol!(item data end $ident $($aux)?),
+                $crate::__address_of_symbol!(item data start $name),
+                $crate::__address_of_symbol!(item data end $name),
             )
         }
     }
@@ -34,14 +34,14 @@ pub use crate::__get_section_standard as get_section;
 crate::__def_section_name! {
     __section_name_standard,
     {
-        data bare =>    ("_data", "_link_section_") __ ();
-        data section => ("_data", "_link_section_") __ ();
-        data start =>   ("__start_", "_data", "_link_section_") __ ();
-        data end =>     ("__stop_", "_data", "_link_section_") __ ();
-        code bare =>    ("_text", "_link_section_") __ ();
-        code section => ("_text", "_link_section_") __ ();
-        code start =>   ("__start_", "_text", "_link_section_") __ ();
-        code end =>     ("__stop_", "_text", "_link_section_") __ ();
+        data bare =>    (           "_data" "_link_section_") __ ();
+        data section => (           "_data" "_link_section_") __ ();
+        data start =>   ("__start_" "_data" "_link_section_") __ ();
+        data end =>     ("__stop_"  "_data" "_link_section_") __ ();
+        code bare =>    (           "_text" "_link_section_") __ ();
+        code section => (           "_text" "_link_section_") __ ();
+        code start =>   ("__start_" "_text" "_link_section_") __ ();
+        code end =>     ("__stop_"  "_text" "_link_section_") __ ();
     }
     AUXILIARY = "_";
     REFS = "_r_";

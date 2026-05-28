@@ -4,7 +4,7 @@
 use link_section::section;
 
 /// Operations.
-#[section(mutable, no_macro)]
+#[section(mutable, unsafe, name = OPERATIONS)]
 pub static OPERATIONS: link_section::TypedMutableSection<&'static str>;
 
 mod operations {

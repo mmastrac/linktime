@@ -15,13 +15,67 @@ A crate for defining linker-backed sections in Rust.
 `link-section` provides two attributes:
 
 - `#[section(...)]` defines a section handle. The handle is a `static` item used
-  to inspect the section at runtime, usually as a slice.
-- `#[in_section(SECTION)]` submits an item to that section. A submitted item is
-  an item annotated with `#[in_section(...)]`; depending on the section kind, it
-  may also remain usable directly at the submission site.
+  to inspect the section at runtime, usually as a slice. The handle's visibility
+  determines where items may be submitted: public handles can be submitted from
+  any module, while private handles can only be submitted from the module that
+  defines them.
+- `#[in_section(path::to::SECTION)]` submits an item to that section. A
+  submitted item is an item annotated with `#[in_section(...)]`; depending on
+  the section kind, it may also remain usable directly at the submission site.
+  The `path::to::SECTION` must be visible to the submission site.
 
 Together, these attributes let separately-declared items be collected into one
 linker section and accessed through a single section handle.
+
+## Visibility
+
+Importantly, even though the linker is used to collect items, the visibility of
+the section handle determines where items may be submitted: public handles can
+be submitted from any crate (assuming the submitting crate references the one
+with the collection handle), while private handles can only be submitted from
+the crate that defines them.
+
+The section name is generated from the name of the item and a location of the
+item within the source tree. This means that you may have more than one
+independent section with the item name in a project, and they will not conflict.
+
+Note that if you are generating sections from a macro, you _must_ include at
+least one token from the top-level macro call in the section definition to avoid
+conflicts with tokens that are provided purely from the macro itself.
+
+To allow for submission of items without visibility constraints, the crate
+provides an `unsafe` option for the submission macro where the section's
+name and attributes may be specified manually:
+
+```rust
+pub struct MyType(u8);
+
+mod my_private_section {
+    // Specify a section name so it can be used without a direct reference.
+    #[section(typed, unsafe, name = my_crate::SECTION_NAME)]
+    static MY_SECTION: link_section::TypedSection<MyType>;
+}
+
+mod elsewhere {
+    // This must match the definition site!
+    #[in_section(unsafe, name = my_crate::SECTION_NAME, type = typed)] // optionally: aux(main = MAIN_SECTION)
+    static ITEM: MyType = MyType(42);
+}
+```
+
+### Syntax
+
+Section definition:
+
+ - `#[section(<kind>)]`
+ - `#[section(<kind>, aux(main = <path::to::MAIN_SECTION>))]`
+ - `#[section(unsafe, type = <kind>)]`
+ - `#[section(unsafe, type = <kind>, name = <name>)]`
+
+Section submission:
+
+ - `#[in_section(path::to::SECTION)]`
+ - `#[in_section(unsafe, type = <kind>, name = <name>)]`
 
 ## Section Kinds
 

@@ -60,22 +60,11 @@ impl<T: 'static> ::core::ops::Deref for ScatteredReferencedSlice<T> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __referenced_slice {
-    (gather $vis:vis $name:ident: $ty:ty) => {
-        $crate::__referenced_slice!(@gather $vis static $name: ScatteredReferencedSlice<$ty>;);
-    };
-    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
-        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __referenced_slice_private_macro__) ({
-            ($passthru:tt) => {
-                $crate::__referenced_slice!(@scatter [$name] $passthru);
-            };
-        }));
-
-        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __referenced_slice_private_macro__) (as $name;));
-
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
             $crate::__support::link_section::declarative::section!(
-                #[section(reference, no_macro)]
+                #[section(unsafe, type = reference, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedReferenceSection<$ty>;
             );
 
@@ -86,9 +75,9 @@ macro_rules! __referenced_slice {
             }
         };
     };
-    (@scatter [$collection_name:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] $types:tt ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection_name, type = reference)]
+            #[in_section(unsafe, name = $collection_name :: $unique, type = reference)]
             $vis static $name: $ty = $expr;
         );
     };
@@ -98,10 +87,10 @@ macro_rules! __referenced_slice {
 mod tests {
     use crate::referenced_slice::ScatteredReferencedSlice;
 
-    __referenced_slice!(gather pub TEST_REF_SLICE: u32);
-    __referenced_slice!(@scatter [TEST_REF_SLICE] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_A: u32 = 1;));
-    __referenced_slice!(@scatter [TEST_REF_SLICE] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_B: u32 = 3;));
-    __referenced_slice!(@scatter [TEST_REF_SLICE] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_C: u32 = 2;));
+    __referenced_slice!(@gather A pub static TEST_REF_SLICE: ScatteredReferencedSlice<u32>;);
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_A: u32 = 1;));
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_B: u32 = 3;));
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_C: u32 = 2;));
 
     #[test]
     fn test_scattered_referenced_slice() {

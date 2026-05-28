@@ -53,52 +53,48 @@ macro_rules! __scatter_parse {
 #[macro_export]
 macro_rules! __gather_parse {
     // Send the #[gather]'d item into the collection's private macro.
+
+    (@dispatch $macro:ident $(#[$imeta:meta])* $vis:vis static $name:ident $($rest:tt)* ) => {
+        $crate::__support::combine!(output=ident prefix=($crate::__gather_parse!) paren=() paren_prefix=(@unique ) input=(
+            H
+            __LOCATIONHASH__(of=($(#[$imeta])* $vis static $name $($rest)*))
+        ) paren_suffix=($macro $(#[$imeta])* $vis static $name $($rest)*) suffix=(;));
+    };
+
+    (@unique $unique:ident $macro:ident $(#[$imeta:meta])* $vis:vis static $name:ident: $collection:ident ($($ty:tt)*);) => {
+        $crate::$macro!(@gather $unique $(#[$imeta])* $vis static $name: $collection <$($ty)*>;);
+
+        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __ $macro __ $unique) ({
+            ($passthru:tt) => {
+                $crate::$macro!(@scatter [$name :: $unique] [$($ty)*] $passthru);
+            };
+        }));
+
+        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __ $macro __ $unique) (as $name;));
+    };
+
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >; ) => {
-        $crate::__slice ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $collection < $ty >;
-        );
+        $crate::__support::gather_parse!(@dispatch __slice $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedSlice < $ty:ty >; ) => {
-        $crate::__sorted_slice ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $collection < $ty >;
-        );
+        $crate::__support::gather_parse!(@dispatch __sorted_slice $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredReferencedSlice < $ty:ty >; ) => {
-        $crate::__referenced_slice ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $collection < $ty >;
-        );
+        $crate::__support::gather_parse!(@dispatch __referenced_slice $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSortedReferencedSlice < $ty:ty >; ) => {
-        $crate::__sorted_referenced_slice ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $collection < $ty >;
-        );
+        $crate::__support::gather_parse!(@dispatch __sorted_referenced_slice $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
 
     (@done ($map:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredMap < $key:ty, $value:ty >; ) => {
-        $crate::__map ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $map < $key, $value >;
-        );
+        $crate::__support::gather_parse!(@dispatch __map $(#[$imeta])* $vis static $name: $map ( $key, $value ););
     };
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredIterable < $ty:ty >; ) => {
-        $crate::__iterable ! (
-            @gather
-            $(#[$imeta])*
-            $vis static $name: $collection < $ty >;
-        );
+        $crate::__support::gather_parse!(@dispatch __iterable $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
 
     (@done #[gather] $($rest:tt)* ) => {
@@ -131,6 +127,7 @@ pub mod __support {
 
     pub use ctor;
     pub use link_section;
+    pub use linktime_proc_macro::combine;
     pub use scattered_collect_proc_macro::ident_concat;
 }
 

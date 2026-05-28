@@ -14,8 +14,6 @@ impl Driver {
 
 #[allow(non_camel_case_types)]
 struct FOO;
-#[doc(hidden)]
-use ::link_section::__in_section_helper_macro_generic as FOO;
 impl FOO {
     /// Get a `const` reference to the underlying section. In
     /// non-const contexts, `deref` is sufficient.
@@ -77,10 +75,10 @@ impl ::core::iter::IntoIterator for FOO {
 const DRIVER: Driver =
     const {
             type __InSecStoredTy =
-                <FOO as ::link_section::__support::SectionItemType>::Item;
+                <::link_section::TypedSection<Driver> as
+                ::link_section::__support::SectionItemType>::Item;
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
                 Driver::new("driver", || ());
-            ;
             #[used]
             #[export_name =
             "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L22_C1"]

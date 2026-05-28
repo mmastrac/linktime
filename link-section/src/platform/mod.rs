@@ -193,32 +193,36 @@ macro_rules! __def_section_name {
         HASH_LENGTH = $__hash_length:literal;
         VALID_SECTION_CHARS = $__valid_section_chars:literal;
     ) => {
-        /// Internal macro for generating a section name.
-        #[macro_export]
-        #[doc(hidden)]
-        macro_rules! $__name {
-            $(
-                (string item $__section $__type $name:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+        mod $__name {
+            /// Internal macro for generating a section name.
+            #[macro_export]
+            #[doc(hidden)]
+            macro_rules! $__name {
+                $(
+                    (string item $__section $__type ($name:tt () $unsafe:tt)) => {
+                        $crate::__support::hash!($unsafe ($__prefix) ($name) ($__suffix) $__hash_length $__max_length $__valid_section_chars)
+                    };
+                    (string item $__section $__type ($aux:tt $name:tt $unsafe:tt)) => {
+                        $crate::__support::hash!($unsafe ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars)
+                    };
+                    (string backref $__section $__type ($name:tt () $unsafe:tt)) => {
+                        $crate::__support::hash!($unsafe ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars)
+                    };
+                    (string backref $__section $__type ($aux:tt $name:tt $unsafe:tt)) => {
+                        $crate::__support::hash!($unsafe ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars)
+                    };
+                )*
+                ($pattern:tt $unknown_ref_or_item:ident $unknown_section:ident $unknown_type:ident $name:ident) => {
+                    const _: () = {
+                        compile_error!(concat!("Unknown section type: `", stringify!($unknown_ref_or_item), "/", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
+                    }
                 };
-                (string item $__section $__type $name:ident $aux:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
-                };
-                (string backref $__section $__type $name:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
-                };
-                (string backref $__section $__type $name:ident $aux:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
-                };
-            )*
-            ($pattern:tt $unknown_ref_or_item:ident $unknown_section:ident $unknown_type:ident $name:ident) => {
-                const _: () = {
-                    compile_error!(concat!("Unknown section type: `", stringify!($unknown_ref_or_item), "/", stringify!($unknown_section), "/", stringify!($unknown_type), "`"));
-                };
-            };
+            }
+
+            pub use $__name as section_name;
         }
 
-        pub use $__name as section_name;
+        pub use $__name::section_name;
 
         pub(crate) const MAX_LENGTH: usize = $__max_length;
         pub(crate) const VALID_SECTION_CHARS: &[u8] = $__valid_section_chars.as_bytes();

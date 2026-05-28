@@ -7,13 +7,13 @@ use core::sync::atomic::{AtomicU8, Ordering};
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_wasm {
-    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    (movable, name=$name:tt, type=$generic_ty:ty) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
-                string item data bare $ident $($aux)?
+                string item data bare $name
             );
             $crate::__support::add_section_link_attribute!(
-                item data bounds $ident $($aux)?
+                item data bounds $name
                 #[export_name = __]
                 #[used]
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionMovableInfo> =
@@ -25,13 +25,13 @@ macro_rules! __get_section_wasm {
             unsafe { $crate::__support::MovableBounds::new(&raw const __LINK_SECTION_INFO) }
         }
     };
-    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         {
             static __LINK_SECTION_NAME: &'static str = $crate::__support::section_name!(
-                string item data bare $ident $($aux)?
+                string item data bare $name
             );
             $crate::__support::add_section_link_attribute!(
-                item data bounds $ident $($aux)?
+                item data bounds $name
                 #[export_name = __]
                 #[used]
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionInfo> =
@@ -51,11 +51,11 @@ use crate::MovableBackref;
 crate::__def_section_name! {
     __section_name_wasm,
     {
-        data bare =>    (".data", ".link_section.") __ ();
-        data section => (".data", ".link_section.") __ ();
-        code bare =>    (".text", ".link_section.") __ ();
-        code section => (".text", ".link_section.") __ ();
-        data bounds =>  (".data", ".link_section.") __ (".bounds");
+        data bare =>    (".data" ".link_section.") __ ();
+        data section => (".data" ".link_section.") __ ();
+        code bare =>    (".text" ".link_section.") __ ();
+        code section => (".text" ".link_section.") __ ();
+        data bounds =>  (".data" ".link_section.") __ (".bounds");
     }
     AUXILIARY = ".";
     REFS = ".r.";
@@ -77,16 +77,16 @@ macro_rules! __register_wasm_item {
 #[macro_export]
 #[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 macro_rules! __register_wasm_item {
-    (movable, value=$value:expr, slot=$slot:expr, section=$section:ident $($aux:ident)?) => {
+    (movable, value=$value:expr, slot=$slot:expr, section=$section:tt) => {
         // Register a counting item.
         $crate::__add_section_link_attribute!(
-            item data section $section $($aux)?
+            item data section $section
             #[link_section = __]
             static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
         );
 
         $crate::__add_section_link_attribute!(
-            item data bounds $section $($aux)?
+            item data bounds $section
             #[link_name = __]
             extern "C" {
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionMovableInfo>;
@@ -113,16 +113,16 @@ macro_rules! __register_wasm_item {
             __LINK_SECTION_ITEM_FN
         };
     };
-    ($section_type:ident, value=$value:expr, $(ref=$ident:ident,)? section=$section:ident $($aux:ident)?) => {
+    ($section_type:ident, value=$value:expr, $(ref=$ident:ident,)? section=$section:tt) => {
         // Register a counting item
         $crate::__add_section_link_attribute!(
-            item data section $section $($aux)?
+            item data section $section
             #[link_section = __]
             static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
         );
 
         $crate::__add_section_link_attribute!(
-            item data bounds $section $($aux)?
+            item data bounds $section
             #[link_name = __]
             extern "C" {
                 static __LINK_SECTION_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionInfo>;

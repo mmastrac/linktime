@@ -22,9 +22,9 @@ mod referenced_operations {
     use link_section::{in_section, section};
 
     #[section(reference)]
-    pub static REF_OPERATIONS: link_section::TypedReferenceSection<&'static str>;
+    pub static OPERATIONS: link_section::TypedReferenceSection<&'static str>;
 
-    #[in_section(REF_OPERATIONS)]
+    #[in_section(OPERATIONS)]
     pub static REF_OPERATION_1: &'static str = "ref_operation_1";
 }
 
@@ -32,6 +32,11 @@ fn main() {
     for op in operations::OPERATIONS {
         println!("Operation: {}", op);
     }
+    for op in referenced_operations::OPERATIONS {
+        println!("Referenced Operation: {}", op);
+    }
+    println!("OPERATIONS: {:?}", operations::OPERATIONS);
+    println!("REF_OPERATIONS: {:?}", referenced_operations::OPERATIONS);
     println!(
         "REF_OPERATION_1: {}",
         *referenced_operations::REF_OPERATION_1

@@ -140,8 +140,18 @@ pub mod collect {
     // These sections are shared between multiple versions of the ctor crate.
 
     link_section::declarative::section!(
-        #[section(mutable, no_macro)]
+        #[section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
         static _CTOR0_ISIZE_FN: link_section::TypedMutableSection<Constructor>;
+    );
+
+    link_section::declarative::section!(
+        #[section(unsafe, type = typed, name = _CTR0GR_ISIZE_FN)]
+        static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
+    );
+
+    link_section::declarative::in_section!(
+        #[in_section(unsafe, type = typed, name = _CTR0GR_ISIZE_FN)]
+        pub static GUARD_ATOMIC: AtomicU8 = AtomicU8::new(GUARD_NOT_RUN);
     );
 
     #[macro_export]
@@ -200,16 +210,6 @@ pub mod collect {
             );
         };
     }
-
-    link_section::declarative::section!(
-        #[section(typed)]
-        static _CTR0GR_ISIZE_FN: link_section::TypedSection<AtomicU8>;
-    );
-
-    link_section::declarative::in_section!(
-        #[in_section(unsafe, type = typed, name = _CTR0GR_ISIZE_FN)]
-        pub static GUARD_ATOMIC: AtomicU8 = AtomicU8::new(GUARD_NOT_RUN);
-    );
 }
 
 /// Declarative form of the `#[ctor]` macro.

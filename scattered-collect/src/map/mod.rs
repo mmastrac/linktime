@@ -210,25 +210,23 @@ impl<K: 'static, V: 'static> __ScatteredMapState<K, V> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __map {
-    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $map:ident < $key:ty, $value:ty >;) => {
-        $crate::__map!(@declare_scatter_macro $name, $key, $value, $vis);
-
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $map:ident < $key:ty, $value:ty >;) => {
         $(#[$meta])*
         $vis static $name: $map<$key, $value> = {
             $crate::__support::link_section::declarative::section!(
-                #[section(typed, no_macro)]
+                #[section(unsafe, type = typed, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedSection<
                     $crate::map::MapRecord<$key, $value>
                 >;
             );
 
             $crate::__support::link_section::declarative::section!(
-                #[section(mutable, no_macro, aux(main = $name))]
+                #[section(unsafe, type = mutable, name = $name :: $unique :: MAP_META)]
                 static MAP_META: $crate::__support::link_section::TypedMutableSection<u8>;
             );
 
             $crate::__support::link_section::declarative::in_section!(
-                #[in_section(unsafe, name = MAP_META, aux(main = $name), type = mutable)]
+                #[in_section(unsafe, type = mutable, name = $name :: $unique :: MAP_META)]
                 const _: $crate::map::MapMetadataChunkBase = $crate::map::MAP_METADATA_CHUNK_BASE_ZERO;
             );
 
@@ -244,27 +242,9 @@ macro_rules! __map {
             $crate::map::ScatteredMap::__new(&__MAP_STATE)
         };
     };
-    (@declare_scatter_macro $name:ident, $key:ty, $value:ty, $vis:vis) => {
-        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (
-            __ $name __map_scatter__
-        ) ({
-            ($passthru:tt) => {
-                $crate::__map!(@scatter [$name] [$key] [$value] $passthru);
-            };
-        }));
-
-        $crate::__support::ident_concat!(
-            (#[doc(hidden)] $vis use)
-            (__ $name __map_scatter__)
-            (as $name;)
-        );
-    };
-    (scatter [$collection:ident] => [$key:ty] [$value:ty] $vis:vis $name:ident: $ty:ty = ($key_expr:expr, $value_expr:expr)) => {
-        $collection ! (( [$collection] => $vis static $name: $ty = ($key_expr, $value_expr); ));
-    };
-    (@scatter [$collection_name:ident] [$key:ty] [$value:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = ($key_expr:expr, $value_expr:expr);)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] [$key:ty , $value:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = ($key_expr:expr, $value_expr:expr);)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection_name, type = typed)]
+            #[in_section(unsafe, name = $collection_name :: $unique, type = typed)]
             $(#[$imeta])*
             $vis $kind $name: $crate::map::MapRecord<$key, $value> = $crate::map::MapRecord::new(
                 $key_expr,
@@ -273,7 +253,7 @@ macro_rules! __map {
             );
         );
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = MAP_META, aux(main = $collection_name), type = mutable)]
+            #[in_section(unsafe, name = $collection_name :: $unique :: MAP_META, type = mutable)]
             const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
@@ -283,9 +263,9 @@ macro_rules! __map {
 mod link_tests {
     use crate::ScatteredMap;
 
-    __map!(@gather pub static TEST_MAP: ScatteredMap<&'static str, u32>;);
-    __map!(scatter [TEST_MAP] => [&'static str] [u32] APPLE: (&'static str, u32) = ("apple", 1));
-    __map!(scatter [TEST_MAP] => [&'static str] [u32] BANANA: (&'static str, u32) = ("banana", 2));
+    __map!(@gather A pub static TEST_MAP: ScatteredMap<&'static str, u32>;);
+    __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static APPLE: (&'static str, u32) = ("apple", 1);));
+    __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static BANANA: (&'static str, u32) = ("banana", 2);));
 
     #[test]
     fn scattered_map_gather_scatter_find() {
@@ -311,17 +291,17 @@ mod link_tests {
         }
     }
 
-    __map!(@gather static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
+    __map!(@gather A static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
 
     macro_rules! make_test {
         ($($name:ident)*) => {
             $(
-            __map!(scatter [TEST_MAP_2] => [&'static str] [Record]
+            __map!(@scatter [TEST_MAP_2::A] [&'static str, Record] ([TEST_MAP_2] => pub static
                 $name: (&'static str, Record) = (
                     stringify!($name),
                     Record::new(stringify!($name), |_key| println!(stringify!($name)))
-                )
-            );
+                );
+            ));
             )*
         }
     }

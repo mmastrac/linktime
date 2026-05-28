@@ -82,10 +82,10 @@ macro_rules! __section_parse_impl {
             features = (
                 aux = $aux:tt: $aux_spec:ident,
                 crate_path = $crate_path:tt: $crate_path_spec:ident,
-                macro_unique_name = $macro_unique_name:tt: $macro_unique_name_spec:ident,
-                no_macro = $no_macro:tt: $no_macro_spec:ident,
+                name = $name:tt: $name_spec:ident,
                 proc_macro = $proc_macro:tt: $proc_macro_spec:ident,
                 type = $section_type:tt: $section_type_spec:ident,
+                unsafe = $unsafe:tt: $unsafe_spec:ident,
             ),
             self = ( $($inner:tt)* ),
             meta = ($(#[$meta:meta])*),
@@ -103,13 +103,16 @@ macro_rules! __section_parse_impl {
 
         // Parse the aux path so we can take its final segment
         $crate::__parse_type!(@entry next=$crate::__section_parse_impl[[
-            @generate features = (
-                no_macro=$no_macro,
-                proc_macro=$proc_macro,
-                macro_unique_name=$macro_unique_name,
-                name=$ident,
+            @types features = (
                 type=$section_type,
+                macro=(
+                    proc_macro=$proc_macro,
+                ),
+                definition=(self=$($inner)* meta=$($meta)* item=$vis static $ident : $($type_rest)*),
+                ident=$ident,
+                name=$name,
                 generic=$generics,
+                unsafe=$unsafe,
             ),
             item = ($(#[$meta])* $vis static $ident: $type),
             ]], input=$aux
@@ -136,104 +139,220 @@ macro_rules! __section_parse_impl {
     };
 
     // Missing type (will have already errored)
-    ([@generate features = (
-        no_macro=$no_macro:tt,
-        proc_macro=$proc_macro:tt,
-        macro_unique_name=$macro_unique_name:tt,
-        name=$ident:ident,
+    ([@types features = (
         type=(),
-        generic=$generics:tt,
+        $($rest:tt)*
     ),
     item = $item:tt,], $type:tt) => {};
 
     // No aux
-    ([@generate features = (
-        no_macro=$no_macro:tt,
-        proc_macro=$proc_macro:tt,
-        macro_unique_name=$macro_unique_name:tt,
-        name=$ident:ident,
+    ([@types features = (
         type=$section_type:ident,
+        macro=$macro:tt,
+        definition=$definition:tt,
+        ident=$ident:ident,
+        name=$name:tt,
         generic=$generics:tt,
+        unsafe=$unsafe:tt,
     ),
     item = $item:tt,], (
         type = ()
     )) => {
-        $crate::__section_parse_impl!(@generate
-            features = (
-                macro=(
-                    no_macro=$no_macro,
-                    proc_macro=$proc_macro,
-                    macro_unique_name=$macro_unique_name,
-                    args=(),
-                ),
-                name=$ident (),
+        $crate::__parse_type!(@entry next=$crate::__section_parse_impl[[
+            @types features = (
                 type=$section_type,
+                macro=$macro,
+                definition=$definition,
+                ident=$ident,
+                aux=(),
                 generic=$generics,
+                unsafe=$unsafe,
             ),
             item = $item,
-        );
+        ]], input=$name);
     };
 
     // Yes aux
-    ([@generate features = (
-        no_macro=$no_macro:tt,
-        proc_macro=$proc_macro:tt,
-        macro_unique_name=$macro_unique_name:tt,
-        name=$ident:ident,
+    ([@types features = (
         type=$section_type:ident,
+        macro=$macro:tt,
+        definition=$definition:tt,
+        ident=$ident:ident,
+        name=$name:tt,
         generic=$generics:tt,
+        unsafe=$unsafe:tt,
     ),
     item = $item:tt,], (
         type = $type:tt
-        prefix = $prefix:tt
+        prefix = ($(:: $name_prefix:ident)? $($name_rest:ident ::)*)
         final = $aux:ident
         generics = ()
     )) => {
-        $crate::__section_parse_impl!(@generate
-            features = (
-                macro=(
-                    no_macro=$no_macro,
-                    proc_macro=$proc_macro,
-                    macro_unique_name=$macro_unique_name,
-                    args=(aux=$aux,),
-                ),
-                name=$ident ($aux $type),
+        $crate::__parse_type!(@entry next=$crate::__section_parse_impl[[
+            @types features = (
                 type=$section_type,
+                macro=$macro,
+                definition=$definition,
+                ident=$ident,
+                aux=($(:: $name_prefix)? $($name_rest ::)* $aux),
                 generic=$generics,
+                unsafe=$unsafe,
+            ),
+            item = $item,
+        ]], input=$name);
+    };
+
+    // No name
+    ([@types features = (
+        type=$section_type:ident,
+        macro=$macro:tt,
+        definition=$definition:tt,
+        ident=$ident:ident,
+        aux=$aux:tt,
+        generic=$generics:tt,
+        unsafe=$unsafe:tt,
+    ),
+    item = $item:tt,], (
+        type = ()
+    )) => {
+        $crate::__section_parse_impl!(
+            @generate features = (
+                type=$section_type,
+                macro=$macro,
+                definition=$definition,
+                aux=$aux,
+                name=($ident),
+                generic=$generics,
+                unsafe=$unsafe,
             ),
             item = $item,
         );
     };
 
+    // Yes name
+    ([@types features = (
+        type=$section_type:ident,
+        macro=$macro:tt,
+        definition=$definition:tt,
+        ident=$ident:ident,
+        aux=$aux:tt,
+        generic=$generics:tt,
+        unsafe=$unsafe:tt,
+    ),
+    item = $item:tt,], (
+        type = $type:tt
+        prefix = ($(:: $name_prefix:ident)? $($name_rest:ident ::)*)
+        final = $name:ident
+        generics = ()
+    )) => {
+        $crate::__section_parse_impl!(
+            @generate features = (
+                type=$section_type,
+                macro=$macro,
+                definition=$definition,
+                aux=$aux,
+                name=($(:: $name_prefix)? $($name_rest ::)* $name),
+                generic=$generics,
+                unsafe=$unsafe,
+            ),
+            item = $item,
+        );
+    };
+
+    // Finalize name/aux w/unsafe
     (@generate
         features = (
-            macro=$macro:tt,
-            name=$name:ident ($($aux:ident $aux_type:tt)? ),
             type=$section_type:ident,
+            macro=(
+                proc_macro=$proc_macro:tt,
+            ),
+            definition=$definition:tt,
+            aux=$aux:tt,
+            name=$name:tt,
+            generic=$generic_ty:ty,
+            unsafe=unsafe,
+        ),
+        item = $item:tt,
+    ) => {
+        $crate::__section_parse_impl!(
+            @generate features = (
+                type=$section_type,
+                macro=(
+                    proc_macro=$proc_macro,
+                    unsafe=unsafe,
+                    args=(
+                        section=($name $aux unsafe),
+                    ),
+                ),
+                name=($name $aux unsafe),
+                generic=$generic_ty,
+            ),
+            item = $item,
+        );
+    };
+
+    // Finalize name/aux w/unsafe
+    (@generate
+        features = (
+            type=$section_type:ident,
+            macro=(
+                proc_macro=$proc_macro:tt,
+            ),
+            definition=$definition:tt,
+            aux=$aux:tt,
+            name=$name:tt,
+            generic=$generic_ty:ty,
+            unsafe=$unsafe:tt,
+        ),
+        item = $item:tt,
+    ) => {
+        $crate::__section_parse_impl!(
+            @generate features = (
+                type=$section_type,
+                macro=(
+                    proc_macro=$proc_macro,
+                    unsafe=$unsafe,
+                    args=(
+                        section=($name $aux $definition),
+                    ),
+                ),
+                name=($name $aux $definition),
+                generic=$generic_ty,
+            ),
+            item = $item,
+        );
+    };
+
+    // ... and go
+    (@generate
+        features = (
+            type=$section_type:ident,
+            macro=$macro:tt,
+            name=$name:tt,
             generic=$generic_ty:ty,
         ),
         item = ($(#[$meta:meta])* $vis:vis static $ident:ident: $collection:ty),
     ) => {
         $(#[$meta])*
         #[allow(non_camel_case_types)]
-        $vis struct $name;
+        $vis struct $ident;
 
         $crate::__section_declare_submission_macro!(
             [$]
             macro=$macro
             type=$section_type
             vis=$vis
-            name=$name
+            name=$ident
         );
 
-        impl $name {
+        impl $ident {
             /// Get a `const` reference to the underlying section. In
             /// non-const contexts, `deref` is sufficient.
             pub const fn const_deref(&self) -> &'static $collection {
                 static SECTION: $collection = {
-                let section = $crate::__support::get_section!($section_type, name=$ident, type=$generic_ty $(, aux=$aux )?);
+                    let section = $crate::__support::get_section!($section_type, name=$name, type=$generic_ty);
                     let name = $crate::__support::section_name!(
-                        string item data bare $ident $($aux)?
+                        string item data bare $name
                     );
                     $crate::__support::validate_section_name(name);
                     unsafe { <$collection>::new(name, section) }
@@ -242,7 +361,7 @@ macro_rules! __section_parse_impl {
             }
         }
 
-        impl ::core::fmt::Debug for $name {
+        impl ::core::fmt::Debug for $ident {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::ops::Deref::deref(self).fmt(f)
             }
@@ -255,23 +374,23 @@ macro_rules! __section_parse_impl {
             }
         }
 
-        $crate::__section_parse_impl!(@slice $section_type $ident $(, $aux)?: ($collection) ($generic_ty));
+        $crate::__section_parse_impl!(@slice $section_type $ident $name : ($collection) ($generic_ty));
     };
 
-    (@slice untyped $ident:ident $(, $aux:ident)? $($rest:tt)*) => {
+    (@slice untyped $ident:ident $name:tt $($rest:tt)*) => {
         impl $crate::__support::IsUntypedSection for $ident {}
 
         const _: () = {
             // Ensure that untyped data sections are never empty.
             $crate::__add_section_link_attribute!(
-                item data section $ident $($aux)?
+                item data section $name
                 #[link_section = __]
                 static __LINK_SECTION_CONST_ITEM: u8 = 0;
             );
         };
     };
 
-    (@slice $section_type:ident $ident:ident $(, $aux:ident)? : ($collection:ty) ($generic_ty:ty)) => {
+    (@slice $section_type:ident $ident:ident $name:tt : ($collection:ty) ($generic_ty:ty)) => {
         impl $crate::__support::SectionItemType for $ident {
             type Item = $generic_ty;
         }
@@ -304,79 +423,39 @@ macro_rules! __section_parse_impl {
 #[doc(hidden)]
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! __section_declare_submission_macro {
-    // No macro, so we do nothing.
-    ([$dollar:tt] macro=(no_macro=no_macro, $($mrest:tt)*) $($rest:tt)*) => {};
-
-    // If aux is not specified, we use the built-in helper macros.
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=untyped vis=$vis:vis name=$name:ident) => {
-        #[doc(hidden)]
-        $vis use $crate::__in_section_helper_macro_no_generic as $name;
-    };
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=typed vis=$vis:vis name=$name:ident) => {
-        #[doc(hidden)]
-        $vis use $crate::__in_section_helper_macro_generic as $name;
-    };
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=mutable vis=$vis:vis name=$name:ident) => {
-        #[doc(hidden)]
-        $vis use $crate::__in_section_helper_macro_generic_mutable as $name;
-    };
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=movable vis=$vis:vis name=$name:ident) => {
-        #[doc(hidden)]
-        $vis use $crate::__in_section_helper_macro_generic_movable as $name;
-    };
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:tt, args=(),) type=reference vis=$vis:vis name=$name:ident) => {
-        #[doc(hidden)]
-        $vis use $crate::__in_section_helper_macro_generic_reference as $name;
-    };
+    // No proc macro or unsafe, so we do nothing.
+    ([$dollar:tt] macro=(proc_macro=(), $($mrest:tt)*) $($rest:tt)*) => {};
+    ([$dollar:tt] macro=(proc_macro=proc_macro, unsafe=unsafe, $($mrest:tt)*) $($rest:tt)*) => {};
 
     // If aux is specified, we need to use a custom macro. Either we use the
     // proc macro, or we use the unique name provided by the user.
 
-    // Macro name specified, use it unconditionally.
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=$proc_macro:tt, macro_unique_name=$macro_unique_name:ident, args=($($arg_name:ident = $arg_value:tt,)*),) type=$section_type:ident vis=$vis:vis name=$name:ident) => {
-        mod $macro_unique_name {
-            #[macro_export]
-            #[doc(hidden)]
-            macro_rules! $macro_unique_name {
-                (($($args:tt)*)) => {
-                    $crate::__in_section_crate!((@v=0 ; (type=$section_type) $(; ($arg_name = $arg_value) )* ; $($args)*));
-                };
-            };
-        };
-
-        #[doc(hidden)]
-        $vis use crate::$macro_unique_name as $name;
-    };
-
     // Proc macro available.
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=proc_macro, macro_unique_name=(), args=($($arg_name:ident = $arg_value:tt,)*),) type=$section_type:ident vis=$vis:vis name=$name:ident) => {
-        $crate::__support::ident_concat!(
-            (mod) (__ $name __ $($arg_value)* __private_macro) ({
-                $crate::__support::ident_concat!(
-                    (#[macro_export]
+    ([$dollar:tt] macro=(proc_macro=proc_macro, unsafe=(), args=($($arg_name:ident = $arg_value:tt,)*),) type=$section_type:ident vis=$vis:vis name=$name:ident) => {
+        $crate::__support::combine!(output=ident span=$name
+            prefix=(#[allow(non_snake_case)] mod) input=(__ $name __ __FILE__(of=$name) _L __LINE__(of=$name) _C __COLUMN__(of=$name) _H __HASH__(string=($($arg_name = $arg_value,)*)) __private_macro) suffix=({
+                $crate::__support::combine!(output=ident span=$name
+                    prefix=(#[macro_export]
+                    #[allow(non_snake_case)]
                     #[doc(hidden)]
-                    macro_rules!) (__ $name __ $($arg_value)* __private_macro) ({
+                    macro_rules!) input=(__ $name __ __FILE__(of=$name) _L __LINE__(of=$name) _C __COLUMN__(of=$name) _H __HASH__(string=($($arg_name = $arg_value,)*)) __private_macro) suffix=({
                         (($dollar ($args:tt)*)) => {
                             $crate::__in_section_crate!((@v=0 ; (source=section) ; (type=$section_type) $(; ($arg_name = $arg_value) )* ; $dollar ($args)*));
                         };
                     })
                 );
 
-                $crate::__support::ident_concat!(
-                    (#[doc(hidden)]
-                    $vis use ) (__ $name __ $($arg_value)* __private_macro) (as $name;)
+                $crate::__support::combine!(output=ident span=$name
+                    prefix=(#[doc(hidden)]
+                    pub use ) input=(__ $name __ __FILE__(of=$name) _L __LINE__(of=$name) _C __COLUMN__(of=$name) _H __HASH__(string=($($arg_name = $arg_value,)*)) __private_macro) suffix=(as __MACRO;)
                 );
             })
         );
 
-        $crate::__support::ident_concat!(
-            (#[doc(hidden)]
-            $vis use ) (__ $name __ $($arg_value)* __private_macro) (::$name as $name;)
+        $crate::__support::combine!(output=ident span=$name
+            prefix=(#[allow(unused_imports)] #[doc(hidden)]
+            $vis use ) input=(__ $name __ __FILE__(of=$name) _L __LINE__(of=$name) _C __COLUMN__(of=$name) _H __HASH__(string=($($arg_name = $arg_value,)*)) __private_macro) suffix=(::__MACRO as $name;)
         );
-    };
-
-    ([$dollar:tt] macro=(no_macro=(), proc_macro=(), macro_unique_name=(), args=$args:tt,) type=untyped vis=$vis:vis name=$name:ident) => {
-        compile_error!("link-section: No proc_macro feature enabled, and no macro_unique_name provided");
     };
 
     ($($rest:tt)*) => {
@@ -407,9 +486,9 @@ macro_rules! __section_parse_internal {
 macro_rules! __in_section_parse_impl {
     ( @entry next=$next:path[$next_args:tt], input=(
         features = (
-            section = $section:tt: $section_spec:ident,
             aux = $aux:tt: $aux_spec:ident,
             name = $name:tt: $name_spec:ident,
+            section = $section:tt: $section_spec:ident,
             section_type = $section_type:tt: $type_spec:ident,
             unsafe = $unsafe:tt: $unsafe_spec:ident,
         ),
@@ -426,18 +505,10 @@ macro_rules! __in_section_parse_impl {
 
     (@dispatch features=(
         section = (),
-        raw = ($aux:ident $name:tt $section_type:tt $unsafe:tt)
+        raw = ($aux:tt $name:tt $section_type:tt $unsafe:tt)
     ) meta=$meta:tt item=$item:tt) => {
         // Raw, feed directly to __in_section_crate!
-        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) ; (aux=$aux) ; (section=$name) ; (meta=$meta) ; (item=$item)));
-    };
-
-    (@dispatch features=(
-        section = (),
-        raw = (() $name:tt $section_type:tt $unsafe:tt)
-    ) meta=$meta:tt item=$item:tt) => {
-        // Raw, feed directly to __in_section_crate!
-        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) ; (section=$name) ; (meta=$meta) ; (item=$item)));
+        $crate::__in_section_crate!((@v=0 ; (source=in_section) ; (type=$section_type) ; (section=($name $aux unsafe)) ; (meta=$meta) ; (item=$item)));
     };
 
     (@dispatch features=(
@@ -448,7 +519,7 @@ macro_rules! __in_section_parse_impl {
     };
 
     ([@dispatch meta=$meta:tt item=$item:tt], (type=($section:path) prefix=$prefix:tt final=$final:ident generics=$generics:tt)) => {
-        $section!(((section=$final) ; (path=$section) ; (meta=$meta) ; (item=$item)));
+        $section!(((path=$section) ; (name=$final) ; (meta=$meta) ; (item=$item)));
     };
 
     ($($input:tt)*) => {

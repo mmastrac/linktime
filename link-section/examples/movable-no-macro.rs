@@ -4,7 +4,7 @@
 use link_section::section;
 
 /// Operations.
-#[section(movable, no_macro)]
+#[section(movable, unsafe, name = OPERATIONS)]
 static OPERATIONS: link_section::TypedMovableSection<Operation>;
 
 #[derive(Debug, PartialEq, Eq, Ord, PartialOrd)]
