@@ -1,6 +1,7 @@
-![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)
-
 The crate is part of the [`linktime`](https://crates.io/crates/linktime) project.
+
+[![GitHub](https://img.shields.io/badge/repo-github-blue)](https://github.com/mmastrac/linktime) [![Crates.io License](https://img.shields.io/crates/l/link-section)](https://crates.io/crates/link-section) [![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)](https://github.com/mmastrac/linktime/actions/workflows/rust.yml) 
+
 
 | crate               |                                                         | docs                                                                                         | version                                                                                                           |
 | ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
