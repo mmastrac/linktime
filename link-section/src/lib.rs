@@ -200,16 +200,16 @@ pub mod __support {
             ))
         };
         // Safe sections are always hashed.
-        (() $prefix:tt $name:tt $suffix:tt $hash_length:literal $max_length:literal $valid_section_chars:literal) => {
+        ($definition:tt $prefix:tt $name:tt $suffix:tt $hash_length:literal $max_length:literal $valid_section_chars:literal) => {
             $crate::__support::combine!(output=string input=(
                 $prefix
                 __SUBSTRING__(input=(
                     __SUBSTRING__(input=(
                         __TOIDENT__(input=(__RAW__(input=($name))))
                     ) end=(__SUB__(a=$max_length b=$hash_length)))
-                    // Hash the name and location information for each component
-                    // of the name.
-                    __LOCATIONHASH__(of=($name) alphabet=[_0-9a-zA-Z])
+                    // Hash the name and location information for the full
+                    // definition.
+                    __LOCATIONHASH__(of=($definition) alphabet=[_0-9a-zA-Z])
                 ) length=$max_length)
                 $suffix
             ))

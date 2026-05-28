@@ -108,8 +108,8 @@ macro_rules! __section_parse_impl {
                 type=$section_type,
                 macro=(
                     proc_macro=$proc_macro,
-                    unsafe=$unsafe,
                 ),
+                definition=(self=$($inner)* meta=$($meta)* item=$vis static $ident : $($type_rest)*),
                 ident=$ident,
                 name=$name,
                 generic=$generics,
@@ -150,6 +150,7 @@ macro_rules! __section_parse_impl {
     ([@types features = (
         type=$section_type:ident,
         macro=$macro:tt,
+        definition=$definition:tt,
         ident=$ident:ident,
         name=$name:tt,
         generic=$generics:tt,
@@ -162,6 +163,7 @@ macro_rules! __section_parse_impl {
             @types features = (
                 type=$section_type,
                 macro=$macro,
+                definition=$definition,
                 ident=$ident,
                 aux=(),
                 generic=$generics,
@@ -175,6 +177,7 @@ macro_rules! __section_parse_impl {
     ([@types features = (
         type=$section_type:ident,
         macro=$macro:tt,
+        definition=$definition:tt,
         ident=$ident:ident,
         name=$name:tt,
         generic=$generics:tt,
@@ -190,6 +193,7 @@ macro_rules! __section_parse_impl {
             @types features = (
                 type=$section_type,
                 macro=$macro,
+                definition=$definition,
                 ident=$ident,
                 aux=($(:: $name_prefix)? $($name_rest ::)* $aux),
                 generic=$generics,
@@ -203,6 +207,7 @@ macro_rules! __section_parse_impl {
     ([@types features = (
         type=$section_type:ident,
         macro=$macro:tt,
+        definition=$definition:tt,
         ident=$ident:ident,
         aux=$aux:tt,
         generic=$generics:tt,
@@ -215,6 +220,7 @@ macro_rules! __section_parse_impl {
             @generate features = (
                 type=$section_type,
                 macro=$macro,
+                definition=$definition,
                 aux=$aux,
                 name=($ident),
                 generic=$generics,
@@ -228,6 +234,7 @@ macro_rules! __section_parse_impl {
     ([@types features = (
         type=$section_type:ident,
         macro=$macro:tt,
+        definition=$definition:tt,
         ident=$ident:ident,
         aux=$aux:tt,
         generic=$generics:tt,
@@ -243,6 +250,7 @@ macro_rules! __section_parse_impl {
             @generate features = (
                 type=$section_type,
                 macro=$macro,
+                definition=$definition,
                 aux=$aux,
                 name=($(:: $name_prefix)? $($name_rest ::)* $name),
                 generic=$generics,
@@ -252,14 +260,46 @@ macro_rules! __section_parse_impl {
         );
     };
 
-    // Finalize name/aux
+    // Finalize name/aux w/unsafe
     (@generate
         features = (
             type=$section_type:ident,
             macro=(
                 proc_macro=$proc_macro:tt,
-                unsafe=$unsafe2:tt,
             ),
+            definition=$definition:tt,
+            aux=$aux:tt,
+            name=$name:tt,
+            generic=$generic_ty:ty,
+            unsafe=unsafe,
+        ),
+        item = $item:tt,
+    ) => {
+        $crate::__section_parse_impl!(
+            @generate features = (
+                type=$section_type,
+                macro=(
+                    proc_macro=$proc_macro,
+                    unsafe=unsafe,
+                    args=(
+                        section=($name $aux unsafe),
+                    ),
+                ),
+                name=($name $aux unsafe),
+                generic=$generic_ty,
+            ),
+            item = $item,
+        );
+    };
+
+    // Finalize name/aux w/unsafe
+    (@generate
+        features = (
+            type=$section_type:ident,
+            macro=(
+                proc_macro=$proc_macro:tt,
+            ),
+            definition=$definition:tt,
             aux=$aux:tt,
             name=$name:tt,
             generic=$generic_ty:ty,
@@ -274,16 +314,17 @@ macro_rules! __section_parse_impl {
                     proc_macro=$proc_macro,
                     unsafe=$unsafe,
                     args=(
-                        section=($name $aux $unsafe),
+                        section=($name $aux $definition),
                     ),
                 ),
-                name=($name $aux $unsafe),
+                name=($name $aux $definition),
                 generic=$generic_ty,
             ),
             item = $item,
         );
     };
 
+    // ... and go
     (@generate
         features = (
             type=$section_type:ident,
@@ -310,7 +351,7 @@ macro_rules! __section_parse_impl {
             /// non-const contexts, `deref` is sufficient.
             pub const fn const_deref(&self) -> &'static $collection {
                 static SECTION: $collection = {
-                let section = $crate::__support::get_section!($section_type, name=$name, type=$generic_ty);
+                    let section = $crate::__support::get_section!($section_type, name=$name, type=$generic_ty);
                     let name = $crate::__support::section_name!(
                         string item data bare $name
                     );
