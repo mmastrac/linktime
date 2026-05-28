@@ -217,7 +217,7 @@ macro_rules! __iterable {
         $crate::__support::combine!(
             output=ident
             prefix=(static )
-            input=(__ $name __ state __) 
+            input=(__ $name __ state __)
         suffix=(: $crate::iterable::__ScatteredIterableState<$ty> = $crate::iterable::__ScatteredIterableState::new();));
 
         $(#[$meta])*
