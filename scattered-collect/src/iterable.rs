@@ -202,7 +202,7 @@ impl<T: 'static> ::core::iter::IntoIterator for &'static ScatteredIterable<T> {
 #[doc(hidden)]
 macro_rules! __iterable_state {
     ($name:ident) => {
-        $crate::__support::ident_concat!( () (__ $name __state__) () )
+        $crate::__support::combine!(output=ident prefix=() input=(__ $name __ state __) suffix=())
     };
 }
 
@@ -214,7 +214,11 @@ macro_rules! __iterable {
         $crate::__iterable!(@gather $name $vis static $name: ScatteredIterable<$ty>;);
     };
     (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
-        $crate::__support::ident_concat!((static ) (__ $name __state__) (: $crate::iterable::__ScatteredIterableState<$ty> = $crate::iterable::__ScatteredIterableState::new();));
+        $crate::__support::combine!(
+            output=ident
+            prefix=(static )
+            input=(__ $name __ state __) 
+        suffix=(: $crate::iterable::__ScatteredIterableState<$ty> = $crate::iterable::__ScatteredIterableState::new();));
 
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {

@@ -64,13 +64,13 @@ macro_rules! __gather_parse {
     (@unique $unique:ident $macro:ident $(#[$imeta:meta])* $vis:vis static $name:ident: $collection:ident ($($ty:tt)*);) => {
         $crate::$macro!(@gather $unique $(#[$imeta])* $vis static $name: $collection <$($ty)*>;);
 
-        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __ $macro __ $unique) ({
+        $crate::__support::combine!(output=ident prefix=(#[doc(hidden)] #[macro_export] macro_rules!) input=(__ $name __ $macro __ $unique) suffix=({
             ($passthru:tt) => {
                 $crate::$macro!(@scatter [$name :: $unique] [$($ty)*] $passthru);
             };
         }));
 
-        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __ $macro __ $unique) (as $name;));
+        $crate::__support::combine!(output=ident prefix=(#[doc(hidden)] $vis use) input=(__ $name __ $macro __ $unique) suffix=(as $name;));
     };
 
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSlice < $ty:ty >; ) => {
@@ -128,7 +128,6 @@ pub mod __support {
     pub use ctor;
     pub use link_section;
     pub use linktime_proc_macro::combine;
-    pub use scattered_collect_proc_macro::ident_concat;
 }
 
 /// Declarative `scatter!` / `gather!` entry points.
@@ -138,7 +137,7 @@ pub mod declarative {
 }
 
 #[doc(inline)]
-pub use scattered_collect_proc_macro::{gather, scatter};
+pub use linktime_proc_macro::{gather, scatter};
 
 #[doc(hidden)]
 #[macro_export]

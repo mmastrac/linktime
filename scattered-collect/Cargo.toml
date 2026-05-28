@@ -16,8 +16,7 @@ __internal = []
 linktime = { workspace = true , features = ["std", "ctor", "link-section", "dtor"] }
 link-section = { workspace = true, features = ["proc_macro"] }
 ctor = { workspace = true, features = ["proc_macro", "priority", "std"] }
-linktime-proc-macro.workspace = true
-scattered-collect-proc-macro.workspace = true
+linktime-proc-macro = { workspace = true, features = ["scattered_collect"] }
 xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 
