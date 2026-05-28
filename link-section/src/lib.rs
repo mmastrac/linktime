@@ -124,9 +124,69 @@ pub mod __support {
     pub use crate::{item::*, platform::*};
 
     #[cfg(feature = "proc_macro")]
-    pub use linktime_proc_macro::hash;
+    pub use linktime_proc_macro::combine;
+
     #[cfg(feature = "proc_macro")]
-    pub use linktime_proc_macro::ident_concat;
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __ident_concat {
+        (($($prefix:tt)*) ($($name:tt)*) ($($suffix:tt)*)) => {
+            $crate::__support::combine!(
+                output=ident
+                prefix=($($prefix)*)
+                input=($($name)*)
+                suffix=($($suffix)*)
+            );
+        };
+    }
+
+    #[cfg(feature = "proc_macro")]
+    pub use crate::__ident_concat as ident_concat;
+
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! __hash_proc_macro {
+        // Matches the former `linktime_proc_macro::hash` proc macro.
+        ((__) (($($__prefix:literal $(,)?)*)) ($($name:tt)*) (($($__suffix:literal $(,)?)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
+            $crate::__support::combine!(output=string input=(
+                __IF__(
+                    test=(
+                        __AND__(
+                            a=(__LT__(
+                                a=(__LENGTH__(string=(__RAW__(input=($($name)*)))))
+                                b=$__max_length
+                            ))
+                            b=(__EQ__(
+                                a=(__LENGTH__(string=(__REPLACE__(
+                                    input=(__RAW__(input=($($name)*)))
+                                    pattern=[$__valid_section_chars]
+                                    replacement=""
+                                ))))
+                                b=0
+                            ))
+                        )
+                    )
+                    then=(
+                        $($__prefix)*
+                        __RAW__(input=($($name)*))
+                        $($__suffix)*
+                    )
+                    else=(
+                        $($__prefix)*
+                        __SUBSTRING__(input=(
+                            __SUBSTRING__(input=(
+                                __TOIDENT__(input=(__RAW__(input=($($name)*))))
+                            ) end=(__SUB__(a=$__max_length b=$__hash_length)))
+                            __SUBSTRING__(input=(
+                                __HASH__(string=(__RAW__(input=($($name)*))) alphabet=[$__valid_section_chars])
+                            ) length=$__hash_length)
+                        ) length=$__max_length)
+                        $($__suffix)*
+                    )
+                )
+            ));
+        };
+    }
 
     #[doc(hidden)]
     #[macro_export]
@@ -135,8 +195,11 @@ pub mod __support {
             concat!($($__prefix,)* $(stringify!($name)),* $(,$__suffix)*);
         };
     }
+
     #[cfg(not(feature = "proc_macro"))]
     pub use __hash_no_proc_macro as hash;
+    #[cfg(feature = "proc_macro")]
+    pub use __hash_proc_macro as hash;
 
     #[cfg(miri)]
     #[doc(hidden)]
