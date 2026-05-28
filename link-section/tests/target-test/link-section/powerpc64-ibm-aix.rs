@@ -71,7 +71,6 @@ fn foo() {
                     <::link_section::TypedSection<fn()> as
                     ::link_section::__support::SectionItemType>::Item;
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
-                ;
                 #[used]
                 #[export_name =
                 "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L11_C1"]

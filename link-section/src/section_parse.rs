@@ -81,7 +81,6 @@ macro_rules! __section_parse_impl {
         input=(
             features = (
                 aux = $aux:tt: $aux_spec:ident,
-                check = $check:tt: $check_spec:ident,
                 crate_path = $crate_path:tt: $crate_path_spec:ident,
                 name = $name:tt: $name_spec:ident,
                 proc_macro = $proc_macro:tt: $proc_macro_spec:ident,

@@ -79,7 +79,6 @@ const DRIVER: Driver =
                 ::link_section::__support::SectionItemType>::Item;
             const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy =
                 Driver::new("driver", || ());
-            ;
             #[used]
             #[export_name =
             "__LINK_SECTION_CONST_ITEM_Pexpand_probe_Mexpand_probe_L22_C1"]

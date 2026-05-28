@@ -39,12 +39,6 @@ __declare_features!(
         example: "aux(main = path::to::MAIN_SECTION)";
         validate: [(($aux_name:path))];
     };
-    /// Specify whether to check the section type at runtime. Requires `unsafe`.
-    check {
-        attr: [(check = $check_value:ident) => ($check_value)];
-        example: "check = true|false";
-        validate: [(true), (false)];
-    };
     /// Specify a custom crate path for the `link-section` crate. Used when
     /// re-exporting the section macro.
     crate_path {
@@ -484,9 +478,9 @@ pub mod __support {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
-
-                $crate::__if_wasm!(() (
+                $crate::__if_wasm!((
+                    $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
+                ) (
                     $crate::__add_section_link_attribute!(
                         item data section $section
                         #[link_section = __]

@@ -15,12 +15,6 @@
 
 
 </td></tr>
-<tr><td><code>check = true|false</code></td><td>
-
- Specify whether to check the section type at runtime. Requires `unsafe`.
-
-
-</td></tr>
 <tr><td><code>crate_path = ::path::to::link_section</code></td><td>
 
  Specify a custom crate path for the `link-section` crate. Used when
