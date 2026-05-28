@@ -207,9 +207,9 @@ pub mod __support {
                     __SUBSTRING__(input=(
                         __TOIDENT__(input=(__RAW__(input=($name))))
                     ) end=(__SUB__(a=$max_length b=$hash_length)))
-                    // Hash the name and location information for the full
-                    // definition.
-                    __LOCATIONHASH__(of=($definition) alphabet=[_0-9a-zA-Z])
+                    // Hash the location information for the full
+                    // definition and computed name.
+                    __LOCATIONHASH__(of=($definition $name) alphabet=[_0-9a-zA-Z])
                 ) length=$max_length)
                 $suffix
             ))
