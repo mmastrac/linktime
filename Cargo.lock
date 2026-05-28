@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.17.2"
+version = "0.18.0"
 dependencies = [
  "linktime-proc-macro",
  "macrotest",
@@ -672,6 +672,7 @@ dependencies = [
  "divan",
  "link-section",
  "linktime",
+ "linktime-proc-macro",
  "scattered-collect",
  "scattered-collect-proc-macro",
  "wide",

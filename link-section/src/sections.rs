@@ -373,7 +373,11 @@ impl<T: 'static> TypedMovableSection<T> {
         }
 
         if backrefs.len() != self.len() {
-            panic!("movable section backref count does not match item count");
+            panic!(
+                "movable section backref count ({}) does not match item count ({})",
+                backrefs.len(),
+                self.len()
+            );
         }
 
         backrefs.sort_unstable_by_key(|backref| backref.current_ptr());

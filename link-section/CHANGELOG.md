@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - Unreleased
+
+### Changed
+
+- `proc_macro` feature is now required for any non-`unsafe` section.
+- Sections now generate a unique ID for the submission site which allows
+multiple sections to share the same identifier.
+
 ## [0.17.2] - 2026-05-18
 
 ### Changed

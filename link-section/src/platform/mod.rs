@@ -198,17 +198,17 @@ macro_rules! __def_section_name {
         #[doc(hidden)]
         macro_rules! $__name {
             $(
-                (string item $__section $__type $name:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                (string item $__section $__type ($name:tt () $unsafe:tt)) => {
+                    $crate::__support::hash!($unsafe ($__prefix) ($name) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
-                (string item $__section $__type $name:ident $aux:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                (string item $__section $__type ($aux:tt $name:tt $unsafe:tt)) => {
+                    $crate::__support::hash!($unsafe ($__prefix) ($name $__aux_sep $aux) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
-                (string backref $__section $__type $name:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                (string backref $__section $__type ($name:tt () $unsafe:tt)) => {
+                    $crate::__support::hash!($unsafe ($__prefix) ($name $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
-                (string backref $__section $__type $name:ident $aux:ident) => {
-                    $crate::__support::hash!((__) ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
+                (string backref $__section $__type ($aux:tt $name:tt $unsafe:tt)) => {
+                    $crate::__support::hash!($unsafe ($__prefix) ($name $__aux_sep $aux $__refs_sep) ($__suffix) $__hash_length $__max_length $__valid_section_chars);
                 };
             )*
             ($pattern:tt $unknown_ref_or_item:ident $unknown_section:ident $unknown_type:ident $name:ident) => {

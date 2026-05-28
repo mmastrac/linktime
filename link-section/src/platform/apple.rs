@@ -5,25 +5,25 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __get_section_apple {
-    (movable, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    (movable, name=$name:tt, type=$generic_ty:ty) => {
         {
             $crate::__support::MovableBounds::new(
                 $crate::__support::PtrBounds::new(
-                    $crate::__address_of_symbol!(item data start $ident $($aux)?),
-                    $crate::__address_of_symbol!(item data end $ident $($aux)?),
+                    $crate::__address_of_symbol!(item data start $name),
+                    $crate::__address_of_symbol!(item data end $name),
                 ),
                 $crate::__support::PtrBounds::new(
-                    $crate::__address_of_symbol!(backref data start $ident $($aux)?),
-                    $crate::__address_of_symbol!(backref data end $ident $($aux)?),
+                    $crate::__address_of_symbol!(backref data start $name),
+                    $crate::__address_of_symbol!(backref data end $name),
                 ),
             )
         }
     };
-    ($section_type:ident, name=$ident:ident, type=$generic_ty:ty $(, aux=$aux:ident )?) => {
+    ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         {
             $crate::__support::PtrBounds::new(
-                $crate::__address_of_symbol!(item data start $ident $($aux)?),
-                $crate::__address_of_symbol!(item data end $ident $($aux)?),
+                $crate::__address_of_symbol!(item data start $name),
+                $crate::__address_of_symbol!(item data end $name),
             )
         }
     }
@@ -44,8 +44,12 @@ crate::__def_section_name! {
     }
     AUXILIARY = "_";
     REFS = "_r_";
+    // We use base63 for hashes. 8 characters yields 248,155,780,267,521
+    // possible values. This gives us space for 5,045,539 hashes (which are
+    // built on the section's raw name, location information and a hash of the
+    // source text) before we have a 5% chance of collision.
     MAX_LENGTH = 16;
-    HASH_LENGTH = 6;
+    HASH_LENGTH = 8;
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
 
@@ -60,19 +64,53 @@ const fn find_byte(bytes: &[u8], byte: u8) -> Option<usize> {
     None
 }
 
+const fn write_bytes<const N: usize>(out: &mut [u8; N], mut pos: usize, bytes: &[u8]) -> usize {
+    let mut i = 0;
+    while i < bytes.len() {
+        out[pos] = bytes[i];
+        pos += 1;
+        i += 1;
+    }
+    pos
+}
+
+const fn panic_invalid_apple_section_name(name: &str, reason: &'static str) -> ! {
+    const PREFIX: &str = "link-section: invalid section name `";
+    const SUFFIX: &str = "`: ";
+    let mut out = [b' '; 1024];
+    let mut pos = 0;
+    pos = write_bytes(&mut out, pos, PREFIX.as_bytes());
+    pos = write_bytes(&mut out, pos, name.as_bytes());
+    pos = write_bytes(&mut out, pos, SUFFIX.as_bytes());
+    write_bytes(&mut out, pos, reason.as_bytes());
+    let msg = match core::str::from_utf8(&out) {
+        Ok(s) => s,
+        Err(_) => reason,
+    };
+    let msg = msg.trim_ascii();
+    panic!("{}", msg);
+}
+
 pub(crate) const fn validate_apple_section_name(name: &str) {
+    match validate_apple_section_name_res(name) {
+        Ok(()) => {}
+        Err(reason) => panic_invalid_apple_section_name(name, reason),
+    }
+}
+
+const fn validate_apple_section_name_res(name: &str) -> Result<(), &'static str> {
     let bytes = name.as_bytes();
     let comma = match find_byte(bytes, b',') {
         Some(i) => i,
-        None => panic!("section name must contain a comma"),
+        None => return Err("section name must contain a comma"),
     };
     if comma == 0 {
-        panic!("section name must have a segment before the comma");
+        return Err("section name must have a segment before the comma");
     }
 
     let mut i = comma + 1;
     if i >= bytes.len() {
-        panic!("section name must not be empty");
+        return Err("section name must not be empty");
     }
     let mut section_len = 0;
     while i < bytes.len() {
@@ -80,19 +118,20 @@ pub(crate) const fn validate_apple_section_name(name: &str) {
             break;
         }
         if !is_valid_section_char(bytes[i]) {
-            panic!("section name contains invalid character");
+            return Err("section name contains invalid character(s)");
         }
         section_len += 1;
         i += 1;
     }
     if section_len == 0 {
-        panic!("Mach-O section name must not be empty");
+        return Err("Mach-O section name must not be empty");
     }
     if section_len > MAX_LENGTH {
         if cfg!(feature = "proc_macro") {
             // `hash!` shortens linker section names; const metadata keeps the raw name.
-            return;
+            return Ok(());
         }
-        panic!("Mach-O section name must be 1 to 16 characters");
+        return Err("Mach-O section name must be 1 to 16 characters");
     }
+    Ok(())
 }

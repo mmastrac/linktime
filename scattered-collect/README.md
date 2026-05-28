@@ -26,6 +26,12 @@ The collections are all zero-allocation. This means that they can be used in
 `no-std`/`no-alloc` environments, and that they do not contribute to heap usage
 whatsoever.
 
+## Free ID generation
+
+Each item is placed in a section which allows for free identifier generation.
+Use each collection's `offset_of` method to get the offset of an item in the
+collection. This ID is guaranteed to be stable per executable build.
+
 ## Collections
 
 - [`ScatteredIterable`]: A collection of items that are available only via
@@ -42,6 +48,18 @@ whatsoever.
   (auto-wrapped as [`sorted_referenced_slice::Ref`]).
 - [`ScatteredMap`]: A collection of key-value pairs that are available via
   slice, as well as indexed by key.
+
+| Collection                       | Ordering               | Indexed Access        | Unique Keys | Per-Item Handles | Notes                         |
+| -------------------------------- | ---------------------- | --------------------- | ----------- | ---------------- | ----------------------------- |
+| `ScatteredSlice`                 | Arbitrary (link order) | Yes (slice)           | No †        | No               | Basic un-ordered slice        |
+| `ScatteredSortedSlice`           | Sorted                 | Yes (slice)           | No †        | No               | Sorted slice                  |
+| `ScatteredIterable`              | Arbitrary (link order) | No (iterator only)    | No †        | Yes              | Singly-linked list            |
+| `ScatteredReferencedSlice`       | Arbitrary (link order) | Yes (slice)           | No †        | Yes              | Un-ordered slice with handles |
+| `ScatteredSortedReferencedSlice` | Sorted                 | Yes (slice)           | No †        | Yes              | Sorted slice with handles     |
+| `ScatteredMap`                   | None (hash-based)      | Yes (by key or entry) | Yes         | Yes              | Swiss-table style map         |
+
+† Each item in the collection is assigned a unique ID which is guaranteed to be
+stable per executable build.
 
 ## Scatter/Gather syntax
 

@@ -3,6 +3,7 @@
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![allow(unsafe_code)]
 #![no_std]
+#![recursion_limit = "256"]
 
 #[doc = include_str!("../docs/LIFE_BEFORE_MAIN.md")]
 pub mod life_before_main {}
@@ -38,21 +39,32 @@ __declare_features!(
         example: "aux(main = path::to::MAIN_SECTION)";
         validate: [(($aux_name:path))];
     };
+    /// Specify whether to check the section type at runtime. Requires `unsafe`.
+    check {
+        attr: [(check = $check_value:ident) => ($check_value)];
+        example: "check = true|false";
+        validate: [(true), (false)];
+    };
     /// Specify a custom crate path for the `link-section` crate. Used when
     /// re-exporting the section macro.
     crate_path {
         attr: [(crate_path = $path:pat) => (($path))];
         example: "crate_path = ::path::to::link_section";
     };
-    /// Define a custom macro name for the submission macro. Note that this is
-    /// required when not using the `proc_macro` feature and using `aux`.
-    macro_unique_name {
-        attr: [(macro_unique_name = $macro_unique_name_str:ident) => (($macro_unique_name_str))];
-        example: "macro_unique_name = my_unique_name_1234";
-    };
-    /// Disable submission macro generation at the definition site.
-    no_macro {
-        attr: [(no_macro) => (no_macro)];
+    /// Specify a custom section name to allow the section to be used without a
+    /// direct reference. If not specified, the section name will be generated
+    /// using the item name and a path to the section.
+    ///
+    /// It is valid to specify multiple sections with the same name, and the linker
+    /// will ensure that both sections contain the same items. The multiple sections
+    /// must contain the same type, otherwise the section will `panic!` at runtime.
+    ///
+    /// While `name` accepts a path, this path does not refer to a specific Rust
+    /// item path.
+    name {
+        attr: [(name = $($name_path:tt)*) => (($($name_path)*))];
+        example: "name = my_crate::SECTION_NAME";
+        validate: [(($name_path:path))];
     };
     /// Crate feature `proc_macro` (enables the `#[section]` attribute shim).
     proc_macro {
@@ -66,6 +78,10 @@ __declare_features!(
         example: "untyped | typed | mutable | movable | reference";
         validate: [(untyped), (typed), (mutable), (movable), (reference)];
     };
+    /// Allow the section to be used without a direct reference.
+    unsafe {
+        attr: [(unsafe) => (unsafe)];
+    };
 );
 
 #[cfg(doc)]
@@ -76,19 +92,31 @@ __declare_features!(
 
     @default: section;
 
+    /// Specify an auxiliary section name to allow submission without a direct
+    /// reference. Requires `unsafe`.
+    aux {
+        attr: [(aux(main = $($aux_name:tt)*)) => (($($aux_name)*))];
+        example: "aux(main = my_crate::SECTION_NAME)";
+        validate: [(($aux_name:path))];
+    };
+    /// Specify a custom section name to allow submission without a direct
+    /// reference. Requires `unsafe`.
+    ///
+    /// While `name` accepts a path, this path does not refer to a specific Rust
+    /// item path.
+    name {
+        attr: [(name = $($name_path:tt)*) => (($($name_path)*))];
+        example: "name = my_crate::SECTION_NAME";
+        validate: [(($name_is_path:path))];
+    };
+    /// Specify an ordinary section reference. The path must be a valid
+    /// reference to the section.
     section {
         attr: [(section = $($section_path:tt)*) => (($($section_path)*))];
         example: "[section = ] ::path::to::SECTION";
         validate: [(($section_path:path))];
     };
-    aux {
-        attr: [(aux(main = $aux_str:ident)) => ($aux_str)];
-        example: "aux(main = MAIN_SECTION)";
-    };
-    name {
-        attr: [(name = $name_str:ident) => ($name_str)];
-        example: "name = SECTION";
-    };
+    /// Specify the type of the section. Used for unsafe submission.
     section_type {
         attr: [(type = $section_type_name:ident) => ($section_type_name)];
         example: "type = untyped | typed | mutable | movable | reference";
@@ -126,86 +154,79 @@ pub mod __support {
     #[cfg(feature = "proc_macro")]
     pub use linktime_proc_macro::combine;
 
-    #[cfg(feature = "proc_macro")]
     #[doc(hidden)]
     #[macro_export]
-    macro_rules! __ident_concat {
-        (($($prefix:tt)*) ($($name:tt)*) ($($suffix:tt)*)) => {
-            $crate::__support::combine!(
-                output=ident
-                prefix=($($prefix)*)
-                input=($($name)*)
-                suffix=($($suffix)*)
-            );
+    macro_rules! __hash_no_proc_macro {
+        (unsafe (($($__prefix:literal $(,)?)*)) (($($name:ident)::*) $($literal2:literal ($($name2:ident)::*))?) (($($__suffix:literal $(,)?)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
+            concat!($($__prefix,)* $(stringify!($name)),* $( ,$literal2 $(, stringify!($name2))* )? $(,$__suffix)*);
+        };
+        ($($rest:tt)*) => {
+            compile_error!(concat!("link-section: No proc_macro feature enabled: `unsafe` is required", stringify!($($rest)*)));
         };
     }
-
-    #[cfg(feature = "proc_macro")]
-    pub use crate::__ident_concat as ident_concat;
 
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __hash_proc_macro {
-        // Matches the former `linktime_proc_macro::hash` proc macro.
-        ((__) (($($__prefix:literal $(,)?)*)) ($($name:tt)*) (($($__suffix:literal $(,)?)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
+        // Unsafe sections are hashed if and only if the name is not valid for
+        // the platform.
+        (unsafe $prefix:tt $name:tt $suffix:tt $hash_length:literal $max_length:literal $valid_section_chars:literal) => {
             $crate::__support::combine!(output=string input=(
                 __IF__(
                     test=(
-                        __AND__(
-                            a=(__LT__(
-                                a=(__LENGTH__(string=(__RAW__(input=($($name)*)))))
-                                b=$__max_length
-                            ))
-                            b=(__EQ__(
-                                a=(__LENGTH__(string=(__REPLACE__(
-                                    input=(__RAW__(input=($($name)*)))
-                                    pattern=[$__valid_section_chars]
-                                    replacement=""
-                                ))))
-                                b=0
-                            ))
+                        __LE__(
+                            a=(__LENGTH__(string=(
+                                __TOIDENT__(input=(__RAW__(input=($name))))
+                            )))
+                            b=$max_length
                         )
                     )
                     then=(
-                        $($__prefix)*
-                        __RAW__(input=($($name)*))
-                        $($__suffix)*
+                        $prefix
+                        __TOIDENT__(input=(__RAW__(input=($name))))
+                        $suffix
                     )
                     else=(
-                        $($__prefix)*
+                        $prefix
                         __SUBSTRING__(input=(
-                            __SUBSTRING__(input=(
-                                __TOIDENT__(input=(__RAW__(input=($($name)*))))
-                            ) end=(__SUB__(a=$__max_length b=$__hash_length)))
-                            __SUBSTRING__(input=(
-                                __HASH__(string=(__RAW__(input=($($name)*))) alphabet=[$__valid_section_chars])
-                            ) length=$__hash_length)
-                        ) length=$__max_length)
-                        $($__suffix)*
+                            __TOIDENT__(input=(__RAW__(input=($name))))
+                        ) end=(__SUB__(a=$max_length b=$hash_length)))
+                        __SUBSTRING__(input=(
+                            __HASH__(string=(__RAW__(input=($name))))
+                        ) length=$hash_length)
+                        $suffix
                     )
                 )
             ));
         };
-    }
-
-    #[doc(hidden)]
-    #[macro_export]
-    macro_rules! __hash_no_proc_macro {
-        ((__) (($($__prefix:literal $(,)?)*)) ($($name:tt)*) (($($__suffix:literal $(,)?)*)) $__hash_length:literal $__max_length:literal $__valid_section_chars:literal) => {
-            concat!($($__prefix,)* $(stringify!($name)),* $(,$__suffix)*);
+        // Safe sections are always hashed.
+        (() $prefix:tt ($($name:tt)*) $suffix:tt $hash_length:literal $max_length:literal $valid_section_chars:literal) => {
+            $crate::__support::combine!(output=string input=(
+                $prefix
+                __SUBSTRING__(input=(
+                    __SUBSTRING__(input=(
+                        __TOIDENT__(input=(__RAW__(input=($($name)*))))
+                    ) end=(__SUB__(a=$max_length b=$hash_length)))
+                    // Hash the name and location information for each component
+                    // of the name.
+                    __LOCATIONHASH__(of=($($name)*) alphabet=[_0-9a-zA-Z])
+                ) length=$max_length)
+                $suffix
+            ));
         };
     }
 
-    #[cfg(not(feature = "proc_macro"))]
-    pub use __hash_no_proc_macro as hash;
     #[cfg(feature = "proc_macro")]
     pub use __hash_proc_macro as hash;
+
+    #[cfg(not(feature = "proc_macro"))]
+    pub use __hash_no_proc_macro as hash;
 
     #[cfg(miri)]
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __address_of_symbol {
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)?) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:tt) => {
             // Miri does not support any of these linker-defined extern statics
             // see: https://github.com/rust-lang/miri/blob/master/src/shims/extern_static.rs#L15
             ::core::ptr::null() as *const ()
@@ -216,13 +237,13 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __address_of_symbol {
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)?) => {
+        ($ref_or_item:ident $section:ident $type:ident $name:tt) => {
             {
                 // These are not valid items, but they are valid pointers.
                 // We cannot safely use them - only take pointers to them.
                 $crate::__add_linktime_attributes_to_static!(
                     extern "C" {
-                        #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
+                        #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name)]
                         static __SYMBOL: u8;
                     }
                 );
@@ -237,17 +258,17 @@ pub mod __support {
     #[doc(hidden)]
     #[macro_export]
     macro_rules! __add_section_link_attribute(
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:tt #[$attr:ident = __]
             $(#[$meta:meta])*
             $vis:vis static $($static:tt)*
         ) => {
             $crate::__add_linktime_attributes_to_static!(
-                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
+                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name)]
                 $(#[$meta])*
                 $vis static $($static)*
             );
         };
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:tt #[$attr:ident = __]
             extern "C" {
                 $(#[$meta:meta])*
                 $vis:vis static $($static:tt)*
@@ -255,16 +276,16 @@ pub mod __support {
         ) => {
             $crate::__add_linktime_attributes_to_static!(
                 extern "C" {
-                    #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
+                    #[link_name = $crate::__support::section_name!(string $ref_or_item $section $type $name)]
                     $(#[$meta])*
                     $vis static $($static)*
                 }
             );
         };
-        ($ref_or_item:ident $section:ident $type:ident $name:ident $($aux:ident)? #[$attr:ident = __]
+        ($ref_or_item:ident $section:ident $type:ident $name:tt #[$attr:ident = __]
             $($item:tt)*) => {
             $crate::__add_linktime_attributes_to_static!(
-                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name $($aux)?)]
+                #[$attr = $crate::__support::section_name!(string $ref_or_item $section $type $name)]
                 $($item)*
             );
         };
@@ -316,17 +337,23 @@ pub mod __support {
     #[doc(hidden)]
     #[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
     macro_rules! __in_section_crate {
-        ((@v=0 ; (source=$source:ident) ; (type = untyped) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
-            $crate::__in_section_crate!(@untyped $section, $($aux)?, $($path)?, $meta $item);
+        ((@v=0 ; (source=$source:ident) ; (type = untyped) ; (path = $path:path) ; (name = $name:ident) ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@untyped (($name)()), , $path, $meta $item);
         };
-        ((@v=0 ; (source=$source:ident) ; (type = $section_type:ident) $(; (aux = $aux:ident))? ; (section = $section:tt) $(; (path = $path:path))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
-            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, $meta $item);
+        ((@v=0 ; (source=$source:ident) ; (type = $section_type:ident) ; (path = $path:path) ; (name = $name:ident) ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@typed[$section_type] (($name)()), , $path, $meta $item);
+        };
+        ((@v=0 ; (source=$source:ident) ; (type = untyped) ; (section = $section:tt) $(; (path = $path:path) ; (name = $name:ident))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@untyped $section, , $($path)?, $meta $item);
+        };
+        ((@v=0 ; (source=$source:ident) ; (type = $section_type:ident) ; (section = $section:tt) $(; (path = $path:path) ; (name = $name:ident))? ; (meta = $meta:tt) ; (item = $item:tt))) => {
+            $crate::__in_section_crate!(@typed[$section_type] $section, , $($path)?, $meta $item);
         };
 
         // Untyped items are placed in the data or code section as-is.
-        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($vis:vis fn $($rest:tt)*)) => {
+        (@untyped $section:tt, , $($path:path)?, ($($meta:tt)*) ($vis:vis fn $($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
-                item code section $section $($aux)?
+                item code section $section
                 #[link_section = __]
                 $($meta)*
                 $vis fn $($rest)*
@@ -337,9 +364,9 @@ pub mod __support {
                 };
             )?
         };
-        (@untyped $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($($rest:tt)*)) => {
+        (@untyped $section:tt, , $($path:path)?, ($($meta:tt)*) ($($rest:tt)*)) => {
             $crate::__add_section_link_attribute!(
-                item data section $section $($aux)?
+                item data section $section
                 #[link_section = __]
                 $($meta)*
                 $($rest)*
@@ -352,10 +379,10 @@ pub mod __support {
         };
 
         // Convert fn() with a body to a const item and a function pointer item.
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $($path:path)?, ($($meta:tt)*) ($vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? { $($body:tt)* })) => {
+        (@typed[$section_type:ident] $section:tt, , $($path:path)?, ($($meta:tt)*) ($vis:vis fn $ident_fn:ident($($args:tt)*) $(-> $ret:ty)? { $($body:tt)* })) => {
             $($meta)*
             $vis fn $ident_fn($($args)*) $(-> $ret)? {
-                $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $($path)?, () (
+                $crate::__in_section_crate!(@typed[$section_type] $section, , $($path)?, () (
                     const _: fn($($args)*) $(-> $ret)? = $ident_fn;
                 ));
 
@@ -364,8 +391,8 @@ pub mod __support {
         };
 
         // If no path is provided, use the item type.
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, , $meta:tt ($vis:vis $const_or_static:ident $name:tt : $ty:ty = $($rest:tt)*)) => {
-            $crate::__in_section_crate!(@typed[$section_type] $section, $($aux)?, $crate::TypedSection::<$ty>, $meta (
+        (@typed[$section_type:ident] $section:tt, , , $meta:tt ($vis:vis $const_or_static:ident $name:tt : $ty:ty = $($rest:tt)*)) => {
+            $crate::__in_section_crate!(@typed[$section_type] $section, , $crate::TypedSection::<$ty>, $meta (
                 $vis $const_or_static $name: $ty = $($rest)*
             ));
         };
@@ -375,10 +402,10 @@ pub mod __support {
         };
 
         // static items
-        (@typed[typed] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident : $ty:ty = $value:expr;)) => {
+        (@typed[typed] $section:tt, , $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident : $ty:ty = $value:expr;)) => {
             #[cfg(not(target_family = "wasm"))]
             $crate::__add_section_link_attribute!(
-                item data section $section $($aux)?
+                item data section $section
                 #[link_section = __]
                 $($meta)*
                 $vis static $ident: $crate::__in_section_crate!(@type_select $path) = const {
@@ -395,17 +422,17 @@ pub mod __support {
         };
 
         // mutable const items live in SyncUnsafeCell
-        (@typed[mutable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
+        (@typed[mutable] $section:tt, , $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
             $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!(mutable, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
+                $crate::__register_wasm_item!(mutable, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
 
                 #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
-                    item data section $section $($aux)?
+                    item data section $section
                     #[link_section = __]
                     static __LINK_SECTION_CONST_ITEM: $crate::__support::SyncUnsafeCell<__InSecStoredTy> = $crate::__support::SyncUnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE);
                 );
@@ -419,7 +446,7 @@ pub mod __support {
         };
 
         // movable static items expose a MovableRef and submit hidden value/backref records.
-        (@typed[movable] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
+        (@typed[movable] $section:tt, , $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             $($meta)*
             $vis static $ident: $crate::MovableRef<$crate::__in_section_crate!(@type_select $path)> = const {
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
@@ -427,14 +454,14 @@ pub mod __support {
                 #[cfg(not(target_family = "wasm"))]
                 {
                     $crate::__add_section_link_attribute!(
-                        item data section $section $($aux)?
+                        item data section $section
                         #[link_section = __]
                         static __LINK_SECTION_CONST_ITEM: $crate::__support::SyncUnsafeCell<__InSecStoredTy> =
                             $crate::__support::SyncUnsafeCell::new(__LINK_SECTION_CONST_ITEM_VALUE);
                     );
 
                     $crate::__add_section_link_attribute!(
-                        backref data section $section $($aux)?
+                        backref data section $section
                         #[link_section = __]
                         static __LINK_SECTION_MOVABLE_BACKREF: $crate::__support::SyncUnsafeCell<
                             $crate::MovableBackref<__InSecStoredTy>
@@ -457,7 +484,7 @@ pub mod __support {
                         movable,
                         value=__LINK_SECTION_CONST_ITEM_VALUE,
                         slot=$crate::MovableRef::slot_ptr(&raw const $ident),
-                        section=$section $($aux)?
+                        section=$section
                     );
 
                     $crate::MovableRef::new(::core::ptr::null())
@@ -470,17 +497,17 @@ pub mod __support {
         };
 
         // const items are the same across all other types
-        (@typed[$section_type:ident] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
+        (@typed[$section_type:ident] $section:tt, , $path:path, ($($meta:tt)*) ($vis:vis const $ident:tt: $ty:ty = $value:expr;)) => {
             $($meta)*
             $vis const $ident: $ty = const {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section $($aux)?);
+                $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
 
                 #[cfg(not(target_family = "wasm"))]
                 $crate::__add_section_link_attribute!(
-                    item data section $section $($aux)?
+                    item data section $section
                     #[link_section = __]
                     static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
                 );
@@ -489,20 +516,20 @@ pub mod __support {
             };
         };
 
-        (@typed[reference] $section:tt, $($aux:ident)?, $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
+        (@typed[reference] $section:tt, , $path:path, ($($meta:tt)*) ($vis:vis static $ident:ident: $ty:ty = $value:expr;)) => {
             #[cfg(target_family="wasm")]
             $($meta)*
             $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
-                $crate::__register_wasm_item!(reference, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section $($aux)?);
+                $crate::__register_wasm_item!(reference, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section);
                 $crate::reference::Ref::new()
             };
 
             // On non-WASM platforms, we can store the value directly (repr(transparent) allows this).
             #[cfg(not(target_family="wasm"))]
             $crate::__add_section_link_attribute!(
-                item data section $section $($aux)?
+                item data section $section
                 #[link_section = __]
                 $($meta)*
                 $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = $crate::reference::Ref::new($value);

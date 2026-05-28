@@ -33,19 +33,11 @@ impl<T> ::core::ops::Deref for ScatteredSlice<T> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __slice {
-    (@gather $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
-        $crate::__support::ident_concat!((#[doc(hidden)] #[macro_export] macro_rules!) (__ $name __slice_private_macro__) ({
-            ($passthru:tt) => {
-                $crate::__slice!(@scatter [$name] $passthru);
-            };
-        }));
-
-        $crate::__support::ident_concat!((#[doc(hidden)] $vis use) (__ $name __slice_private_macro__) (as $name;));
-
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
         $(#[$meta])*
         $vis static $name: $collection<$ty> = {
             $crate::__support::link_section::declarative::section!(
-                #[section(typed)]
+                #[section(unsafe, type = typed, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedSection<$ty>;
             );
 
@@ -55,9 +47,9 @@ macro_rules! __slice {
         };
     };
 
-    (@scatter [$collection_name:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] $types:tt ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
-            #[in_section(unsafe, name = $collection_name, type = typed)]
+            #[in_section(unsafe, name = $collection_name :: $unique, type = typed)]
             $(#[$imeta])*
             $vis $type $name: $ty = $expr;
         );
@@ -68,10 +60,10 @@ macro_rules! __slice {
 mod tests {
     pub use super::ScatteredSlice;
 
-    __slice!(@gather pub static TEST_SLICE: ScatteredSlice<u32>;);
-    __slice!(@scatter [TEST_SLICE] ([TEST_SLICE] => const _: u32 = 1;));
-    __slice!(@scatter [TEST_SLICE] ([TEST_SLICE] => const _: u32 = 3;));
-    __slice!(@scatter [TEST_SLICE] ([TEST_SLICE] => const _: u32 = 2;));
+    __slice!(@gather A pub static TEST_SLICE: ScatteredSlice<u32>;);
+    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 1;));
+    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 3;));
+    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 2;));
 
     #[test]
     fn test_scattered_slice() {
