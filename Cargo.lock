@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "libc-print",
  "link-section",
@@ -234,7 +234,7 @@ dependencies = [
 
 [[package]]
 name = "dtor"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "libc-print",
  "linktime-proc-macro",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "linktime"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "ctor",
  "dtor",
@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.4.0"
+version = "0.10.0"
 dependencies = [
  "ctor",
  "divan",
@@ -674,14 +674,9 @@ dependencies = [
  "linktime",
  "linktime-proc-macro",
  "scattered-collect",
- "scattered-collect-proc-macro",
  "wide",
  "xxhash-rust",
 ]
-
-[[package]]
-name = "scattered-collect-proc-macro"
-version = "0.1.0"
 
 [[package]]
 name = "scopeguard"

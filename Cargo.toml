@@ -8,7 +8,6 @@ members = [
     "linktime-proc-macro",
     "link-section",
     "scattered-collect",
-    "scattered-collect-proc-macro",
     "tests"
 ]
 default-members = [
@@ -18,7 +17,6 @@ default-members = [
     "macro-magic",
     "link-section",
     "scattered-collect",
-    "scattered-collect-proc-macro",
     "tests"
 ]
 exclude = []
@@ -29,12 +27,11 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/mmastrac/linktime"
 
 [workspace.dependencies]
-ctor = { path = "ctor", version = "1.0.6", default-features = false }
-dtor = { path = "dtor", version = "1.0.3", default-features = false }
+ctor = { path = "ctor", version = "1.0.7", default-features = false }
+dtor = { path = "dtor", version = "1.0.4", default-features = false }
 link-section = { path = "link-section", version = "0.18.0", default-features = false }
-linktime = { path = "linktime", version = "0.16.0", default-features = false }
+linktime = { path = "linktime", version = "0.17.0", default-features = false }
 
 linktime-proc-macro = { path = "linktime-proc-macro", version = "0.2.0" }
 
-scattered-collect = { path = "scattered-collect", version = "0.3.0" }
-scattered-collect-proc-macro = { path = "scattered-collect-proc-macro", version = "0.1.0" }
+scattered-collect = { path = "scattered-collect", version = "0.10.0" }
