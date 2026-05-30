@@ -153,6 +153,8 @@ macro_rules! __register_wasm_item {
 
 #[cfg(target_family = "wasm")]
 #[allow(missing_unsafe_on_extern)] // MSRV
+#[cfg_attr(target_os = "unknown", link(wasm_import_module = "env"))]
+#[cfg_attr(target_env = "p1", link(wasm_import_module = "env"))]
 extern "C" {
     /// Read custom section with name/name_length as a UTF8 string
     pub(crate) fn read_custom_section(

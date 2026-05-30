@@ -68,6 +68,7 @@ unsafe fn _run_atexit(cb: unsafe extern "C" fn()) {
 #[inline(always)]
 unsafe fn _run_atexit(cb: unsafe extern "C" fn()) {
     #[allow(missing_unsafe_on_extern)] // MSRV
+    #[cfg_attr(target_os = "unknown", link(wasm_import_module = "env"))]
     extern "C" {
         fn atexit(cb: unsafe extern "C" fn()) -> i32;
     }
