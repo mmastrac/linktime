@@ -6,6 +6,6 @@ publish = false
 
 [dependencies]
 dtor = { path = "../../../dtor" }
-libc-print = "0.3"
+libc-print = "0.5"
 
 [workspace]

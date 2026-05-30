@@ -35,7 +35,7 @@ linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }
 link-section = { workspace = true, optional = true, default-features = false }
 
 [dev-dependencies]
-libc-print = "0.3"
+libc-print = "0.5"
 macrotest = "1"
 trybuild = "1"
 walkdir = "2"
