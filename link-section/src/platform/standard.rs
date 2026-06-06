@@ -37,12 +37,12 @@ macro_rules! __get_section_standard {
 /// This ensures we can reference them even if the section is empty
 #[doc(hidden)]
 #[macro_export]
+#[cfg(all(not(miri), not(target_os = "aix"), not(target_family = "wasm")))]
 macro_rules! __weak_section_symbols {
     // `$ref_or_item` is `item` or `backref`; it both selects the symbol names
     // (via `section_name!`) and names the wrapper module, so the value- and
     // backref-symbol invocations in the `movable` arm don't collide.
     ($ref_or_item:ident $section:ident $name:tt) => {
-        #[cfg(not(miri))]
         mod $ref_or_item {
             ::core::arch::global_asm!(::core::concat!(
                 ".weak ",
@@ -54,6 +54,16 @@ macro_rules! __weak_section_symbols {
             ));
         }
     };
+}
+
+/// Declare a section's `__start_`/`__stop_` encapsulation symbols as weak.
+///
+/// This ensures we can reference them even if the section is empty
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(all(not(miri), not(target_os = "aix"), not(target_family = "wasm"))))]
+macro_rules! __weak_section_symbols {
+    ($($args:tt)*) => {};
 }
 
 pub use crate::__get_section_standard as get_section;
