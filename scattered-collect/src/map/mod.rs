@@ -123,6 +123,11 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
     pub fn is_empty(&self) -> bool {
         self.state.records.is_empty()
     }
+
+    /// The offset of the record in the map, if it is from this map.
+    pub fn offset_of(this: &Self, record: &MapRecord<K, V>) -> Option<usize> {
+        this.state.records.offset_of(record)
+    }
 }
 
 impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredMap<K, V> {
