@@ -151,7 +151,7 @@ pub fn callback() {
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
 | WASM                     | ✅ Fully supported, via emulation (§2) (§3)     |
-| AIX                      | ✅ Supported (§4)                               |
+| AIX                      | ✅ Supported (§4) (§5)                          |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
 (§1) Orphan section handling is a feature of the linker that allows sections to
@@ -166,6 +166,9 @@ function) is required to register each section with the runtime.
 
 (§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
 similar to LLVM/GCC's orphan section handling.
+
+(§5) Empty sections are not currently supported: ensure every section has at least
+one item, or pass the `-C link-arg=-berok` linker flag to ignore errors.
 
 ## Platform Details
 
@@ -291,6 +294,10 @@ found:
         ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
         ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
 ```
+
+In addition, the linker may report the same errors if a section is empty. It is
+recommended that you either (1) provide a sentinel item for AIX that can be skipped
+in the slice, or (2) pass the `-C link-arg=-berok` linker flag to ignore the error.
 
 For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out` and
 `-C link-arg=-bnoquiet` may also be useful.
