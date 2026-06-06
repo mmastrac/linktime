@@ -321,4 +321,14 @@ mod link_tests {
         TEST_MAP_2.find(&"B").unwrap().call();
         TEST_MAP_2.find(&"C").unwrap().call();
     }
+
+    __map!(@gather B pub static EMPTY_MAP: ScatteredMap<&'static str, u32>;);
+
+    #[test]
+    fn test_empty_scattered_map() {
+        assert_eq!(EMPTY_MAP.len(), 0);
+        assert!(EMPTY_MAP.is_empty());
+        assert_eq!(EMPTY_MAP.find(&"apple"), None);
+        assert!(!EMPTY_MAP.contains_key(&"apple"));
+    }
 }

@@ -119,4 +119,13 @@ mod tests {
             println!("item: {}", item);
         }
     }
+
+    __sorted_slice!(@gather B pub static EMPTY_SORTED_SLICE: ScatteredSortedSlice<u32>;);
+
+    #[test]
+    fn test_empty_scattered_sorted_slice() {
+        assert_eq!(EMPTY_SORTED_SLICE.len(), 0);
+        assert!(EMPTY_SORTED_SLICE.is_empty());
+        assert_eq!(&*EMPTY_SORTED_SLICE, &[] as &[u32]);
+    }
 }

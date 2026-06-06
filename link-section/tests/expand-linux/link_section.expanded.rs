@@ -15,6 +15,7 @@ impl FOO {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
+                mod item {}
                 ::link_section::__support::PtrBounds::new(
                     {
                         #[allow(missing_unsafe_on_extern)]

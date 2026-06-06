@@ -39,6 +39,10 @@ name = "link-section-dyn"
 path = "examples/dyn.rs"
 
 [[example]]
+name = "link-section-empty"
+path = "examples/empty.rs"
+
+[[example]]
 name = "link-section-example"
 path = "examples/example.rs"
 

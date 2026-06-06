@@ -11,6 +11,7 @@ zig_examples=(
   ctor-advanced
   link-section-const
   link-section-dyn
+  link-section-empty
   link-section-example
   link-section-mut
 )

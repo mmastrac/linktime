@@ -304,4 +304,13 @@ mod tests {
         assert!(items.contains(&2));
         assert!(items.contains(&3));
     }
+
+    __iterable!(gather pub EMPTY_ITERABLE: u32);
+
+    #[test]
+    fn test_empty_scattered_iterable() {
+        assert_eq!(EMPTY_ITERABLE.len(), 0);
+        assert!(EMPTY_ITERABLE.is_empty());
+        assert_eq!((&EMPTY_ITERABLE).into_iter().count(), 0);
+    }
 }

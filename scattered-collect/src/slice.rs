@@ -72,4 +72,13 @@ mod tests {
         assert!(TEST_SLICE.contains(&2));
         assert!(TEST_SLICE.contains(&3));
     }
+
+    __slice!(@gather B pub static EMPTY_SLICE: ScatteredSlice<u32>;);
+
+    #[test]
+    fn test_empty_scattered_slice() {
+        assert_eq!(EMPTY_SLICE.len(), 0);
+        assert!(EMPTY_SLICE.is_empty());
+        assert_eq!(&*EMPTY_SLICE, &[] as &[u32]);
+    }
 }
