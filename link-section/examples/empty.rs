@@ -3,6 +3,7 @@
 //!
 //! Each section kind that routes through `get_section!` is exercised empty.
 #![warn(missing_docs)]
+#![allow(unsafe_code)]
 
 use link_section::{
     section, Ref, TypedMovableSection, TypedMutableSection, TypedReferenceSection, TypedSection,
