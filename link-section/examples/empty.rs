@@ -1,20 +1,11 @@
 //! Regression test: sections with no `#[in_section]` items must still link.
 //!
-//! On ELF targets the linker only synthesizes the `__start_`/`__stop_`
-//! encapsulation symbols for sections that are actually emitted. A section with
-//! no submitted items is never emitted, so without the weak-symbol workaround
-//! (see `__weak_section_symbols!` in the standard platform) the `extern`
-//! references would be undefined and the link would fail:
-//!
-//! ```text
-//! ld.lld: error: undefined symbol: __start__data_link_section_...
-//! ```
 //!
 //! Each section kind that routes through `get_section!` is exercised empty.
 #![warn(missing_docs)]
 
 use link_section::{
-    Ref, TypedMovableSection, TypedMutableSection, TypedReferenceSection, TypedSection, section,
+    section, Ref, TypedMovableSection, TypedMutableSection, TypedReferenceSection, TypedSection,
 };
 
 /// An empty typed section.
