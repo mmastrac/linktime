@@ -7,6 +7,8 @@
 macro_rules! __get_section_standard {
     (movable, name=$name:tt, type=$generic_ty:ty) => {
         {
+            $crate::__weak_section_symbols!(item data $name);
+            $crate::__weak_section_symbols!(backref data $name);
             $crate::__support::MovableBounds::new(
                 $crate::__support::PtrBounds::new(
                     $crate::__address_of_symbol!(item data start $name),
@@ -21,12 +23,47 @@ macro_rules! __get_section_standard {
     };
     ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         {
+            $crate::__weak_section_symbols!(item data $name);
             $crate::__support::PtrBounds::new(
                 $crate::__address_of_symbol!(item data start $name),
                 $crate::__address_of_symbol!(item data end $name),
             )
         }
     }
+}
+
+/// Declare a section's `__start_`/`__stop_` encapsulation symbols as weak.
+///
+/// This ensures we can reference them even if the section is empty
+#[doc(hidden)]
+#[macro_export]
+#[cfg(all(not(miri), not(target_os = "aix"), not(target_family = "wasm")))]
+macro_rules! __weak_section_symbols {
+    // `$ref_or_item` is `item` or `backref`; it both selects the symbol names
+    // (via `section_name!`) and names the wrapper module, so the value- and
+    // backref-symbol invocations in the `movable` arm don't collide.
+    ($ref_or_item:ident $section:ident $name:tt) => {
+        mod $ref_or_item {
+            ::core::arch::global_asm!(::core::concat!(
+                ".weak ",
+                $crate::__support::section_name!(string $ref_or_item $section start $name),
+                "\n",
+                ".weak ",
+                $crate::__support::section_name!(string $ref_or_item $section end $name),
+                "\n",
+            ));
+        }
+    };
+}
+
+/// Declare a section's `__start_`/`__stop_` encapsulation symbols as weak.
+///
+/// This ensures we can reference them even if the section is empty
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(all(not(miri), not(target_os = "aix"), not(target_family = "wasm"))))]
+macro_rules! __weak_section_symbols {
+    ($($args:tt)*) => {};
 }
 
 pub use crate::__get_section_standard as get_section;

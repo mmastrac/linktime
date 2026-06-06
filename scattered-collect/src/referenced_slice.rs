@@ -103,4 +103,13 @@ mod tests {
         assert_eq!(*REF_SLICE_ITEM_B, 3);
         assert_eq!(*REF_SLICE_ITEM_C, 2);
     }
+
+    __referenced_slice!(@gather B pub static EMPTY_REF_SLICE: ScatteredReferencedSlice<u32>;);
+
+    #[test]
+    fn test_empty_scattered_referenced_slice() {
+        assert_eq!(EMPTY_REF_SLICE.len(), 0);
+        assert!(EMPTY_REF_SLICE.is_empty());
+        assert_eq!(&*EMPTY_REF_SLICE, &[] as &[u32]);
+    }
 }

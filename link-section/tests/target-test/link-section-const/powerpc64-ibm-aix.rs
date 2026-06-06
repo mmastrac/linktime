@@ -22,6 +22,7 @@ impl FOO {
             {
                 let section =
                     {
+                        ;
                         ::link_section::__support::PtrBounds::new({
                                 #[allow(missing_unsafe_on_extern)]
                                 extern "C" {

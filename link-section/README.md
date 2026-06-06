@@ -151,7 +151,7 @@ pub fn callback() {
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
 | WASM                     | ✅ Fully supported, via emulation (§2) (§3)     |
-| AIX                      | ✅ Supported (§4)                               |
+| AIX                      | ✅ Supported (§4) (§5)                          |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
 (§1) Orphan section handling is a feature of the linker that allows sections to
@@ -166,6 +166,9 @@ function) is required to register each section with the runtime.
 
 (§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
 similar to LLVM/GCC's orphan section handling.
+
+(§5) Empty sections are not currently supported: ensure every section has at least
+one item, or pass the `-C link-arg=-berok` linker flag to ignore errors.
 
 ## Platform Details
 
@@ -225,11 +228,10 @@ pre-main construction functions to copy each entry into a contiguous section
 allocated at startup. The number of items in a link-section is computed by
 generating a custom data section containing one byte per item.
 
-The WASM support expects a function in the module's environment with the
-following signature and functionality. The wasm import only passes the four
-`usize` / pointer parameters; the embedder should close over
-`WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
-installing the import.
+The WASM support expects a function named `read_custom_section` in the module's
+environment with four `usize` / pointer parameters; the embedder should close
+over `WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
+installing the import and pass them to the function below:
 
 ```js
 /**
@@ -291,6 +293,10 @@ found:
         ld: 0711-317 ERROR: Undefined symbol: __stop__data_link_section_DATABASES
         ld: 0711-345 Use the -bloadmap or -bnoquiet option to obtain more information.
 ```
+
+In addition, the linker may report the same errors if a section is empty. It is
+recommended that you either (1) provide a sentinel item for AIX that can be skipped
+in the slice, or (2) pass the `-C link-arg=-berok` linker flag to ignore the error.
 
 For debugging AIX link-section issues, `-C link-arg=-bmap:[path]/linker.out` and
 `-C link-arg=-bnoquiet` may also be useful.

@@ -126,4 +126,13 @@ mod tests {
         assert_eq!(*SORT_REF_ITEM_B, 3);
         assert_eq!(*SORT_REF_ITEM_C, 2);
     }
+
+    __sorted_referenced_slice!(@gather B pub static EMPTY_SORT_REF: ScatteredSortedReferencedSlice<u32>;);
+
+    #[test]
+    fn test_empty_scattered_sorted_referenced_slice() {
+        assert_eq!(EMPTY_SORT_REF.len(), 0);
+        assert!(EMPTY_SORT_REF.is_empty());
+        assert_eq!(&*EMPTY_SORT_REF, &[] as &[u32]);
+    }
 }
