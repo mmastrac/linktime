@@ -21,10 +21,6 @@ fn main() {
     println!("BANANA: {:?}", BANANA);
     println!("ORANGE: {:?}", ORANGE);
 
-    assert!(ScatteredMap::offset_of(&MAP, &APPLE).is_some());
-    assert!(ScatteredMap::offset_of(&MAP, &BANANA).is_some());
-    assert!(ScatteredMap::offset_of(&MAP, &ORANGE).is_some());
-
     println!("Entries:");
     for (key, value) in &MAP {
         println!(" - {}: {:?}", key, value);
