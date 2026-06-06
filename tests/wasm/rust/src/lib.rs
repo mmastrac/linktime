@@ -89,11 +89,19 @@ mod link_section {
         }
     }
 
+    mod empty {
+        use linktime::link_section::{section, TypedSection};
+
+        #[section(typed)]
+        pub static EMPTY_LINK_SECTION: TypedSection<u32>;
+    }
+
     pub fn test_link_section() {
         libc_println!("test_link_section");
         libc_println!("DRIVER: {}", reference::DRIVER.name);
         (reference::DRIVER.f)();
         assert!(reference::DRIVERS.offset_of(&reference::DRIVER) == Some(0));
+        assert!(empty::EMPTY_LINK_SECTION.is_empty());
     }
 }
 
