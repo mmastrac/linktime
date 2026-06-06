@@ -228,11 +228,10 @@ pre-main construction functions to copy each entry into a contiguous section
 allocated at startup. The number of items in a link-section is computed by
 generating a custom data section containing one byte per item.
 
-The WASM support expects a function in the module's environment with the
-following signature and functionality. The wasm import only passes the four
-`usize` / pointer parameters; the embedder should close over
-`WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
-installing the import.
+The WASM support expects a function named `read_custom_section` in the module's
+environment with four `usize` / pointer parameters; the embedder should close
+over `WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
+installing the import and pass them to the function below:
 
 ```js
 /**
