@@ -131,8 +131,76 @@ pub mod __support {
 }
 
 /// Declarative `scatter!` / `gather!` entry points.
+///
+/// These are useful for cases where the scattered collections are used within
+/// your own macros.
+///
+/// The syntax is identical to the proc-macro form in both the `scatter` and
+/// `gather` cases, with the declarative macro wrapped around them.
+///
+/// ```rust
+/// use scattered_collect::declarative::{scatter, gather};
+/// use scattered_collect::slice::ScatteredSlice;
+///
+/// # fn main() {
+/// gather! {
+///   #[gather]
+///   static ITEMS: ScatteredSlice<u32>;
+/// }
+///
+/// scatter! {
+///   #[scatter(ITEMS)]
+///   const _: u32 = 1;
+/// }
+/// # }
+/// ```
+
 pub mod declarative {
+    /// Declarative form of the `#[gather]` macro.
+    ///
+    /// Useful for re-exporting these macros from other crates. Wrap this around
+    /// the proc-macro form:
+    ///
+    /// ```rust
+    /// # use scattered_collect::declarative::{scatter, gather};
+    /// # use scattered_collect::slice::ScatteredSlice;
+    ///
+    /// # fn main() {
+    /// gather! {
+    ///   #[gather]
+    ///   static ITEMS: ScatteredSlice<u32>;
+    /// }
+    ///
+    /// scatter! {
+    ///   #[scatter(ITEMS)]
+    ///   const _: u32 = 1;
+    /// }
+    /// # }
+    /// ```
+    #[doc(inline)]
     pub use crate::__gather_brace as gather;
+    /// Declarative form of the `#[scatter]` macro.
+    ///
+    /// Useful for re-exporting these macros from other crates. Wrap this around
+    /// the proc-macro form:
+    ///
+    /// ```rust
+    /// # use scattered_collect::declarative::{scatter, gather};
+    /// # use scattered_collect::slice::ScatteredSlice;
+    ///
+    /// # fn main() {
+    /// gather! {
+    ///   #[gather]
+    ///   static ITEMS: ScatteredSlice<u32>;
+    /// }
+    ///
+    /// scatter! {
+    ///   #[scatter(ITEMS)]
+    ///   const _: u32 = 1;
+    /// }
+    /// # }
+    /// ```
+    #[doc(inline)]
     pub use crate::__scatter_brace as scatter;
 }
 
@@ -143,7 +211,7 @@ pub use linktime_proc_macro::{gather, scatter};
 #[macro_export]
 macro_rules! __gather_brace {
     ($($item:tt)*) => {
-        $crate::__support::gather_parse!(#[gather] $($item)*);
+        $crate::__support::gather_parse!($($item)*);
     };
 }
 

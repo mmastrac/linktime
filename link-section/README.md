@@ -396,4 +396,4 @@ mod my_registry {
 
 ## Inspiration
 
-`link-section` was originally inspired by the `linkme` project.
+`link-section` would have been far more challenging to implement without dtolnay's great `linkme` project paving the way.
