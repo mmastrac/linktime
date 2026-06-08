@@ -3,16 +3,16 @@
 pub mod hash;
 pub mod iterable;
 pub mod map;
-pub mod set;
 pub mod referenced_slice;
+pub mod set;
 pub mod slice;
 pub mod sorted_referenced_slice;
 pub mod sorted_slice;
 
 pub use iterable::ScatteredIterable;
 pub use map::ScatteredMap;
-pub use set::ScatteredSet;
 pub use referenced_slice::ScatteredReferencedSlice;
+pub use set::ScatteredSet;
 pub use slice::ScatteredSlice;
 pub use sorted_referenced_slice::ScatteredSortedReferencedSlice;
 pub use sorted_slice::ScatteredSortedSlice;
@@ -160,7 +160,6 @@ pub mod __support {
 /// }
 /// # }
 /// ```
-
 pub mod declarative {
     /// Declarative form of the `#[gather]` macro.
     ///

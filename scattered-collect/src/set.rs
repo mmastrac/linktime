@@ -1,10 +1,15 @@
-use crate::{ScatteredMap, hash::ConstHash, map::{__ScatteredMapState, MapRecord}};
+//! A swiss-table-style set initialized with link-time data.
+use crate::{
+    ScatteredMap,
+    hash::ConstHash,
+    map::{__ScatteredMapState, MapRecord},
+};
 
 /// A set of items gathered into a set in arbitrary link order.
-/// 
+///
 /// See [`ScatteredMap`] for more information about performance and algorithm
 /// details.
-/// 
+///
 /// ```rust
 #[doc = include_str!("../examples/set.rs")]
 /// ```
@@ -15,35 +20,43 @@ pub struct ScatteredSet<T: 'static> {
 impl<T: ConstHash + PartialEq + 'static> ScatteredSet<T> {
     #[doc(hidden)]
     pub const fn __new(state: &'static __ScatteredMapState<T, ()>) -> Self {
-        Self { map: ScatteredMap::__new(state) }
+        Self {
+            map: ScatteredMap::__new(state),
+        }
     }
 
+    /// The number of records in the set.
     #[inline]
     pub fn len(&self) -> usize {
         self.map.len()
     }
 
+    /// True if the set is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }
 
+    /// True if the set contains the given key.
     #[inline]
     pub fn contains(&self, key: &T) -> bool {
         self.map.contains_key(key)
     }
-    
+
+    /// Iterate over the values in the set.
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.map.keys()
     }
 
+    /// The offset of the record in the set, if it is from this set.
     #[inline]
     pub fn offset_of(this: &Self, key: &SetRecord<T>) -> Option<usize> {
         ScatteredMap::offset_of(&this.map, key.as_map_record_ref())
     }
 }
 
+/// One gathered set entry.
 #[repr(transparent)]
 pub struct SetRecord<T: 'static> {
     record: MapRecord<T, ()>,
@@ -51,10 +64,9 @@ pub struct SetRecord<T: 'static> {
 
 impl<K: 'static> IntoIterator for &'static ScatteredSet<K> {
     type Item = &'static K;
-    type IntoIter = ::std::iter::Map<
-        ::std::slice::Iter<'static, SetRecord<K>>,
-        fn(&SetRecord<K>) -> &K,
-    >;
+    type IntoIter =
+        ::std::iter::Map<::std::slice::Iter<'static, SetRecord<K>>, fn(&SetRecord<K>) -> &K>;
+    #[allow(unsafe_code)]
     fn into_iter(self) -> Self::IntoIter {
         let records: &[SetRecord<K>] = unsafe { core::mem::transmute(self.map.state.records()) };
         records.iter().map(|record| &record.record.key)
@@ -84,6 +96,7 @@ impl<T: ConstHash + 'static> ::core::ops::Deref for SetRecord<T> {
 }
 
 impl<T: ConstHash + 'static> SetRecord<T> {
+    #[allow(unsafe_code)]
     pub(crate) fn as_map_record_ref(&self) -> &MapRecord<T, ()> {
         unsafe { core::mem::transmute(&self.record) }
     }

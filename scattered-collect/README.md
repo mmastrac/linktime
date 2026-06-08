@@ -62,6 +62,11 @@ collection. This ID is guaranteed to be stable per executable build.
 † Each item in the collection is assigned a unique ID which is guaranteed to be
 stable per executable build.
 
+## Re-exporting the scatter/gather macros
+
+The scatter/gather macros can be easily re-exported from other crates using the
+[`declarative`] module.
+
 ## Scatter/Gather syntax
 
 The collections are defined as a single scatter call with multiple gather calls

@@ -1,8 +1,5 @@
 //! Example for `ScatteredMap`.
-use scattered_collect::{gather, set::ScatteredSet, scatter};
-
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
-struct MyId(u32);
+use scattered_collect::{gather, scatter, set::ScatteredSet};
 
 #[gather]
 static SET: ScatteredSet<&'static str>;
