@@ -4,6 +4,7 @@ pub mod hash;
 pub mod iterable;
 pub mod map;
 pub mod referenced_slice;
+pub mod set;
 pub mod slice;
 pub mod sorted_referenced_slice;
 pub mod sorted_slice;
@@ -11,6 +12,7 @@ pub mod sorted_slice;
 pub use iterable::ScatteredIterable;
 pub use map::ScatteredMap;
 pub use referenced_slice::ScatteredReferencedSlice;
+pub use set::ScatteredSet;
 pub use slice::ScatteredSlice;
 pub use sorted_referenced_slice::ScatteredSortedReferencedSlice;
 pub use sorted_slice::ScatteredSortedSlice;
@@ -93,6 +95,10 @@ macro_rules! __gather_parse {
         $crate::__support::gather_parse!(@dispatch __map $(#[$imeta])* $vis static $name: $map ( $key, $value ););
     };
 
+    (@done ($set:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSet < $key:ty >; ) => {
+        $crate::__support::gather_parse!(@dispatch __set $(#[$imeta])* $vis static $name: $set ( $key ););
+    };
+
     (@done ($collection:ident) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredIterable < $ty:ty >; ) => {
         $crate::__support::gather_parse!(@dispatch __iterable $(#[$imeta])* $vis static $name: $collection ( $ty ););
     };
@@ -131,8 +137,75 @@ pub mod __support {
 }
 
 /// Declarative `scatter!` / `gather!` entry points.
+///
+/// These are useful for cases where the scattered collections are used within
+/// your own macros.
+///
+/// The syntax is identical to the proc-macro form in both the `scatter` and
+/// `gather` cases, with the declarative macro wrapped around them.
+///
+/// ```rust
+/// use scattered_collect::declarative::{scatter, gather};
+/// use scattered_collect::slice::ScatteredSlice;
+///
+/// # fn main() {
+/// gather! {
+///   #[gather]
+///   static ITEMS: ScatteredSlice<u32>;
+/// }
+///
+/// scatter! {
+///   #[scatter(ITEMS)]
+///   const _: u32 = 1;
+/// }
+/// # }
+/// ```
 pub mod declarative {
+    /// Declarative form of the `#[gather]` macro.
+    ///
+    /// Useful for re-exporting these macros from other crates. Wrap this around
+    /// the proc-macro form:
+    ///
+    /// ```rust
+    /// # use scattered_collect::declarative::{scatter, gather};
+    /// # use scattered_collect::slice::ScatteredSlice;
+    ///
+    /// # fn main() {
+    /// gather! {
+    ///   #[gather]
+    ///   static ITEMS: ScatteredSlice<u32>;
+    /// }
+    ///
+    /// scatter! {
+    ///   #[scatter(ITEMS)]
+    ///   const _: u32 = 1;
+    /// }
+    /// # }
+    /// ```
+    #[doc(inline)]
     pub use crate::__gather_brace as gather;
+    /// Declarative form of the `#[scatter]` macro.
+    ///
+    /// Useful for re-exporting these macros from other crates. Wrap this around
+    /// the proc-macro form:
+    ///
+    /// ```rust
+    /// # use scattered_collect::declarative::{scatter, gather};
+    /// # use scattered_collect::slice::ScatteredSlice;
+    ///
+    /// # fn main() {
+    /// gather! {
+    ///   #[gather]
+    ///   static ITEMS: ScatteredSlice<u32>;
+    /// }
+    ///
+    /// scatter! {
+    ///   #[scatter(ITEMS)]
+    ///   const _: u32 = 1;
+    /// }
+    /// # }
+    /// ```
+    #[doc(inline)]
     pub use crate::__scatter_brace as scatter;
 }
 
@@ -143,7 +216,7 @@ pub use linktime_proc_macro::{gather, scatter};
 #[macro_export]
 macro_rules! __gather_brace {
     ($($item:tt)*) => {
-        $crate::__support::gather_parse!(#[gather] $($item)*);
+        $crate::__support::gather_parse!($($item)*);
     };
 }
 

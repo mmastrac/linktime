@@ -151,7 +151,7 @@ impl<T: 'static> ExactSizeIterator for Iter<'_, T> {
 ///
 /// This collection is thread-safe: access before initialization completes will
 /// yield fewer items, but will not panic or cause undefined behavior. The count
-/// returned by [`len`] may be stale while constructors are still running; the
+/// returned by [`ScatteredIterable::len`] may be stale while constructors are still running; the
 /// [`ExactSizeIterator::len`] on [`Iter`] is derived from each node's [`Ref::offset_of`]
 /// index and stays consistent for the suffix being iterated.
 ///

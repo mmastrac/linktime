@@ -20,11 +20,6 @@ impl<T> ScatteredSlice<T> {
     pub const unsafe fn new(section: &'static TypedSection<T>) -> Self {
         Self { section }
     }
-
-    /// The offset of the item in the slice, if it is from this slice.
-    pub fn offset_of(this: &Self, item: &T) -> Option<usize> {
-        TypedSection::offset_of(this.section, item)
-    }
 }
 
 impl<T> ::core::ops::Deref for ScatteredSlice<T> {
