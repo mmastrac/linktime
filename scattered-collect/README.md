@@ -56,7 +56,8 @@ collection. This ID is guaranteed to be stable per executable build.
 | `ScatteredIterable`              | Arbitrary (link order) | No (iterator only)    | No †        | Yes              | Singly-linked list            |
 | `ScatteredReferencedSlice`       | Arbitrary (link order) | Yes (slice)           | No †        | Yes              | Un-ordered slice with handles |
 | `ScatteredSortedReferencedSlice` | Sorted                 | Yes (slice)           | No †        | Yes              | Sorted slice with handles     |
-| `ScatteredMap`                   | None (hash-based)      | Yes (by key or entry) | Yes         | Yes              | Swiss-table style map         |
+| `ScatteredMap`                   | None (link order)      | Yes (by key or entry) | Yes         | Yes              | Swiss-table style map         |
+| `ScatteredSet`                   | None (link order)      | n/a                   | Yes         | No               | Swiss-table style set         |
 
 † Each item in the collection is assigned a unique ID which is guaranteed to be
 stable per executable build.

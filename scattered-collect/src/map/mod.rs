@@ -125,6 +125,7 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
     }
 
     /// The offset of the record in the map, if it is from this map.
+    #[inline]
     pub fn offset_of(this: &Self, record: &MapRecord<K, V>) -> Option<usize> {
         this.state.records.offset_of(record)
     }
@@ -162,7 +163,7 @@ impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredMap<K, V> {
 #[doc = include_str!("../../examples/map.rs")]
 /// ```
 pub struct ScatteredMap<K: 'static, V: 'static> {
-    state: &'static __ScatteredMapState<K, V>,
+    pub(crate) state: &'static __ScatteredMapState<K, V>,
 }
 
 #[doc(hidden)]
@@ -190,6 +191,10 @@ impl<K: 'static, V: 'static> __ScatteredMapState<K, V> {
     #[doc(hidden)]
     pub fn __initialize(&self) {
         self.ensure_initialized();
+    }
+
+    pub(crate) fn records(&self) -> &[MapRecord<K, V>] {
+        self.records.as_slice()
     }
 
     #[allow(unsafe_code)]
