@@ -1,6 +1,6 @@
 [package]
 name = "scattered-collect"
-version = "0.12.0"
+version = "0.20.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
@@ -35,6 +35,10 @@ path = "examples/intern_strings.rs"
 [[example]]
 name = "scattered-collect-map"
 path = "examples/map.rs"
+
+[[example]]
+name = "scattered-collect-set"
+path = "examples/set.rs"
 
 [[example]]
 name = "scattered-collect-slice"

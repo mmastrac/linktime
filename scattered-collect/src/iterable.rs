@@ -210,10 +210,7 @@ macro_rules! __iterable_state {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __iterable {
-    (gather $vis:vis $name:ident: $ty:ty) => {
-        $crate::__iterable!(@gather $name $vis static $name: ScatteredIterable<$ty>;);
-    };
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($collection:tt)*) < $ty:ty >;) => {
         $crate::__support::combine!(
             output=ident
             prefix=(static )
@@ -221,7 +218,7 @@ macro_rules! __iterable {
         suffix=(: $crate::iterable::__ScatteredIterableState<$ty> = $crate::iterable::__ScatteredIterableState::new();));
 
         $(#[$meta])*
-        $vis static $name: $collection<$ty> = {
+        $vis static $name: $($collection)* <$ty> = {
             $crate::iterable::ScatteredIterable::new(&$crate::__iterable_state!($name))
         };
     };
@@ -242,7 +239,7 @@ macro_rules! __iterable {
 mod tests {
     use crate::iterable::{Ref, ScatteredIterable};
 
-    __iterable!(gather pub TEST_ITERABLE: u32);
+    __iterable!(@gather pub static TEST_ITERABLE: (ScatteredIterable)<u32>;);
     __iterable!(@scatter [TEST_ITERABLE :: A] [u32] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_A: u32 = 1;));
     __iterable!(@scatter [TEST_ITERABLE :: A] [u32] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_B: u32 = 3;));
     __iterable!(@scatter [TEST_ITERABLE :: A] [u32] ([TEST_ITERABLE] => pub static ITERABLE_ITEM_C: u32 = 2;));
@@ -305,7 +302,7 @@ mod tests {
         assert!(items.contains(&3));
     }
 
-    __iterable!(gather pub EMPTY_ITERABLE: u32);
+    __iterable!(@gather pub static EMPTY_ITERABLE: (ScatteredIterable)<u32>;);
 
     #[test]
     fn test_empty_scattered_iterable() {

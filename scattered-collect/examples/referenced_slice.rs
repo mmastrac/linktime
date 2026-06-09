@@ -1,12 +1,12 @@
 //! Example for `ScatteredReferencedSlice`.
-use scattered_collect::{gather, referenced_slice::ScatteredReferencedSlice, scatter};
+use scattered_collect::{gather, scatter};
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 struct MyId(u32);
 
 /// A scattered referenced slice of `u32`.
 #[gather]
-static COLLECTION: ScatteredReferencedSlice<MyId>;
+static COLLECTION: scattered_collect::referenced_slice::ScatteredReferencedSlice<MyId>;
 
 #[scatter(COLLECTION)]
 static ITEM_ONE: MyId = MyId(1);

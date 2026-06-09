@@ -60,9 +60,9 @@ impl<T: 'static> ::core::ops::Deref for ScatteredReferencedSlice<T> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __referenced_slice {
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($collection:tt)*) < $ty:ty >;) => {
         $(#[$meta])*
-        $vis static $name: $collection<$ty> = {
+        $vis static $name: $($collection)* <$ty> = {
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = reference, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedReferenceSection<$ty>;
@@ -87,7 +87,7 @@ macro_rules! __referenced_slice {
 mod tests {
     use crate::referenced_slice::ScatteredReferencedSlice;
 
-    __referenced_slice!(@gather A pub static TEST_REF_SLICE: ScatteredReferencedSlice<u32>;);
+    __referenced_slice!(@gather A pub static TEST_REF_SLICE: (ScatteredReferencedSlice)<u32>;);
     __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_A: u32 = 1;));
     __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_B: u32 = 3;));
     __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_C: u32 = 2;));
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(*REF_SLICE_ITEM_C, 2);
     }
 
-    __referenced_slice!(@gather B pub static EMPTY_REF_SLICE: ScatteredReferencedSlice<u32>;);
+    __referenced_slice!(@gather B pub static EMPTY_REF_SLICE: (ScatteredReferencedSlice)<u32>;);
 
     #[test]
     fn test_empty_scattered_referenced_slice() {

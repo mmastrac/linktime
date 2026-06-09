@@ -220,9 +220,9 @@ impl<K: 'static, V: 'static> __ScatteredMapState<K, V> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __map {
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $map:ident < $key:ty, $value:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($map:tt)*) < $key:ty, $value:ty >;) => {
         $(#[$meta])*
-        $vis static $name: $map<$key, $value> = {
+        $vis static $name: $($map)* <$key, $value> = {
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = typed, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedSection<
@@ -273,7 +273,7 @@ macro_rules! __map {
 mod link_tests {
     use crate::ScatteredMap;
 
-    __map!(@gather A pub static TEST_MAP: ScatteredMap<&'static str, u32>;);
+    __map!(@gather A pub static TEST_MAP: (ScatteredMap)<&'static str, u32>;);
     __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static APPLE: (&'static str, u32) = ("apple", 1);));
     __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static BANANA: (&'static str, u32) = ("banana", 2);));
 
@@ -301,7 +301,7 @@ mod link_tests {
         }
     }
 
-    __map!(@gather A static TEST_MAP_2: ScatteredMap<&'static str, Record>;);
+    __map!(@gather A static TEST_MAP_2: (ScatteredMap)<&'static str, Record>;);
 
     macro_rules! make_test {
         ($($name:ident)*) => {
@@ -332,7 +332,7 @@ mod link_tests {
         TEST_MAP_2.find(&"C").unwrap().call();
     }
 
-    __map!(@gather B pub static EMPTY_MAP: ScatteredMap<&'static str, u32>;);
+    __map!(@gather B pub static EMPTY_MAP: (ScatteredMap)<&'static str, u32>;);
 
     #[test]
     fn test_empty_scattered_map() {

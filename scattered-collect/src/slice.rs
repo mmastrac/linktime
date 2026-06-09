@@ -33,9 +33,9 @@ impl<T> ::core::ops::Deref for ScatteredSlice<T> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __slice {
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($collection:tt)*) < $ty:ty >;) => {
         $(#[$meta])*
-        $vis static $name: $collection<$ty> = {
+        $vis static $name: $($collection)* <$ty> = {
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = typed, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedSection<$ty>;
@@ -60,7 +60,7 @@ macro_rules! __slice {
 mod tests {
     pub use super::ScatteredSlice;
 
-    __slice!(@gather A pub static TEST_SLICE: ScatteredSlice<u32>;);
+    __slice!(@gather A pub static TEST_SLICE: (ScatteredSlice)<u32>;);
     __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 1;));
     __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 3;));
     __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 2;));
@@ -73,7 +73,7 @@ mod tests {
         assert!(TEST_SLICE.contains(&3));
     }
 
-    __slice!(@gather B pub static EMPTY_SLICE: ScatteredSlice<u32>;);
+    __slice!(@gather B pub static EMPTY_SLICE: (ScatteredSlice)<u32>;);
 
     #[test]
     fn test_empty_scattered_slice() {
