@@ -37,6 +37,10 @@ name = "scattered-collect-map"
 path = "examples/map.rs"
 
 [[example]]
+name = "scattered-collect-set"
+path = "examples/set.rs"
+
+[[example]]
 name = "scattered-collect-slice"
 path = "examples/slice.rs"
 
