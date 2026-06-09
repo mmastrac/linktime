@@ -20,6 +20,13 @@ referenced variants allow you to access the items as `static` handles at the
 declaration site, while the unreferenced variants allow you to access the items
 as a slice only. The latter, unreferenced variants may be more efficient.
 
+## MSRV
+
+This crate currently has a MSRV of **Rust >= 1.85**. 
+
+For collections that have duplicate names across different files, **Rust >=
+1.88** is required (the `proc_macro_span` is used to generate unique filenames).
+
 ## Zero-allocation collections
 
 The collections are all zero-allocation. This means that they can be used in
