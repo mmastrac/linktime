@@ -19,6 +19,9 @@ sanitize_runs=(
   "scattered-collect:scattered-collect-sorted-slice"
   "scattered-collect:scattered-collect-referenced-slice"
   "scattered-collect:scattered-collect-sorted-referenced-slice"
+  "scattered-collect:scattered-collect-map"
+  "scattered-collect:scattered-collect-set"
+  "scattered-collect:scattered-collect-iterable"
 )
 
 for spec in "${sanitize_runs[@]}"; do

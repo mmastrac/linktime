@@ -14,6 +14,14 @@ zig_examples=(
   link-section-empty
   link-section-example
   link-section-mut
+  scattered-collect-intern-strings
+  scattered-collect-slice
+  scattered-collect-sorted-slice
+  scattered-collect-referenced-slice
+  scattered-collect-sorted-referenced-slice
+  scattered-collect-map
+  scattered-collect-set
+  scattered-collect-iterable
 )
 
 for bin in "${zig_examples[@]}"; do
