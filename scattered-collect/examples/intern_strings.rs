@@ -72,10 +72,10 @@ impl Ord for Str {
 }
 
 mod intern {
-    use crate::{ScatteredSortedReferencedSlice, Str, gather};
+    use crate::{Str, gather};
 
     #[gather]
-    pub(crate) static INTERNED_STRINGS: ScatteredSortedReferencedSlice<Str>;
+    pub(crate) static INTERNED_STRINGS: crate::ScatteredSortedReferencedSlice<Str>;
 
     macro_rules! intern_string {
         ($name:ident, $string:literal) => {

@@ -105,9 +105,9 @@ impl<T: ConstHash + 'static> SetRecord<T> {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __set {
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $set:ident < $key:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($set:tt)*) < $key:ty >;) => {
         $(#[$meta])*
-        $vis static $name: $set<$key> = {
+        $vis static $name: $($set)* <$key> = {
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = typed, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedSection<

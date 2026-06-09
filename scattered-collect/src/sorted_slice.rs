@@ -68,9 +68,9 @@ pub fn initialize_scattered_sorted_slice<T: Ord>(main: &mut [T]) {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __sorted_slice {
-    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: $collection:ident < $ty:ty >;) => {
+    (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($collection:tt)*) < $ty:ty >;) => {
         $(#[$meta])*
-        $vis static $name: $collection<$ty> = {
+        $vis static $name: $($collection)* <$ty> = {
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = mutable, name = $name :: $unique)]
                 static $name: $crate::__support::link_section::TypedMutableSection<$ty>;
@@ -103,7 +103,7 @@ macro_rules! __sorted_slice {
 mod tests {
     pub use super::ScatteredSortedSlice;
 
-    __sorted_slice!(@gather A pub static TEST_SORTED_SLICE: ScatteredSortedSlice<u32>;);
+    __sorted_slice!(@gather A pub static TEST_SORTED_SLICE: (ScatteredSortedSlice)<u32>;);
     __sorted_slice!(@scatter [TEST_SORTED_SLICE::A] [u32] ([TEST_SORTED_SLICE] => const _: u32 = 6;));
     __sorted_slice!(@scatter [TEST_SORTED_SLICE::A] [u32] ([TEST_SORTED_SLICE] => const _: u32 = 3;));
     __sorted_slice!(@scatter [TEST_SORTED_SLICE::A] [u32] ([TEST_SORTED_SLICE] => const _: u32 = 2;));
@@ -120,7 +120,7 @@ mod tests {
         }
     }
 
-    __sorted_slice!(@gather B pub static EMPTY_SORTED_SLICE: ScatteredSortedSlice<u32>;);
+    __sorted_slice!(@gather B pub static EMPTY_SORTED_SLICE: (ScatteredSortedSlice)<u32>;);
 
     #[test]
     fn test_empty_scattered_sorted_slice() {
