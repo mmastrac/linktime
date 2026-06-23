@@ -37,14 +37,17 @@ pub const fn validate_section_name(name: &str) {
 }
 
 /// Launder a pointer's provenance so it appears as an "exposed" pointer.
-#[cfg(not(windows))]
 pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
-    core::ptr::with_exposed_provenance(ptr.expose_provenance())
-}
+    #[cfg(not(windows))]
+    {
+        core::ptr::with_exposed_provenance(ptr.expose_provenance())
+    }
 
-#[cfg(windows)]
-pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
-    core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
+    // Windows requires a stronger hint to avoid mis-optimization.
+    #[cfg(windows)]
+    {
+        core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
+    }
 }
 
 /// Constant bounds for a pointer-based section.
