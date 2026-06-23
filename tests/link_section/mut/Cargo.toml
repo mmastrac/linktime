@@ -9,4 +9,10 @@ ctor = { path = "../../../ctor" }
 link-section = { path = "../../../link-section" }
 libc-print = "0.5"
 
+[profile.dev]
+lto = true
+
+[profile.release]
+lto = true
+
 [workspace]
