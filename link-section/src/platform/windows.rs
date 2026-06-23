@@ -31,12 +31,15 @@ macro_rules! __get_section_windows {
                     let start = &raw const __START;
                     start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
                 };
+                let start = $crate::__support::launder_pointer_provenance(start);
+
                 add_section_link_attribute!(
                     item data end $name
                     #[link_section = __]
                     static __END: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
                 let end = unsafe { &raw const __END as *const () };
+                let end = $crate::__support::launder_pointer_provenance(end);
 
                 add_section_link_attribute!(
                     backref data start $name

@@ -3,6 +3,8 @@ pub mod standard;
 pub mod wasm;
 pub mod windows;
 
+use core::ptr;
+
 #[cfg(target_vendor = "apple")]
 pub use apple::{get_section, section_name};
 #[cfg(all(
@@ -34,6 +36,10 @@ pub const fn validate_section_name(name: &str) {
     )) {
         standard::is_valid_section_name(name);
     }
+}
+
+pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
+    core::ptr::with_exposed_provenance(ptr.expose_provenance())
 }
 
 /// Constant bounds for a pointer-based section.
