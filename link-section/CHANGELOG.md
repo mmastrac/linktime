@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.3] - 2026-06-23
+
+### Fixed
+
+- Windows/COFF: section start/end pointers are now opacified with `black_box`,
+  fixing a miscompile where an optimizing (LTO) build could prove a gathered
+  slice (e.g. `ScatteredSlice<&'static T>`) reads as all-zero and fold it to
+  null values, crashing on use (`0xC0000005`). Fixes
+  [#479](https://github.com/mmastrac/linktime/issues/479).
+
 ## [0.18.2] - 2026-06-06
 
 ### Changed
