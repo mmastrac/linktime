@@ -3,8 +3,6 @@ pub mod standard;
 pub mod wasm;
 pub mod windows;
 
-use core::ptr;
-
 #[cfg(target_vendor = "apple")]
 pub use apple::{get_section, section_name};
 #[cfg(all(
