@@ -45,13 +45,13 @@ macro_rules! __get_section_windows {
                         SyncUnsafeCell::new(Alignment::new());
                 );
 
-                let start = $crate::__support::launder_pointer_provenance(unsafe { &raw const __START as *const () });
+                let start = unsafe { &raw const __START as *const () };
                 let start = unsafe {
                     start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
                 };
                 let end = unsafe { &raw const __END as *const () };
 
-                let ref_start = $crate::__support::launder_pointer_provenance(unsafe { &raw const __REF_START as *const () });
+                let ref_start = unsafe { &raw const __REF_START as *const () };
                 let ref_start = unsafe {
                     start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const()
                 };

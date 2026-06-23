@@ -55,40 +55,24 @@ impl PtrBounds {
     }
 }
 
-#[cfg(not(miri))]
 impl PtrBounds {
     #[inline(always)]
-    /// Start as an opaque pointer.
-    pub const fn start_ptr(&self) -> *const () {
-        self.start
-    }
-    #[inline(always)]
-    /// End as an opaque pointer.
-    pub const fn end_ptr(&self) -> *const () {
-        self.end
-    }
-    #[inline(always)]
-    /// Length in bytes (`end - start`).
-    pub const fn byte_len(&self) -> usize {
-        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
-        // so we manually implement it here.
-        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
-    }
-}
-
-#[cfg(miri)]
-impl PtrBounds {
-    /// Start as an opaque pointer.
+    /// Start pointer as an opaque pointer, with the same provenance as the end pointer.
     pub fn start_ptr(&self) -> *const () {
-        self.start as usize as *const ()
+        launder_pointer_provenance(self.start)
     }
-    /// End as an opaque pointer.
+
+    #[inline(always)]
+    /// End pointer for the section, with the same provenance as the start pointer.
     pub fn end_ptr(&self) -> *const () {
-        self.end as usize as *const ()
+        unsafe { (self.start_ptr() as *const u8).add(self.byte_len()) as *const () }
     }
+
+    #[inline(always)]
     /// Length in bytes (`end - start`).
     pub fn byte_len(&self) -> usize {
-        self.end as usize - self.start as usize
+        // Provenance-insensitive difference.
+        self.end.addr() - self.start.addr()
     }
 }
 
@@ -125,11 +109,6 @@ impl PtrMovableBounds {
     #[inline(always)]
     pub fn backrefs_start_ptr(&self) -> *const () {
         self.refs.start_ptr()
-    }
-    /// End pointer for the movable backref section.
-    #[inline(always)]
-    pub fn backrefs_end_ptr(&self) -> *const () {
-        self.refs.end_ptr()
     }
     /// Length in bytes of the movable backref section.
     #[inline(always)]
