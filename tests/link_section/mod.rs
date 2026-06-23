@@ -45,7 +45,7 @@ defer {
 }
 $ cargo run --quiet
 ! MUTABLE: [1, 2, 3, 4, 5]
-! IMMUTABLE: [1, 2, 4]
+! IMMUTABLE: [1, 4, 9]
 "#
 );
 

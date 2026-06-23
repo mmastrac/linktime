@@ -11,10 +11,10 @@ libc-print = "0.5"
 
 [profile.dev]
 lto = true
-opt-level = "3"
+opt-level = 3
 
 [profile.release]
 lto = true
-opt-level = "3"
+opt-level = 3
 
 [workspace]
