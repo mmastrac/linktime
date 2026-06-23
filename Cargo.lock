@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.18.2"
+version = "0.18.3"
 dependencies = [
  "linktime-proc-macro",
  "macrotest",
