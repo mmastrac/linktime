@@ -1,0 +1,18 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+ctor = { path = "../../../ctor" }
+link-section = { path = "../../../link-section" }
+libc-print = "0.5"
+
+[profile.dev]
+lto = true
+
+[profile.release]
+lto = true
+
+[workspace]

@@ -36,6 +36,20 @@ choice {
 );
 
 clitest!(
+    copied,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/copied";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! MUTABLE: [1, 2, 3, 4, 5]
+! IMMUTABLE: [1, 2, 4]
+"#
+);
+
+clitest!(
     interior_mut,
     r#"
 set RUSTFLAGS "";
