@@ -57,7 +57,7 @@ impl PtrBounds {
     }
 }
 
-#[cfg(all(not(miri), not(target_os = "windows")))]
+#[cfg(not(miri))]
 impl PtrBounds {
     #[inline(always)]
     /// Start as an opaque pointer.
@@ -72,44 +72,6 @@ impl PtrBounds {
     #[inline(always)]
     /// Length in bytes (`end - start`).
     pub const fn byte_len(&self) -> usize {
-        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
-        // so we manually implement it here.
-        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
-    }
-}
-
-#[cfg(all(not(miri), target_os = "windows"))]
-impl PtrBounds {
-    // On Windows the bounds are the addresses of two distinct marker statics
-    // (`__START` / `__END`) and the items live in *separate* statics in
-    // between. A pointer that keeps its `&__START` provenance only covers the
-    // `__START` allocation, so a `&[T]` spanning the items through it is UB —
-    // and LLVM exploits it: it proves every element load observes `__START`'s
-    // zero bytes and constant-folds `iter().copied().collect()` into a
-    // zero-filled allocation, so the slice reads as all-null at runtime.
-    //
-    // `black_box` lowers to an inline-asm barrier with a memory clobber, which
-    // yields a pointer of unknown provenance the optimizer cannot trace back to
-    // `__START` — so it can no longer prove the span. An exposed-provenance
-    // round-trip (`with_exposed_provenance(ptr.expose_provenance())`) is *not*
-    // sufficient: it lowers to `inttoptr`/`ptrtoint`, which LLVM folds back to
-    // the original pointer (and thus the original provenance) under LTO.
-    // ELF/Mach-O don't need this: their bounds come from opaque linker-defined
-    // `extern` symbols, which already have unknown provenance.
-    #[inline(always)]
-    /// Start as an opaque pointer, with provenance opacified (see the impl
-    /// comment for why this is required on COFF/Windows).
-    pub fn start_ptr(&self) -> *const () {
-        ::core::hint::black_box(self.start)
-    }
-    #[inline(always)]
-    /// End as an opaque pointer, with provenance opacified.
-    pub fn end_ptr(&self) -> *const () {
-        ::core::hint::black_box(self.end)
-    }
-    #[inline(always)]
-    /// Length in bytes (`end - start`).
-    pub fn byte_len(&self) -> usize {
         // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
         // so we manually implement it here.
         unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
