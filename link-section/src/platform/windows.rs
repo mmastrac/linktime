@@ -53,7 +53,7 @@ macro_rules! __get_section_windows {
 
                 let ref_start = unsafe { &raw const __REF_START as *const () };
                 let ref_start = unsafe {
-                    start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const()
+                    ref_start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const ()
                 };
                 let ref_end = unsafe { &raw const __REF_END as *const () };
 
