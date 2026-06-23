@@ -3,19 +3,13 @@
 use link_section::{in_section, section};
 use std::fmt;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct ComplexType {
     static_string: &'static str,
     static_ptr: &'static OtherType,
 }
 
-impl fmt::Debug for ComplexType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.static_string)
-    }
-}
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct OtherType {
     u32: u32,
     u64: u64,
