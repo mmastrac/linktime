@@ -36,6 +36,7 @@ pub const fn validate_section_name(name: &str) {
     }
 }
 
+/// Launder a pointer's provenance so it appears as an "exposed" pointer.
 pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
     core::ptr::with_exposed_provenance(ptr.expose_provenance())
 }
