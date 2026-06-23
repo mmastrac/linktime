@@ -45,17 +45,21 @@ const _: ComplexType = ComplexType {
     static_ptr: &OTHER_TYPE,
 };
 
-#[in_section(MUT_LINK_SECTION)]
-const _: ComplexType = ComplexType {
-    static_string: "4",
-    static_ptr: &OTHER_TYPE_2,
-};
+mod other {
+    use super::*;
 
-#[in_section(MUT_LINK_SECTION)]
-const _: ComplexType = ComplexType {
-    static_string: "5",
-    static_ptr: &OTHER_TYPE,
-};
+    #[in_section(MUT_LINK_SECTION)]
+    const _: ComplexType = ComplexType {
+        static_string: "4",
+        static_ptr: &OTHER_TYPE_2,
+    };
+
+    #[in_section(MUT_LINK_SECTION)]
+    const _: ComplexType = ComplexType {
+        static_string: "5",
+        static_ptr: &OTHER_TYPE,
+    };
+}
 
 #[section(typed)]
 pub static IMMUTABLE_LINK_SECTION: link_section::TypedSection<ComplexType>;
@@ -66,17 +70,21 @@ const _: ComplexType = ComplexType {
     static_ptr: &OTHER_TYPE,
 };
 
-#[in_section(IMMUTABLE_LINK_SECTION)]
-const _: ComplexType = ComplexType {
-    static_string: "9",
-    static_ptr: &OTHER_TYPE_2,
-};
+mod other_immutable {
+    use super::*;
 
-#[in_section(IMMUTABLE_LINK_SECTION)]
-const _: ComplexType = ComplexType {
-    static_string: "4",
-    static_ptr: &OTHER_TYPE,
-};
+    #[in_section(IMMUTABLE_LINK_SECTION)]
+    const _: ComplexType = ComplexType {
+        static_string: "9",
+        static_ptr: &OTHER_TYPE_2,
+    };
+
+    #[in_section(IMMUTABLE_LINK_SECTION)]
+    const _: ComplexType = ComplexType {
+        static_string: "4",
+        static_ptr: &OTHER_TYPE,
+    };
+}
 
 pub fn main() {
     // LLVM was optimizing these copies into memsets
