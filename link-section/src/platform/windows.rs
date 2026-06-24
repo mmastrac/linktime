@@ -27,33 +27,34 @@ macro_rules! __get_section_windows {
                     #[link_section = __]
                     static __START: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
-                let start = unsafe {
-                    let start = &raw const __START;
-                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
-                };
                 add_section_link_attribute!(
                     item data end $name
                     #[link_section = __]
                     static __END: SyncUnsafeCell<Alignment<$generic_ty>> = SyncUnsafeCell::new(Alignment::new());
                 );
-                let end = unsafe { &raw const __END as *const () };
-
                 add_section_link_attribute!(
                     backref data start $name
                     #[link_section = __]
                     static __REF_START: SyncUnsafeCell<Alignment<$crate::MovableBackref<$generic_ty>>> =
                         SyncUnsafeCell::new(Alignment::new());
                 );
-                let ref_start = unsafe {
-                    let start = &raw const __REF_START;
-                    start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const()
-                };
                 add_section_link_attribute!(
                     backref data end $name
                     #[link_section = __]
                     static __REF_END: SyncUnsafeCell<Alignment<$crate::MovableBackref<$generic_ty>>> =
                         SyncUnsafeCell::new(Alignment::new());
                 );
+
+                let start = unsafe { &raw const __START as *const () };
+                let start = unsafe {
+                    start.cast::<u8>().add(mem::size_of::<Alignment<$generic_ty>>()) as *const()
+                };
+                let end = unsafe { &raw const __END as *const () };
+
+                let ref_start = unsafe { &raw const __REF_START as *const () };
+                let ref_start = unsafe {
+                    ref_start.cast::<u8>().add(mem::size_of::<Alignment<$crate::MovableBackref<$generic_ty>>>()) as *const ()
+                };
                 let ref_end = unsafe { &raw const __REF_END as *const () };
 
                 $crate::__support::MovableBounds::new(

@@ -36,7 +36,7 @@ impl Section {
     /// The end address of the section.
     #[inline]
     pub fn end_ptr(&self) -> *const () {
-        self.bounds.end_ptr()
+        unsafe { (self.start_ptr() as *const u8).add(self.byte_len()) as *const () }
     }
 
     /// Ensures that a section exists at the given path.

@@ -36,6 +36,25 @@ choice {
 );
 
 clitest!(
+    copied,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/copied";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+"""
+MUTABLE: [ComplexType { static_string: "1", static_ptr: OtherType { u32: 1, u64: 2 } }, ComplexType { static_string: "2", static_ptr: OtherType { u32: 1, u64: 2 } }, ComplexType { static_string: "3", static_ptr: OtherType { u32: 1, u64: 2 } }, ComplexType { static_string: "4", static_ptr: OtherType { u32: 3, u64: 4 } }, ComplexType { static_string: "5", static_ptr: OtherType { u32: 1, u64: 2 } }]
+IMMUTABLE: [ComplexType { static_string: "1", static_ptr: OtherType { u32: 1, u64: 2 } }, ComplexType { static_string: "4", static_ptr: OtherType { u32: 1, u64: 2 } }, ComplexType { static_string: "9", static_ptr: OtherType { u32: 3, u64: 4 } }]
+LEN=5
+VALS=[10, 20, 30, 40, 50]
+OK
+"""
+"#
+);
+
+clitest!(
     interior_mut,
     r#"
 set RUSTFLAGS "";

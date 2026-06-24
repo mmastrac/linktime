@@ -36,6 +36,26 @@ pub const fn validate_section_name(name: &str) {
     }
 }
 
+/// Launder a pointer's provenance so it appears as an "exposed" pointer.
+pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
+    #[cfg(not(windows))]
+    {
+        core::ptr::with_exposed_provenance(ptr.expose_provenance())
+    }
+
+    // Windows requires a stronger hint to avoid mis-optimization. On Windows, section bounds
+    // come from marker sections. LLVM may fold ptrtoint/inttoptr under LTO, which takes our
+    // exposed provenance and reverts it, which it then traces to the marker allocation which
+    // it then believes all slice loads come from.
+    //
+    // Treating this provenance round-trip as a no-op is arguably an LLVM optimization issue
+    // somewhere between Rust and LLVM.
+    #[cfg(windows)]
+    {
+        core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
+    }
+}
+
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
     /// Section start address.
@@ -51,78 +71,24 @@ impl PtrBounds {
     }
 }
 
-#[cfg(all(not(miri), not(target_os = "windows")))]
 impl PtrBounds {
     #[inline(always)]
-    /// Start as an opaque pointer.
-    pub const fn start_ptr(&self) -> *const () {
-        self.start
-    }
-    #[inline(always)]
-    /// End as an opaque pointer.
-    pub const fn end_ptr(&self) -> *const () {
-        self.end
-    }
-    #[inline(always)]
-    /// Length in bytes (`end - start`).
-    pub const fn byte_len(&self) -> usize {
-        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
-        // so we manually implement it here.
-        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
-    }
-}
-
-#[cfg(all(not(miri), target_os = "windows"))]
-impl PtrBounds {
-    // On Windows the bounds are the addresses of two distinct marker statics
-    // (`__START` / `__END`) and the items live in *separate* statics in
-    // between. A pointer that keeps its `&__START` provenance only covers the
-    // `__START` allocation, so a `&[T]` spanning the items through it is UB —
-    // and LLVM exploits it: it proves every element load observes `__START`'s
-    // zero bytes and constant-folds `iter().copied().collect()` into a
-    // zero-filled allocation, so the slice reads as all-null at runtime.
-    //
-    // `black_box` lowers to an inline-asm barrier with a memory clobber, which
-    // yields a pointer of unknown provenance the optimizer cannot trace back to
-    // `__START` — so it can no longer prove the span. An exposed-provenance
-    // round-trip (`with_exposed_provenance(ptr.expose_provenance())`) is *not*
-    // sufficient: it lowers to `inttoptr`/`ptrtoint`, which LLVM folds back to
-    // the original pointer (and thus the original provenance) under LTO.
-    // ELF/Mach-O don't need this: their bounds come from opaque linker-defined
-    // `extern` symbols, which already have unknown provenance.
-    #[inline(always)]
-    /// Start as an opaque pointer, with provenance opacified (see the impl
-    /// comment for why this is required on COFF/Windows).
+    /// Start pointer as an opaque pointer, with the same provenance as the end pointer.
     pub fn start_ptr(&self) -> *const () {
-        ::core::hint::black_box(self.start)
+        launder_pointer_provenance(self.start)
     }
+
     #[inline(always)]
-    /// End as an opaque pointer, with provenance opacified.
+    /// End pointer for the section, with the same provenance as the start pointer.
     pub fn end_ptr(&self) -> *const () {
-        ::core::hint::black_box(self.end)
+        unsafe { (self.start_ptr() as *const u8).add(self.byte_len()) as *const () }
     }
+
     #[inline(always)]
     /// Length in bytes (`end - start`).
     pub fn byte_len(&self) -> usize {
-        // NOTE: MSRV for non-WASM targets doesn't allow byte_offset_from,
-        // so we manually implement it here.
-        unsafe { (self.end.cast::<u8>()).offset_from(self.start.cast::<u8>()) as usize }
-    }
-}
-
-#[cfg(miri)]
-impl PtrBounds {
-    /// Start as an opaque pointer.
-    pub fn start_ptr(&self) -> *const () {
-        self.start as usize as *const ()
-    }
-    /// End as an opaque pointer.
-    pub fn end_ptr(&self) -> *const () {
-        self.end as usize as *const ()
-    }
-    /// Length in bytes (`end - start`).
-    pub fn byte_len(&self) -> usize {
-        self.end as usize - self.start as usize
+        // Provenance-insensitive difference.
+        self.end.addr() - self.start.addr()
     }
 }
 
@@ -159,11 +125,6 @@ impl PtrMovableBounds {
     #[inline(always)]
     pub fn backrefs_start_ptr(&self) -> *const () {
         self.refs.start_ptr()
-    }
-    /// End pointer for the movable backref section.
-    #[inline(always)]
-    pub fn backrefs_end_ptr(&self) -> *const () {
-        self.refs.end_ptr()
     }
     /// Length in bytes of the movable backref section.
     #[inline(always)]
