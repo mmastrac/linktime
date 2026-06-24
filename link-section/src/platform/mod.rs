@@ -43,7 +43,13 @@ pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
         core::ptr::with_exposed_provenance(ptr.expose_provenance())
     }
 
-    // Windows requires a stronger hint to avoid mis-optimization.
+    // Windows requires a stronger hint to avoid mis-optimization. On Windows, section bounds
+    // come from marker sections. LLVM may fold ptrtoint/inttoptr under LTO, which takes our
+    // exposed provenance and reverts it, which it then traces to the marker allocation which
+    // it then believes all slice loads come from.
+    //
+    // Treating this provenance round-trip as a no-op is arguably an LLVM optimization issue
+    // somewhere between Rust and LLVM.
     #[cfg(windows)]
     {
         core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
