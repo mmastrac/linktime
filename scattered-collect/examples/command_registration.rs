@@ -1,3 +1,4 @@
+//! Example for `ScatteredMap`: registering named commands at link-time.
 use scattered_collect::{ScatteredMap, gather, scatter};
 
 trait Command: Send + Sync {
@@ -7,6 +8,7 @@ trait Command: Send + Sync {
 #[gather]
 static COMMANDS: ScatteredMap<&'static str, &'static dyn Command>;
 
+/// Macro for registering commands at link-time.
 #[macro_export]
 macro_rules! register_commands {
     ($($command:ident: $type:ident),* $(,)?) => {
