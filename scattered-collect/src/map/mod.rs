@@ -3,6 +3,7 @@
 
 use link_section::{TypedMutableSection, TypedSection};
 use std::{
+    borrow::Borrow,
     mem::MaybeUninit,
     ptr,
     sync::atomic::{AtomicU8, Ordering},
@@ -73,15 +74,30 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
         Self { state }
     }
 
+    /// Lookup a value by key (deprecated, use `get` instead).
+    #[deprecated(since = "0.21.0", note = "Use `get` instead.")]
+    #[inline]
+    pub fn find<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: ConstHash + Eq + ?Sized,
+    {
+        self.get(key)
+    }
+
     /// Lookup a value by key.
     #[inline]
-    pub fn find(&self, key: &K) -> Option<&V> {
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: ConstHash + Eq + ?Sized,
+    {
         let this = self.state;
         let table = this.ensure_initialized();
         let hash = ConstHash::hash(key);
         let offset = (table.lookup_fn)(table, hash)?;
         let record = &this.records[offset as usize];
-        if record.key == *key {
+        if record.key.borrow() == key {
             Some(&record.value)
         } else {
             None
@@ -108,8 +124,12 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
 
     /// True when a key is present in the map.
     #[inline]
-    pub fn contains_key(&self, key: &K) -> bool {
-        self.find(key).is_some()
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: ConstHash + Eq + ?Sized,
+    {
+        self.get(key).is_some()
     }
 
     /// The number of records in the map.
@@ -267,6 +287,13 @@ macro_rules! __map {
             const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
+    (@scatter [$collection_name:ident :: $unique:ident] [$key:ty , $value:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = $expr:expr;)) => {
+        ::core::compile_error!(
+            "invalid #[scatter] syntax for ScatteredMap: expected \
+             `static NAME: (Key, Value) = (key_expr, value_expr);` \
+             (for example: `static FOO: (&'static str, u32) = (\"foo\", 1);`)"
+        );
+    };
 }
 
 #[cfg(all(test, not(miri)))]
@@ -278,12 +305,16 @@ mod link_tests {
     __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static BANANA: (&'static str, u32) = ("banana", 2);));
 
     #[test]
-    fn scattered_map_gather_scatter_find() {
+    fn scattered_map_gather_scatter_get() {
         assert_eq!(TEST_MAP.len(), 2);
-        assert_eq!(TEST_MAP.find(&"apple"), Some(&1));
-        assert_eq!(TEST_MAP.find(&"banana"), Some(&2));
-        assert_eq!(TEST_MAP.find(&"orange"), None);
+        assert_eq!(TEST_MAP.get(&"apple"), Some(&1));
+        assert_eq!(TEST_MAP.get(&"banana"), Some(&2));
+        assert_eq!(TEST_MAP.get(&"orange"), None);
         assert!(TEST_MAP.contains_key(&"apple"));
+
+        // This works for a borrow from a string too
+        let apple = String::from("apple");
+        assert_eq!(TEST_MAP.get(apple.as_str()), Some(&1));
     }
 
     struct Record {
@@ -326,10 +357,10 @@ mod link_tests {
     );
 
     #[test]
-    fn test_scattered_map_2() {
-        TEST_MAP_2.find(&"A").unwrap().call();
-        TEST_MAP_2.find(&"B").unwrap().call();
-        TEST_MAP_2.find(&"C").unwrap().call();
+    fn test_scattered_map_large() {
+        TEST_MAP_2.get(&"A").unwrap().call();
+        TEST_MAP_2.get(&"B").unwrap().call();
+        TEST_MAP_2.get(&"C").unwrap().call();
     }
 
     __map!(@gather B pub static EMPTY_MAP: (ScatteredMap)<&'static str, u32>;);
@@ -338,7 +369,7 @@ mod link_tests {
     fn test_empty_scattered_map() {
         assert_eq!(EMPTY_MAP.len(), 0);
         assert!(EMPTY_MAP.is_empty());
-        assert_eq!(EMPTY_MAP.find(&"apple"), None);
+        assert_eq!(EMPTY_MAP.get(&"apple"), None);
         assert!(!EMPTY_MAP.contains_key(&"apple"));
     }
 }

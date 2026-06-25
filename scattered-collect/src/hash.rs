@@ -15,21 +15,36 @@ pub trait ConstHash {
     fn hash(&self) -> u64;
 }
 
-impl ConstHash for &'static str {
-    type Hasher = StrHasher;
-    const HASHER: Self::Hasher = StrHasher;
+macro_rules! const_hash_str {
+    ($($ty:ty)*) => {
+        $(
+            impl ConstHash for $ty {
+                type Hasher = StrHasher;
+                const HASHER: Self::Hasher = StrHasher;
+                fn hash(&self) -> u64 {
+                    (Self::HASHER).const_hash(self)
+                }
+            }
 
-    fn hash(&self) -> u64 {
-        (Self::HASHER).const_hash(self)
+            impl <'a> ConstHash for &'a $ty {
+                type Hasher = StrHasher;
+                const HASHER: Self::Hasher = StrHasher;
+                fn hash(&self) -> u64 {
+                    (Self::HASHER).const_hash(self)
+                }
+            }
+        )*
     }
 }
+
+const_hash_str!(String str std::borrow::Cow<'_, str>);
 
 #[doc(hidden)]
 pub struct StrHasher;
 
 impl StrHasher {
     /// Hash a string at compile time.
-    pub const fn const_hash(self, s: &'static str) -> u64 {
+    pub const fn const_hash(self, s: &str) -> u64 {
         xxhash_rust::const_xxh3::xxh3_64(s.as_bytes())
     }
 }

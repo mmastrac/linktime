@@ -21,16 +21,26 @@ pub use sorted_slice::ScatteredSortedSlice;
 #[macro_export]
 macro_rules! __scatter_parse {
     // Send the #[scatter]'d item into the collection's private macro.
-    (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $($item:tt)*) => {
+    (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $vis:vis static $($item:tt)*) => {
         $($meta)* ! (
             ([$($meta)*] =>
             $(#[$imeta])*
+            $vis static
+            $($item)*
+            )
+        );
+    };
+    (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $vis:vis const $($item:tt)*) => {
+        $($meta)* ! (
+            ([$($meta)*] =>
+            $(#[$imeta])*
+            $vis const
             $($item)*
             )
         );
     };
     (#[scatter] $($rest:tt)* ) => {
-        compile_error!("Unknown collection type");
+        compile_error!("Missing collection for #[scatter] attribute. Expected: #[scatter(COLLECTION)] <item>;");
     };
 
     (@reorder (#[scatter] $($item:tt)*) ($($rest:tt)*)) => {
