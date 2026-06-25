@@ -1,4 +1,6 @@
 //! A swiss-table-style set initialized with link-time data.
+use std::borrow::Borrow;
+
 use crate::{
     ScatteredMap,
     hash::ConstHash,
@@ -39,7 +41,11 @@ impl<T: ConstHash + PartialEq + 'static> ScatteredSet<T> {
 
     /// True if the set contains the given key.
     #[inline]
-    pub fn contains(&self, key: &T) -> bool {
+    pub fn contains<Q>(&self, key: &Q) -> bool
+    where
+        T: Borrow<Q>,
+        Q: ConstHash + Eq + ?Sized,
+    {
         self.map.contains_key(key)
     }
 
