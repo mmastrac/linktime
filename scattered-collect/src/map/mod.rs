@@ -74,6 +74,7 @@ impl<K: ConstHash + PartialEq + 'static, V: 'static> ScatteredMap<K, V> {
         Self { state }
     }
 
+    /// Lookup a value by key (deprecated, use `get` instead).
     #[deprecated(since = "0.21.0", note = "Use `get` instead.")]
     #[inline]
     pub fn find<Q>(&self, key: &Q) -> Option<&V>
