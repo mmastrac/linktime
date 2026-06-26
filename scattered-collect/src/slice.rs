@@ -47,7 +47,7 @@ macro_rules! __slice {
         };
     };
 
-    (@scatter [$collection_name:ident :: $unique:ident] $types:tt ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $type:ident $name:tt: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique, type = typed)]
             $(#[$imeta])*
@@ -61,9 +61,9 @@ mod tests {
     pub use super::ScatteredSlice;
 
     __slice!(@gather A pub static TEST_SLICE: (ScatteredSlice)<u32>;);
-    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 1;));
-    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 3;));
-    __slice!(@scatter [TEST_SLICE :: A] [u32] ([TEST_SLICE] => const _: u32 = 2;));
+    __slice!(@scatter [TEST_SLICE :: A] ([TEST_SLICE] => const _: u32 = 1;));
+    __slice!(@scatter [TEST_SLICE :: A] ([TEST_SLICE] => const _: u32 = 3;));
+    __slice!(@scatter [TEST_SLICE :: A] ([TEST_SLICE] => const _: u32 = 2;));
 
     #[test]
     fn test_scattered_slice() {

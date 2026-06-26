@@ -108,10 +108,19 @@ impl<T: ConstHash + 'static> SetRecord<T> {
     }
 }
 
+impl<K: 'static> crate::ScatteredElementType for ScatteredSet<K> {
+    type T = SetRecord<K>;
+}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __set {
     (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($set:tt)*) < $key:ty >;) => {
+        // Type alias for element type projection.
+        #[doc(hidden)]
+        #[allow(unused, non_camel_case_types)]
+        $vis type $name = $($set)* <$key>;
+
         $(#[$meta])*
         $vis static $name: $($set)* <$key> = {
             $crate::__support::link_section::declarative::section!(
@@ -143,11 +152,11 @@ macro_rules! __set {
             $crate::set::ScatteredSet::__new(&__MAP_STATE)
         };
     };
-    (@scatter [$collection_name:ident :: $unique:ident] [$key:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = $key_expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = $key_expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique, type = typed)]
             $(#[$imeta])*
-            $vis $kind $name: $crate::set::SetRecord<$key> = $crate::set::SetRecord::new(
+            $vis $kind $name: <$($meta)* as $crate::ScatteredElementType>::T = $crate::set::SetRecord::new(
                 $key_expr,
                 $crate::const_hash!($key_expr)
             );

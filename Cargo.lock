@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.21.1"
+version = "0.21.2"
 dependencies = [
  "ctor",
  "divan",

@@ -75,7 +75,7 @@ macro_rules! __referenced_slice {
             }
         };
     };
-    (@scatter [$collection_name:ident :: $unique:ident] $types:tt ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique, type = reference)]
             $vis static $name: $ty = $expr;
@@ -88,9 +88,9 @@ mod tests {
     use crate::referenced_slice::ScatteredReferencedSlice;
 
     __referenced_slice!(@gather A pub static TEST_REF_SLICE: (ScatteredReferencedSlice)<u32>;);
-    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_A: u32 = 1;));
-    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_B: u32 = 3;));
-    __referenced_slice!(@scatter [TEST_REF_SLICE::A] [u32] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_C: u32 = 2;));
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_A: u32 = 1;));
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_B: u32 = 3;));
+    __referenced_slice!(@scatter [TEST_REF_SLICE::A] ([TEST_REF_SLICE] => pub static REF_SLICE_ITEM_C: u32 = 2;));
 
     #[test]
     fn test_scattered_referenced_slice() {

@@ -39,6 +39,15 @@ impl<K, V> MapRecord<K, V> {
     }
 }
 
+impl<K: 'static, V: 'static> crate::ScatteredElementType for ScatteredMap<K, V> {
+    type T = MapRecord<K, V>;
+}
+
+impl<K: 'static, V: 'static> crate::ScatteredElementTuple for ScatteredMap<K, V> {
+    type A = K;
+    type B = V;
+}
+
 impl<K, V> ::core::fmt::Debug for MapRecord<K, V>
 where
     K: ::core::fmt::Debug,
@@ -241,6 +250,11 @@ impl<K: 'static, V: 'static> __ScatteredMapState<K, V> {
 #[doc(hidden)]
 macro_rules! __map {
     (@gather $unique:ident $(#[$meta:meta])* $vis:vis static $name:ident: ($($map:tt)*) < $key:ty, $value:ty >;) => {
+        // Type alias for element type projection.
+        #[doc(hidden)]
+        #[allow(unused, non_camel_case_types)]
+        $vis type $name = $($map)* <$key, $value>;
+
         $(#[$meta])*
         $vis static $name: $($map)* <$key, $value> = {
             $crate::__support::link_section::declarative::section!(
@@ -273,13 +287,16 @@ macro_rules! __map {
         };
     };
     // Accept any initializer expression and let the compiler validate its shape
-    // through the typed `let (key, value): (Key, Value) = ...` binding below.
-    (@scatter [$collection_name:ident :: $unique:ident] [$key:ty , $value:ty] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = $init:expr;)) => {
+    // through the typed `let entry: (Key, Value) = ...` binding below.
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis $kind:ident $name:tt: $ty:ty = $init:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique, type = typed)]
             $(#[$imeta])*
-            $vis $kind $name: $crate::map::MapRecord<$key, $value> = {
-                let entry: ($key, $value) = $init;
+            $vis $kind $name: <$($meta)* as $crate::ScatteredElementType>::T = {
+                let entry: (
+                    <$($meta)* as $crate::ScatteredElementTuple>::A,
+                    <$($meta)* as $crate::ScatteredElementTuple>::B,
+                ) = $init;
                 // Check against both types: local and collection
                 let _: &$ty = &entry;
                 let (key, value) = entry;
@@ -291,7 +308,7 @@ macro_rules! __map {
             const _: $crate::map::MapMetadataChunk = $crate::map::MAP_METADATA_CHUNK_ZERO;
         );
     };
-    (@scatter [$collection_name:ident :: $unique:ident] [$key:ty , $value:ty] ([$($meta:tt)*] => $($rest:tt)*)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $($rest:tt)*)) => {
         ::core::compile_error!(
             "invalid #[scatter] syntax for ScatteredMap: expected \
              `static NAME: (Key, Value) = <expr>;` where `<expr>` resolves to a \
@@ -305,8 +322,8 @@ mod link_tests {
     use crate::ScatteredMap;
 
     __map!(@gather A pub static TEST_MAP: (ScatteredMap)<&'static str, u32>;);
-    __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static APPLE: (&'static str, u32) = ("apple", 1);));
-    __map!(@scatter [TEST_MAP::A] [&'static str, u32] ([TEST_MAP] => pub static BANANA: (&'static str, u32) = ("banana", 2);));
+    __map!(@scatter [TEST_MAP::A] ([TEST_MAP] => pub static APPLE: (&'static str, u32) = ("apple", 1);));
+    __map!(@scatter [TEST_MAP::A] ([TEST_MAP] => pub static BANANA: (&'static str, u32) = ("banana", 2);));
 
     #[test]
     fn scattered_map_gather_scatter_get() {
@@ -341,7 +358,7 @@ mod link_tests {
     macro_rules! make_test {
         ($($name:ident)*) => {
             $(
-            __map!(@scatter [TEST_MAP_2::A] [&'static str, Record] ([TEST_MAP_2] => pub static
+            __map!(@scatter [TEST_MAP_2::A] ([TEST_MAP_2] => pub static
                 $name: (&'static str, Record) = (
                     stringify!($name),
                     Record::new(stringify!($name), |_key| println!(stringify!($name)))
@@ -370,7 +387,7 @@ mod link_tests {
     // A `const` block initializer that resolves to a `(key, value)` tuple is
     // accepted just like a direct tuple literal.
     __map!(@gather C pub static BLOCK_MAP: (ScatteredMap)<&'static str, u32>;);
-    __map!(@scatter [BLOCK_MAP::C] [&'static str, u32] ([BLOCK_MAP] => pub static CHERRY: (&'static str, u32) = {
+    __map!(@scatter [BLOCK_MAP::C] ([BLOCK_MAP] => pub static CHERRY: (&'static str, u32) = {
         const KEY: &str = "cherry";
         (KEY, 3)
     };));
