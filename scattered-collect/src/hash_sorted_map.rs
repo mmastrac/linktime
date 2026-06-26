@@ -111,7 +111,9 @@ impl<K, V> HashBackref<K, V> {
 }
 
 // The record pointers refer to `static` link-section storage that is fixed after link time.
+#[allow(unsafe_code)]
 unsafe impl<K: Sync, V: Sync> Sync for HashBackref<K, V> {}
+#[allow(unsafe_code)]
 unsafe impl<K: Send, V: Send> Send for HashBackref<K, V> {}
 
 /// A map whose hash index is sorted at link time for hybrid interpolation + SIMD lookup.
@@ -151,6 +153,7 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
 
     /// Lookup a value by key using coarse interpolation jumps and SIMD tag filtering.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn find(&self, key: &K) -> Option<&V>
     where
         K: ConstHash + PartialEq,
@@ -228,6 +231,7 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
     }
 
     /// Iterate over entries in hash-sorted order.
+    #[allow(unsafe_code)]
     pub fn sorted_entries(&self) -> impl Iterator<Item = (&K, &V)> {
         self.hash_index().iter().map(|entry| {
             let record = unsafe { &*entry.record };
@@ -502,12 +506,10 @@ pub fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Opt
         let hi_hash = index[hi].hash;
         let span = hi_hash.wrapping_sub(lo_hash);
         if span == 0 {
-            for i in lo..=hi {
-                if index[i].hash == hash {
-                    return Some(i);
-                }
-            }
-            return None;
+            return index[lo..=hi]
+                .iter()
+                .position(|entry| entry.hash == hash)
+                .map(|offset| lo + offset);
         }
 
         let pos = interpolate_pos(lo, hi, lo_hash, hi_hash, hash, None);
@@ -550,7 +552,6 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
         return (None, steps);
     }
 
-    let target_tag = hash_tag(hash);
     let bucket = (hash >> 56) as usize;
     let (mut low, mut high) = if let Some(radix) = radix {
         if radix.starts[bucket] == radix.starts[bucket + 1] {
@@ -568,7 +569,7 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
     let window = high.saturating_sub(low) + 1;
     if window < RADIX_LINEAR_THRESHOLD {
         return (
-            linear_tag_block_search(index, tags, hash, target_tag, low, high, len, &mut steps),
+            linear_tag_block_search(index, tags, hash, low, high, &mut steps),
             steps,
         );
     }
@@ -614,17 +615,9 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
     let mut block_offset = low;
     while block_offset <= high {
         steps.simd_blocks += 1;
-        if let Some(idx) = simd_verify_tag_block(
-            index,
-            tags,
-            hash,
-            target_tag,
-            block_offset,
-            low,
-            high,
-            len,
-            &mut steps,
-        ) {
+        if let Some(idx) =
+            simd_verify_tag_block(index, tags, hash, block_offset, low, high, &mut steps)
+        {
             return (Some(idx), steps);
         }
         block_offset += TAG_BLOCK_SIZE;
@@ -638,10 +631,8 @@ fn linear_tag_block_search<K, V>(
     index: &[HashBackref<K, V>],
     tags: &[Tag],
     hash: u64,
-    target_tag: Tag,
     low: usize,
     high: usize,
-    len: usize,
     steps: &mut SearchStepCounts,
 ) -> Option<usize> {
     let window = high.saturating_sub(low) + 1;
@@ -650,17 +641,8 @@ fn linear_tag_block_search<K, V>(
     let mut block_offset = low;
     while block_offset <= high {
         steps.simd_blocks += 1;
-        if let Some(idx) = simd_verify_tag_block(
-            index,
-            tags,
-            hash,
-            target_tag,
-            block_offset,
-            low,
-            high,
-            len,
-            steps,
-        ) {
+        if let Some(idx) = simd_verify_tag_block(index, tags, hash, block_offset, low, high, steps)
+        {
             return Some(idx);
         }
         block_offset += TAG_BLOCK_SIZE;
@@ -683,11 +665,9 @@ fn simd_verify_tag_block<K, V>(
     index: &[HashBackref<K, V>],
     tags: &[Tag],
     hash: u64,
-    target_tag: Tag,
     block_offset: usize,
     low: usize,
     high: usize,
-    len: usize,
     steps: &mut SearchStepCounts,
 ) -> Option<usize> {
     if block_offset + TAG_BLOCK_SIZE > tags.len() {
@@ -695,14 +675,14 @@ fn simd_verify_tag_block<K, V>(
     }
 
     let current_tags = load_tag_block(tags, block_offset);
-    let target_vec = TagVector::splat(target_tag);
+    let target_vec = TagVector::splat(hash_tag(hash));
     let mut move_mask = current_tags.simd_eq(target_vec).to_bitmask();
 
     while move_mask != 0 {
         let lane = move_mask.trailing_zeros() as usize;
         let candidate_idx = block_offset + lane;
 
-        if candidate_idx >= low && candidate_idx <= high && candidate_idx < len {
+        if candidate_idx >= low && candidate_idx <= high && candidate_idx < index.len() {
             steps.simd_candidates += 1;
             let candidate = &index[candidate_idx];
             if candidate.hash == hash {
