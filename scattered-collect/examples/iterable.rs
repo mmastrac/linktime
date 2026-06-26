@@ -17,6 +17,14 @@ static ITEM_TWO: MyId = MyId(2);
 #[scatter(COLLECTION)]
 static ITEM_THREE: MyId = MyId(3);
 
+// Scatter sites can live in other modules.
+mod other_module {
+    use scattered_collect::scatter;
+
+    #[scatter(crate::COLLECTION)]
+    static ITEM_FOUR: super::MyId = super::MyId(4);
+}
+
 fn main() {
     println!("COLLECTION len: {}", COLLECTION.len());
     println!("ITEM_ONE: {:?}", *ITEM_ONE);

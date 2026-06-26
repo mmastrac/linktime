@@ -172,6 +172,12 @@ impl<T: 'static> ScatteredIterable<T> {
         Self { state }
     }
 
+    /// Register a scattered node with this iterable.
+    #[doc(hidden)]
+    pub fn __submit(&self, node: &'static Ref<T>) {
+        submit(self.state, node);
+    }
+
     /// The number of items in the iterable.
     pub fn len(&self) -> usize {
         self.state.len.load(Ordering::Acquire)
@@ -229,7 +235,7 @@ macro_rules! __iterable {
         $crate::__support::ctor::declarative::ctor!(
             #[ctor(unsafe, anonymous, priority = 0)]
             fn __iterable_submit() {
-                $crate::iterable::submit(&$crate::__iterable_state!($($meta)*), &$name);
+                $($meta)*.__submit(&$name);
             }
         );
     };

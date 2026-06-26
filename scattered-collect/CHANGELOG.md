@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ScatteredMap` and `ScatteredSet` use type aliases from the `gather`'d
   collection rather than re-exporting the `gather` macro's type. This fixes
   issues using $crate in collection types.
+- `ScatteredIterable` cross-module fixes.
 
 ## [0.21.1] - 2026-06-26
 
