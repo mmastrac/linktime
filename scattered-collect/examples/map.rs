@@ -13,8 +13,13 @@ static APPLE: (&'static str, MyId) = ("apple", MyId(1));
 #[scatter(MAP)]
 static BANANA: (&'static str, MyId) = ("banana", MyId(2));
 
+// Map keys and values can be `const`-computed!
 #[scatter(MAP)]
-static ORANGE: (&'static str, MyId) = ("orange", MyId(3));
+static ORANGE: (&'static str, MyId) = const {
+    let orange = "orange";
+    let id = orange.len() / 2;
+    (orange, MyId(id as _))
+};
 
 fn main() {
     println!("APPLE: {:?}", APPLE);

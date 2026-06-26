@@ -1,0 +1,7 @@
+error: Missing collection for #[scatter] attribute. Expected: #[scatter(COLLECTION)] <item>;
+ --> tests/errors/scatter_missing_collection.rs:6:1
+  |
+6 | #[scatter]
+  | ^^^^^^^^^^
+  |
+  = note: this error originates in the macro `::scattered_collect::__support::scatter_parse` which comes from the expansion of the attribute macro `scatter` (in Nightly builds, run with -Z macro-backtrace for more info)

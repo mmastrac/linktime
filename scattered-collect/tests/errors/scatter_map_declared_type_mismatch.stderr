@@ -1,0 +1,12 @@
+error[E0308]: mismatched types
+ --> tests/errors/scatter_map_declared_type_mismatch.rs:7:1
+  |
+7 | #[scatter(MAP)]
+  | ^^^^^^^^^^^^^^^
+  | |
+  | expected `&(&str, u64)`, found `&(&str, u32)`
+  | expected due to this
+  |
+  = note: expected reference `&(&'static str, u64)`
+             found reference `&(&'static str, u32)`
+  = note: this error originates in the macro `$crate::__map` which comes from the expansion of the attribute macro `scatter` (in Nightly builds, run with -Z macro-backtrace for more info)
