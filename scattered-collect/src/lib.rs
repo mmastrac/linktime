@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 pub mod hash;
+pub mod hash_sorted_map;
 pub mod iterable;
 pub mod map;
 pub mod referenced_slice;
@@ -9,6 +10,7 @@ pub mod slice;
 pub mod sorted_referenced_slice;
 pub mod sorted_slice;
 
+pub use hash_sorted_map::ScatteredHashSortedMap;
 pub use iterable::ScatteredIterable;
 pub use map::ScatteredMap;
 pub use referenced_slice::ScatteredReferencedSlice;
@@ -119,6 +121,10 @@ macro_rules! __gather_parse {
 
     (@done ($($collection:tt)*) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredMap < $key:ty, $value:ty >; ) => {
         $crate::__support::gather_parse!(@dispatch __map $(#[$imeta])* $vis static $name: ($($collection)*) ( $key, $value ););
+    };
+
+    (@done ($($collection:tt)*) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredHashSortedMap < $key:ty, $value:ty >; ) => {
+        $crate::__support::gather_parse!(@dispatch __hash_sorted_map $(#[$imeta])* $vis static $name: ($($collection)*) ( $key, $value ););
     };
 
     (@done ($($collection:tt)*) #[gather] $(#[$imeta:meta])* $vis:vis static $name:ident: ScatteredSet < $key:ty >; ) => {

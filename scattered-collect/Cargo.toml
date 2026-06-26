@@ -42,6 +42,10 @@ name = "scattered-collect-map"
 path = "examples/map.rs"
 
 [[example]]
+name = "scattered-collect-hash-sorted-map"
+path = "examples/hash_sorted_map.rs"
+
+[[example]]
 name = "scattered-collect-set"
 path = "examples/set.rs"
 
