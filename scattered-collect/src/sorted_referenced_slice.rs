@@ -99,7 +99,7 @@ macro_rules! __sorted_referenced_slice {
             }
         };
     };
-    (@scatter [$collection_name:ident :: $unique:ident] $types:tt ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
+    (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $(#[$imeta:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr;)) => {
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique, type = movable)]
             $(#[$imeta])*
@@ -113,9 +113,9 @@ mod tests {
     use crate::sorted_referenced_slice::{Ref, ScatteredSortedReferencedSlice};
 
     __sorted_referenced_slice!(@gather A pub static TEST_SORT_REF: (ScatteredSortedReferencedSlice)<u32>;);
-    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] [u32] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_A: u32 = 1;));
-    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] [u32] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_B: u32 = 3;));
-    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] [u32] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_C: u32 = 2;));
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_A: u32 = 1;));
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_B: u32 = 3;));
+    __sorted_referenced_slice!(@scatter [TEST_SORT_REF::A] ([TEST_SORT_REF] => pub static SORT_REF_ITEM_C: u32 = 2;));
 
     #[test]
     fn test_scattered_sorted_referenced_slice() {

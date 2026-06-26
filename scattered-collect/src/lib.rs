@@ -18,6 +18,22 @@ pub use sorted_referenced_slice::ScatteredSortedReferencedSlice;
 pub use sorted_slice::ScatteredSortedSlice;
 
 #[doc(hidden)]
+/// The per-record storage type of a scattered collection.
+pub trait ScatteredElementType {
+    /// The per-record type stored in the collection's link section.
+    type T;
+}
+
+#[doc(hidden)]
+/// The two-component types of a tuple-shaped scattered collection.
+pub trait ScatteredElementTuple {
+    /// The first component (key) type.
+    type A;
+    /// The second component (value) type.
+    type B;
+}
+
+#[doc(hidden)]
 #[macro_export]
 macro_rules! __scatter_parse {
     // Send the #[scatter]'d item into the collection's private macro.
@@ -78,7 +94,7 @@ macro_rules! __gather_parse {
 
         $crate::__support::combine!(output=ident prefix=(#[doc(hidden)] #[macro_export] macro_rules!) input=(__ $name __ $macro __ $unique) suffix=({
             ($passthru:tt) => {
-                $crate::$macro!(@scatter [$name :: $unique] [$($ty)*] $passthru);
+                $crate::$macro!(@scatter [$name :: $unique] $passthru);
             };
         }));
 
