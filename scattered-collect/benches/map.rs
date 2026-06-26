@@ -5,13 +5,22 @@ use scattered_collect::{
     const_hash,
     hash_sorted_map::{
         HashBackref, MapRecord as HashSortedMapRecord, RadixLookupTables, TAG_BLOCK_SIZE,
-        TOP_BYTE_INDEX_ZERO, hybrid_interpolation_search,
+        TOP_BYTE_INDEX_ZERO, Tag, hybrid_interpolation_search,
         initialize_hash_sorted_map_index_with_scratch, interpolation_search,
     },
     map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity},
 };
 
 const NUM_RECORDS: usize = 5000;
+
+/// Probe keys (all present) with precomputed hash and expected value. Hashing is
+/// hoisted out of the timed loops so the benches measure only the lookup, not the
+/// (identical) hasher.
+static PROBES: [(u64, u32); 3] = [
+    (const_hash!("key0500"), 500),
+    (const_hash!("key0100"), 100),
+    (const_hash!("key0254"), 254),
+];
 
 const fn make_static_string(i: usize) -> [u8; 7] {
     let mut s = [0u8; 7];
@@ -95,21 +104,22 @@ static HASH_INDEX_UNSORTED: [HashBackref<&'static str, u32>; NUM_RECORDS] = cons
 /// Mutable link-section-like buffers for hash-sorted map benches.
 struct HashSortedBenchState {
     index: [HashBackref<&'static str, u32>; NUM_RECORDS],
-    tags: [u16; NUM_RECORDS + TAG_BLOCK_SIZE],
+    tags: [Tag; NUM_RECORDS + TAG_BLOCK_SIZE],
     radix: RadixLookupTables,
     scratch: Vec<HashBackref<&'static str, u32>>,
 }
 
 impl HashSortedBenchState {
     fn new_unsorted() -> Self {
-        let mut state = Self {
-            index: unsafe { std::mem::MaybeUninit::uninit().assume_init() },
-            tags: [0_u16; NUM_RECORDS + TAG_BLOCK_SIZE],
+        Self {
+            // Copy from the link-order index.
+            index: std::array::from_fn(|i| {
+                HashBackref::new(HASH_INDEX_UNSORTED[i].hash, HASH_INDEX_UNSORTED[i].record)
+            }),
+            tags: [0; NUM_RECORDS + TAG_BLOCK_SIZE],
             radix: TOP_BYTE_INDEX_ZERO,
             scratch: Vec::with_capacity(NUM_RECORDS),
-        };
-        state.reset_index_from_unsorted();
-        state
+        }
     }
 
     /// Restore the index section to link-order data so init can run again.
@@ -150,10 +160,8 @@ fn scattered_map_build(bencher: Bencher) {
                 ptr::write_bytes((*refs).as_mut_ptr(), 0, REFS_LEN);
             }
         })
-        .bench_local_values(|()| {
-            unsafe {
-                initialize_scattered_map(&MAP_RECORDS, std::mem::transmute((*refs).as_mut_slice()));
-            }
+        .bench_local_values(|()| unsafe {
+            initialize_scattered_map(&MAP_RECORDS, std::mem::transmute((*refs).as_mut_slice()));
         });
 }
 
@@ -166,9 +174,8 @@ fn scattered_map_lookup(bencher: Bencher) {
     });
 
     bencher.bench_local(|| {
-        for (n, key) in [(500, "key0500"), (100, "key0100"), (254, "key0254")] {
-            let hash = const_hash!(key);
-            let offset = (table.lookup_fn)(&table, hash);
+        for (hash, n) in PROBES {
+            let offset = (table.lookup_fn)(&table, divan::black_box(hash));
             let value = offset.map(|offset| &MAP_RECORDS[offset as usize].value);
             assert_eq!(value, Some(&n));
         }
@@ -179,7 +186,9 @@ fn scattered_map_lookup(bencher: Bencher) {
 #[allow(static_mut_refs)]
 fn hash_sorted_map_build(bencher: Bencher) {
     let mut state = HashSortedBenchState::new_unsorted();
-    let state = (&mut state as *mut HashSortedBenchState).cast_const().cast_mut();
+    let state = (&mut state as *mut HashSortedBenchState)
+        .cast_const()
+        .cast_mut();
     bencher
         .with_inputs(|| {
             // SAFETY: `bench_local_values` runs setup and timed sections sequentially
@@ -188,10 +197,8 @@ fn hash_sorted_map_build(bencher: Bencher) {
                 (*state).reset_index_from_unsorted();
             }
         })
-        .bench_local_values(|()| {
-            unsafe {
-                (*state).init();
-            }
+        .bench_local_values(|()| unsafe {
+            (*state).init();
         });
 }
 
@@ -202,13 +209,12 @@ fn hash_sorted_map_lookup(bencher: Bencher) {
     state.init();
 
     bencher.bench_local(|| {
-        for (n, key) in [(500, "key0500"), (100, "key0100"), (254, "key0254")] {
-            let hash = const_hash!(key);
+        for (hash, n) in PROBES {
             let idx = hybrid_interpolation_search(
                 &state.index,
                 &state.tags,
                 Some(&state.radix),
-                hash,
+                divan::black_box(hash),
             );
             let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
             assert_eq!(value, Some(&n));
@@ -223,9 +229,8 @@ fn hash_sorted_map_lookup_scalar(bencher: Bencher) {
     state.init();
 
     bencher.bench_local(|| {
-        for (n, key) in [(500, "key0500"), (100, "key0100"), (254, "key0254")] {
-            let hash = const_hash!(key);
-            let idx = interpolation_search(&state.index, hash);
+        for (hash, n) in PROBES {
+            let idx = interpolation_search(&state.index, divan::black_box(hash));
             let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
             assert_eq!(value, Some(&n));
         }
@@ -236,7 +241,9 @@ fn hash_sorted_map_lookup_scalar(bencher: Bencher) {
 #[allow(static_mut_refs)]
 fn hash_map_build(bencher: Bencher) {
     let mut hash_map = HashMap::with_capacity(MAP_RECORDS.len());
-    let hash_map = (&mut hash_map as *mut HashMap<&'static str, u32>).cast_const().cast_mut();
+    let hash_map = (&mut hash_map as *mut HashMap<&'static str, u32>)
+        .cast_const()
+        .cast_mut();
     bencher
         .with_inputs(|| {
             // SAFETY: `bench_local_values` runs setup and timed sections sequentially
@@ -245,11 +252,9 @@ fn hash_map_build(bencher: Bencher) {
                 (*hash_map).clear();
             }
         })
-        .bench_local_values(|()| {
-            unsafe {
-                for record in &MAP_RECORDS {
-                    (*hash_map).insert(record.key, record.value);
-                }
+        .bench_local_values(|()| unsafe {
+            for record in &MAP_RECORDS {
+                (*hash_map).insert(record.key, record.value);
             }
         });
 }
@@ -261,8 +266,10 @@ fn hash_map_lookup(bencher: Bencher) {
     for record in &MAP_RECORDS {
         hash_map.insert(record.key, record.value);
     }
+    // Coarse baseline: `get` hashes internally, so this includes SipHash and is not
+    // like-for-like with the hoisted scattered-map lookups.
     bencher.bench_local(|| {
-        for (n, key) in [(500, "key0500"), (100, "key0100"), (254, "key0254")] {
+        for (n, key) in [(500u32, "key0500"), (100, "key0100"), (254, "key0254")] {
             let value = hash_map.get(key);
             assert_eq!(value, Some(&n));
         }

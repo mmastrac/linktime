@@ -2,24 +2,32 @@
 #![doc = concat!("```rust\n", include_str!("../examples/hash_sorted_map.rs"), "\n```\n")]
 
 use link_section::{TypedMutableSection, TypedSection};
-use wide::{CmpEq, u16x16};
+use wide::CmpEq;
 
 use crate::hash::ConstHash;
 
-/// The number of `u16` tags compared per SIMD step.
-pub const TAG_BLOCK_SIZE: usize = 16;
+// Tag width and SIMD lane count are selected by these two aliases; everything
+// below derives from them. Alternatives: `(u16, u16x16)` or `(u8, u8x16)` for 16 lanes.
+/// Scalar type of a SIMD tag: the low bits of a hash used for filtering.
+pub type Tag = u8;
+
+/// SIMD vector of [`Tag`]s compared in one step.
+type TagVector = wide::u8x32;
+
+/// The number of [`Tag`]s compared per SIMD step — the lane count of [`TagVector`].
+pub const TAG_BLOCK_SIZE: usize = size_of::<TagVector>() / size_of::<Tag>();
 
 /// Below this radix-bucket width, skip interpolation and linearly scan tags.
 pub const RADIX_LINEAR_THRESHOLD: usize = 64;
 
-/// Zero `u16` tag slots reserved at gather time so the final 16-wide SIMD window
-/// can load past the last record without branching.
+/// Zero [`Tag`] slots reserved at gather time so the final [`TAG_BLOCK_SIZE`]-wide
+/// SIMD window can load past the last record without branching.
 #[doc(hidden)]
-pub const TAG_GATHER_PADDING: [u16; TAG_BLOCK_SIZE] = [0; TAG_BLOCK_SIZE];
+pub const TAG_GATHER_PADDING: [Tag; TAG_BLOCK_SIZE] = [0; TAG_BLOCK_SIZE];
 
 /// Per-scatter tag placeholder written before init fills the real tag.
 #[doc(hidden)]
-pub const TAG_SCATTER_ZERO: u16 = 0;
+pub const TAG_SCATTER_ZERO: Tag = 0;
 
 /// Number of top-byte partition slots (`0..=256`, with `starts[256] == len`).
 pub const TOP_BYTE_SLOTS: usize = 257;
@@ -109,8 +117,8 @@ unsafe impl<K: Send, V: Send> Send for HashBackref<K, V> {}
 /// A map whose hash index is sorted at link time for hybrid interpolation + SIMD lookup.
 ///
 /// Scatter sites contribute a [`MapRecord`], a matching [`HashBackref`], and a zero
-/// `u16` tag placeholder. A priority-0 constructor sorts the hash index and writes
-/// the lower 16 bits of each sorted hash into the tag section.
+/// [`Tag`] placeholder. A priority-0 constructor sorts the hash index and writes
+/// the low [`Tag`] bits of each sorted hash into the tag section.
 ///
 /// For swiss-table lookup, use [`crate::ScatteredMap`]. For a sorted slice without
 /// key lookup, use [`crate::ScatteredSortedSlice`].
@@ -120,7 +128,7 @@ unsafe impl<K: Send, V: Send> Send for HashBackref<K, V> {}
 pub struct ScatteredHashSortedMap<K: 'static, V: 'static> {
     records: &'static TypedSection<MapRecord<K, V>>,
     index: &'static TypedMutableSection<HashBackref<K, V>>,
-    tags: &'static TypedMutableSection<u16>,
+    tags: &'static TypedMutableSection<Tag>,
     radix: &'static TypedMutableSection<RadixLookupTables>,
 }
 
@@ -130,7 +138,7 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
     pub const unsafe fn new(
         records: &'static TypedSection<MapRecord<K, V>>,
         index: &'static TypedMutableSection<HashBackref<K, V>>,
-        tags: &'static TypedMutableSection<u16>,
+        tags: &'static TypedMutableSection<Tag>,
         radix: &'static TypedMutableSection<RadixLookupTables>,
     ) -> Self {
         Self {
@@ -183,10 +191,10 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
         self.index.as_slice()
     }
 
-    /// The SIMD tag slice. The first [`Self::len`] entries hold the lower 16 bits of
-    /// each sorted hash; trailing entries are zero padding for safe SIMD loads.
+    /// The SIMD tag slice. The first [`Self::len`] entries hold the low [`Tag`] bits
+    /// of each sorted hash; trailing entries are zero padding for safe SIMD loads.
     #[inline]
-    pub fn tags(&self) -> &[u16] {
+    pub fn tags(&self) -> &[Tag] {
         self.tags.as_slice()
     }
 
@@ -259,10 +267,10 @@ impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredHashSortedMap<K,
     }
 }
 
-/// The lower 16 bits of a hash used for SIMD tag filtering.
+/// The low [`Tag`] bits of a hash, used for SIMD tag filtering.
 #[inline]
-pub const fn hash_tag(hash: u64) -> u16 {
-    hash as u16
+pub const fn hash_tag(hash: u64) -> Tag {
+    hash as Tag
 }
 
 /// Per-phase step counts for search analysis.
@@ -272,7 +280,7 @@ pub struct SearchStepCounts {
     pub coarse_steps: u32,
     /// Top-byte window expansion steps after the first jump.
     pub top_byte_expand_steps: u32,
-    /// 16-wide SIMD blocks examined.
+    /// SIMD tag blocks examined ([`TAG_BLOCK_SIZE`] lanes each).
     pub simd_blocks: u32,
     /// SIMD tag matches that required a full-hash check.
     pub simd_candidates: u32,
@@ -283,7 +291,7 @@ pub struct SearchStepCounts {
 /// Sort the hash index and write sorted SIMD tags and the top-byte jump table.
 pub fn initialize_hash_sorted_map_index<K, V>(
     index: &mut [HashBackref<K, V>],
-    tags: &mut [u16],
+    tags: &mut [Tag],
     radix: &mut RadixLookupTables,
 ) {
     let len = index.len();
@@ -292,9 +300,7 @@ pub fn initialize_hash_sorted_map_index<K, V>(
         return;
     }
     if len > tags.len() {
-        panic!(
-            "tag section must have at least as many entries as the hash index (need {len})"
-        );
+        panic!("tag section must have at least as many entries as the hash index (need {len})");
     }
 
     let mut scratch = ::std::vec::Vec::with_capacity(len);
@@ -306,7 +312,7 @@ pub fn initialize_hash_sorted_map_index<K, V>(
 #[doc(hidden)]
 pub fn initialize_hash_sorted_map_index_with_scratch<K, V>(
     index: &mut [HashBackref<K, V>],
-    tags: &mut [u16],
+    tags: &mut [Tag],
     radix: &mut RadixLookupTables,
     scratch: &mut ::std::vec::Vec<HashBackref<K, V>>,
 ) {
@@ -316,9 +322,7 @@ pub fn initialize_hash_sorted_map_index_with_scratch<K, V>(
         return;
     }
     if len > tags.len() {
-        panic!(
-            "tag section must have at least as many entries as the hash index (need {len})"
-        );
+        panic!("tag section must have at least as many entries as the hash index (need {len})");
     }
 
     sort_index_by_top_byte_bucket(index, radix, scratch);
@@ -334,7 +338,10 @@ fn sort_index_by_top_byte_bucket<K, V>(
 ) {
     let len = index.len();
     if len > u16::MAX as usize {
-        panic!("ScatteredHashSortedMap supports at most {} records", u16::MAX);
+        panic!(
+            "ScatteredHashSortedMap supports at most {} records",
+            u16::MAX
+        );
     }
 
     let mut count = [0u32; 256];
@@ -383,12 +390,15 @@ fn sort_index_by_top_byte_bucket<K, V>(
 /// `radix.starts` must already reflect top-byte partition boundaries.
 fn finish_sorted_index<K, V>(
     index: &[HashBackref<K, V>],
-    tags: &mut [u16],
+    tags: &mut [Tag],
     radix: &mut RadixLookupTables,
 ) {
     let len = index.len();
     if len > u16::MAX as usize {
-        panic!("ScatteredHashSortedMap supports at most {} records", u16::MAX);
+        panic!(
+            "ScatteredHashSortedMap supports at most {} records",
+            u16::MAX
+        );
     }
 
     for (tag, entry) in tags.iter_mut().zip(index.iter()).take(len) {
@@ -520,7 +530,7 @@ pub fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Opt
 /// Hybrid lookup: coarse interpolation jumps, then SIMD tag filtering, then full-hash verification.
 pub fn hybrid_interpolation_search<K, V>(
     index: &[HashBackref<K, V>],
-    tags: &[u16],
+    tags: &[Tag],
     radix: Option<&RadixLookupTables>,
     hash: u64,
 ) -> Option<usize> {
@@ -530,7 +540,7 @@ pub fn hybrid_interpolation_search<K, V>(
 /// Hybrid lookup with per-phase step counts for analysis.
 pub fn hybrid_interpolation_search_with_steps<K, V>(
     index: &[HashBackref<K, V>],
-    tags: &[u16],
+    tags: &[Tag],
     radix: Option<&RadixLookupTables>,
     hash: u64,
 ) -> (Option<usize>, SearchStepCounts) {
@@ -599,7 +609,9 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
         return (None, steps);
     }
 
-    let mut block_offset = low - (low % TAG_BLOCK_SIZE);
+    // Start at `low` (unaligned); aligning down to a block boundary only wastes
+    // an extra block when `low` sits late in its lane group.
+    let mut block_offset = low;
     while block_offset <= high {
         steps.simd_blocks += 1;
         if let Some(idx) = simd_verify_tag_block(
@@ -621,12 +633,12 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
     (None, steps)
 }
 
-/// Walk `u16` tag blocks sequentially over a small radix window (no interpolation).
+/// Walk [`Tag`] blocks sequentially over a small radix window (no interpolation).
 fn linear_tag_block_search<K, V>(
     index: &[HashBackref<K, V>],
-    tags: &[u16],
+    tags: &[Tag],
     hash: u64,
-    target_tag: u16,
+    target_tag: Tag,
     low: usize,
     high: usize,
     len: usize,
@@ -635,11 +647,7 @@ fn linear_tag_block_search<K, V>(
     let window = high.saturating_sub(low) + 1;
     steps.linear_tag_checks += window as u32;
 
-    if window <= TAG_BLOCK_SIZE {
-        return linear_tag_search_scalar(index, tags, hash, target_tag, low, high, steps);
-    }
-
-    let mut block_offset = low - (low % TAG_BLOCK_SIZE);
+    let mut block_offset = low;
     while block_offset <= high {
         steps.simd_blocks += 1;
         if let Some(idx) = simd_verify_tag_block(
@@ -660,44 +668,22 @@ fn linear_tag_block_search<K, V>(
     None
 }
 
-/// Scalar `u16` tag scan for very small windows that fit in one cache line.
-#[inline]
-fn linear_tag_search_scalar<K, V>(
-    index: &[HashBackref<K, V>],
-    tags: &[u16],
-    hash: u64,
-    target_tag: u16,
-    low: usize,
-    high: usize,
-    steps: &mut SearchStepCounts,
-) -> Option<usize> {
-    for i in low..=high {
-        if tags[i] == target_tag {
-            steps.simd_candidates += 1;
-            if index[i].hash == hash {
-                return Some(i);
-            }
-        }
-    }
-    None
-}
-
 #[inline]
 #[allow(unsafe_code)]
-fn load_tag_block(tags: &[u16], block_offset: usize) -> u16x16 {
+fn load_tag_block(tags: &[Tag], block_offset: usize) -> TagVector {
     debug_assert!(block_offset + TAG_BLOCK_SIZE <= tags.len());
     unsafe {
-        let ptr = tags.as_ptr().add(block_offset) as *const [u16; TAG_BLOCK_SIZE];
-        u16x16::new(*ptr)
+        let ptr = tags.as_ptr().add(block_offset) as *const [Tag; TAG_BLOCK_SIZE];
+        TagVector::new(*ptr)
     }
 }
 
 #[inline]
 fn simd_verify_tag_block<K, V>(
     index: &[HashBackref<K, V>],
-    tags: &[u16],
+    tags: &[Tag],
     hash: u64,
-    target_tag: u16,
+    target_tag: Tag,
     block_offset: usize,
     low: usize,
     high: usize,
@@ -709,7 +695,7 @@ fn simd_verify_tag_block<K, V>(
     }
 
     let current_tags = load_tag_block(tags, block_offset);
-    let target_vec = u16x16::splat(target_tag);
+    let target_vec = TagVector::splat(target_tag);
     let mut move_mask = current_tags.simd_eq(target_vec).to_bitmask();
 
     while move_mask != 0 {
@@ -757,7 +743,9 @@ macro_rules! __hash_sorted_map {
 
             $crate::__support::link_section::declarative::section!(
                 #[section(unsafe, type = mutable, name = $name :: $unique :: TAGS)]
-                static TAGS: $crate::__support::link_section::TypedMutableSection<u16>;
+                static TAGS: $crate::__support::link_section::TypedMutableSection<
+                    $crate::hash_sorted_map::Tag
+                >;
             );
 
             $crate::__support::link_section::declarative::section!(
@@ -769,7 +757,7 @@ macro_rules! __hash_sorted_map {
 
             $crate::__support::link_section::declarative::in_section!(
                 #[in_section(unsafe, type = mutable, name = $name :: $unique :: TAGS)]
-                const _: [u16; $crate::hash_sorted_map::TAG_BLOCK_SIZE] =
+                const _: [$crate::hash_sorted_map::Tag; $crate::hash_sorted_map::TAG_BLOCK_SIZE] =
                     $crate::hash_sorted_map::TAG_GATHER_PADDING;
             );
 
@@ -823,7 +811,7 @@ macro_rules! __hash_sorted_map {
         );
         $crate::__support::link_section::declarative::in_section!(
             #[in_section(unsafe, name = $collection_name :: $unique :: TAGS, type = mutable)]
-            const _: u16 = $crate::hash_sorted_map::TAG_SCATTER_ZERO;
+            const _: $crate::hash_sorted_map::Tag = $crate::hash_sorted_map::TAG_SCATTER_ZERO;
         );
     };
     (@scatter [$collection_name:ident :: $unique:ident] ([$($meta:tt)*] => $($rest:tt)*)) => {
@@ -840,7 +828,7 @@ macro_rules! __hash_sorted_map {
 mod link_tests {
     use super::{
         HashBackref, MapRecord, ScatteredHashSortedMap, SearchStepCounts, TAG_BLOCK_SIZE,
-        TOP_BYTE_INDEX_ZERO, hash_tag, hybrid_interpolation_search,
+        TOP_BYTE_INDEX_ZERO, Tag, hash_tag, hybrid_interpolation_search,
         hybrid_interpolation_search_with_steps, initialize_hash_sorted_map_index,
         interpolation_search,
     };
@@ -887,7 +875,7 @@ mod link_tests {
         let mut bucket_sorted = make_index();
         let mut full_sorted = make_index();
         let mut radix = TOP_BYTE_INDEX_ZERO;
-        let mut tags = [0_u16; 5 + TAG_BLOCK_SIZE];
+        let mut tags = [0 as Tag; 5 + TAG_BLOCK_SIZE];
         let mut scratch = Vec::new();
 
         super::sort_index_by_top_byte_bucket(&mut bucket_sorted, &mut radix, &mut scratch);
@@ -919,7 +907,7 @@ mod link_tests {
             HashBackref::new(crate::const_hash!("a"), &records[0] as *const _),
             HashBackref::new(crate::const_hash!("b"), &records[1] as *const _),
         ];
-        let mut tags = [0_u16; 3 + TAG_BLOCK_SIZE];
+        let mut tags = [0 as Tag; 3 + TAG_BLOCK_SIZE];
         let mut radix = TOP_BYTE_INDEX_ZERO;
         initialize_hash_sorted_map_index(&mut index, &mut tags, &mut radix);
 
@@ -956,13 +944,10 @@ mod link_tests {
         let mut index: Vec<HashBackref<&'static str, u32>> = records
             .iter()
             .map(|record| {
-                HashBackref::new(
-                    ConstHash::hash(&record.key),
-                    record as *const _ as *const _,
-                )
+                HashBackref::new(ConstHash::hash(&record.key), record as *const _ as *const _)
             })
             .collect();
-        let mut tags = vec![0_u16; NUM_RECORDS + TAG_BLOCK_SIZE];
+        let mut tags = vec![0 as Tag; NUM_RECORDS + TAG_BLOCK_SIZE];
         let mut radix = TOP_BYTE_INDEX_ZERO;
         initialize_hash_sorted_map_index(&mut index, &mut tags, &mut radix);
 
