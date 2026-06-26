@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.21.0"
+version = "0.21.1"
 dependencies = [
  "ctor",
  "divan",
@@ -674,6 +674,7 @@ dependencies = [
  "linktime",
  "linktime-proc-macro",
  "scattered-collect",
+ "trybuild",
  "wide",
  "xxhash-rust",
 ]

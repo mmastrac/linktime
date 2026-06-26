@@ -1,0 +1,9 @@
+error: Missing #[scatter] attribute.
+ --> tests/errors/scatter_missing_attribute.rs:6:1
+  |
+6 | / scatter! {
+7 | |     static BAD: (&'static str, u32) = ("a", 1);
+8 | | }
+  | |_^
+  |
+  = note: this error originates in the macro `$crate::__support::scatter_parse` which comes from the expansion of the macro `scatter` (in Nightly builds, run with -Z macro-backtrace for more info)

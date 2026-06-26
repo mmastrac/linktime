@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+ --> tests/errors/scatter_map_three_tuple_initializer.rs:7:35
+  |
+6 | #[scatter(MAP)]
+  | --------------- expected due to this
+7 | static BAD: (&'static str, u32) = ("a", 1, 2);
+  |                                   ^^^^^^^^^^^ expected a tuple with 2 elements, found one with 3 elements
+  |
+  = note: expected tuple `(&'static str, u32)`
+             found tuple `(&'static str, u32, {integer})`
