@@ -22,6 +22,14 @@ static PROBES: [(u64, u32); 3] = [
     (const_hash!("key0254"), 254),
 ];
 
+/// Hashes of keys absent from the map (same shape as the present keys, but past
+/// the inserted range), for the miss (`None`) path.
+static MISSING_PROBES: [u64; 3] = [
+    const_hash!("key5000"),
+    const_hash!("key7500"),
+    const_hash!("key9999"),
+];
+
 const fn make_static_string(i: usize) -> [u8; 7] {
     let mut s = [0u8; 7];
     s[0] = b'k';
@@ -184,6 +192,22 @@ fn scattered_map_lookup(bencher: Bencher) {
 
 #[divan::bench]
 #[allow(static_mut_refs)]
+fn scattered_map_lookup_miss(bencher: Bencher) {
+    let mut refs = [0_u8; safe_byte_count_for_capacity(MAP_RECORDS.len())];
+    let table = initialize_scattered_map(&MAP_RECORDS, unsafe {
+        std::mem::transmute(refs.as_mut_slice())
+    });
+
+    bencher.bench_local(|| {
+        for hash in MISSING_PROBES {
+            let offset = (table.lookup_fn)(&table, divan::black_box(hash));
+            assert_eq!(offset, None);
+        }
+    });
+}
+
+#[divan::bench]
+#[allow(static_mut_refs)]
 fn hash_sorted_map_build(bencher: Bencher) {
     let mut state = HashSortedBenchState::new_unsorted();
     let state = (&mut state as *mut HashSortedBenchState)
@@ -218,6 +242,25 @@ fn hash_sorted_map_lookup(bencher: Bencher) {
             );
             let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
             assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+#[allow(static_mut_refs)]
+fn hash_sorted_map_lookup_miss(bencher: Bencher) {
+    let mut state = HashSortedBenchState::new_unsorted();
+    state.init();
+
+    bencher.bench_local(|| {
+        for hash in MISSING_PROBES {
+            let idx = hybrid_interpolation_search(
+                &state.index,
+                &state.tags,
+                Some(&state.radix),
+                divan::black_box(hash),
+            );
+            assert_eq!(idx, None);
         }
     });
 }
@@ -272,6 +315,20 @@ fn hash_map_lookup(bencher: Bencher) {
         for (n, key) in [(500u32, "key0500"), (100, "key0100"), (254, "key0254")] {
             let value = hash_map.get(key);
             assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+#[allow(static_mut_refs)]
+fn hash_map_lookup_miss(bencher: Bencher) {
+    let mut hash_map = HashMap::with_capacity(MAP_RECORDS.len());
+    for record in &MAP_RECORDS {
+        hash_map.insert(record.key, record.value);
+    }
+    bencher.bench_local(|| {
+        for key in ["key5000", "key7500", "key9999"] {
+            assert_eq!(hash_map.get(key), None);
         }
     });
 }
