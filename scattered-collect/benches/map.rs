@@ -55,6 +55,22 @@ static STRINGS: [[u8; 7]; NUM_RECORDS] = const {
     strings
 };
 
+/// Every key, hashed, in a scrambled order (stride coprime with `NUM_RECORDS`).
+/// Probing all of them per iteration spills L1 so lookups hit L2.
+static SWEEP_PROBES: [(u64, u32); NUM_RECORDS] = const {
+    let mut probes = [(0u64, 0u32); NUM_RECORDS];
+    let mut i = 0;
+    while i < NUM_RECORDS {
+        let j = (i * 2503) % NUM_RECORDS;
+        let Ok(s) = str::from_utf8(STRINGS[j].as_slice()) else {
+            panic!("invalid string");
+        };
+        probes[i] = (const_hash!(s), j as u32);
+        i += 1;
+    }
+    probes
+};
+
 static MAP_RECORDS: [MapRecord<&'static str, u32>; NUM_RECORDS] = const {
     let mut records: [MaybeUninit<MapRecord<&'static str, u32>>; NUM_RECORDS] = unsafe {
         std::mem::transmute(MaybeUninit::<
@@ -192,6 +208,23 @@ fn scattered_map_lookup(bencher: Bencher) {
 
 #[divan::bench]
 #[allow(static_mut_refs)]
+fn scattered_map_lookup_sweep(bencher: Bencher) {
+    let mut refs = [0_u8; safe_byte_count_for_capacity(MAP_RECORDS.len())];
+    let table = initialize_scattered_map(&MAP_RECORDS, unsafe {
+        std::mem::transmute(refs.as_mut_slice())
+    });
+
+    bencher.bench_local(|| {
+        for (hash, n) in SWEEP_PROBES {
+            let offset = (table.lookup_fn)(&table, divan::black_box(hash));
+            let value = offset.map(|offset| &MAP_RECORDS[offset as usize].value);
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+#[allow(static_mut_refs)]
 fn scattered_map_lookup_miss(bencher: Bencher) {
     let mut refs = [0_u8; safe_byte_count_for_capacity(MAP_RECORDS.len())];
     let table = initialize_scattered_map(&MAP_RECORDS, unsafe {
@@ -234,6 +267,26 @@ fn hash_sorted_map_lookup(bencher: Bencher) {
 
     bencher.bench_local(|| {
         for (hash, n) in PROBES {
+            let idx = hybrid_interpolation_search(
+                &state.index,
+                &state.tags,
+                Some(&state.radix),
+                divan::black_box(hash),
+            );
+            let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+#[allow(static_mut_refs)]
+fn hash_sorted_map_lookup_sweep(bencher: Bencher) {
+    let mut state = HashSortedBenchState::new_unsorted();
+    state.init();
+
+    bencher.bench_local(|| {
+        for (hash, n) in SWEEP_PROBES {
             let idx = hybrid_interpolation_search(
                 &state.index,
                 &state.tags,

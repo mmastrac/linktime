@@ -159,10 +159,13 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
         K: ConstHash + PartialEq,
     {
         let hash = ConstHash::hash(key);
+        // `first()` yields `None` for an empty radix section (e.g. an empty map under
+        // Miri, where link sections don't populate), so an empty map returns `None`.
+        let radix = self.radix.as_slice().first()?;
         let idx = hybrid_interpolation_search(
             self.index.as_slice(),
             self.tags.as_slice(),
-            Some(radix_tables(self.radix.as_slice())),
+            Some(radix),
             hash,
         )?;
         let record = unsafe { &*self.index.as_slice()[idx].record };
