@@ -1,12 +1,15 @@
-use std::{collections::HashMap, mem::MaybeUninit, ptr};
+use std::{collections::HashMap, mem::MaybeUninit, ptr, sync::LazyLock};
 
 use divan::Bencher;
 use scattered_collect::{
     const_hash,
     hash_sorted_map::{
-        HashBackref, MapRecord as HashSortedMapRecord, RadixLookupTables, TAG_BLOCK_SIZE,
-        TOP_BYTE_INDEX_ZERO, Tag, hybrid_interpolation_search,
-        initialize_hash_sorted_map_index_with_scratch, interpolation_search,
+        HashBackref, MapRecord as HashSortedMapRecord, RADIX_TABLES_ZERO, RadixLookupTables,
+        TAG_BLOCK_SIZE, Tag,
+        internal::{
+            hybrid_interpolation_search, initialize_hash_sorted_map_index_with_scratch,
+            interpolation_search,
+        },
     },
     map::{MapRecord, initialize_scattered_map, safe_byte_count_for_capacity},
 };
@@ -131,6 +134,7 @@ struct HashSortedBenchState {
     tags: [Tag; NUM_RECORDS + TAG_BLOCK_SIZE],
     radix: RadixLookupTables,
     scratch: Vec<HashBackref<&'static str, u32>>,
+    counts: Vec<u32>,
 }
 
 impl HashSortedBenchState {
@@ -141,8 +145,9 @@ impl HashSortedBenchState {
                 HashBackref::new(HASH_INDEX_UNSORTED[i].hash, HASH_INDEX_UNSORTED[i].record)
             }),
             tags: [0; NUM_RECORDS + TAG_BLOCK_SIZE],
-            radix: TOP_BYTE_INDEX_ZERO,
+            radix: RADIX_TABLES_ZERO,
             scratch: Vec::with_capacity(NUM_RECORDS),
+            counts: Vec::new(),
         }
     }
 
@@ -166,6 +171,7 @@ impl HashSortedBenchState {
             &mut self.tags,
             &mut self.radix,
             &mut self.scratch,
+            &mut self.counts,
         );
     }
 }
@@ -386,7 +392,253 @@ fn hash_map_lookup_miss(bencher: Bencher) {
     });
 }
 
+// 50k benches: data is generated at runtime with heap buffers.
+const N_LARGE: usize = 50_000;
+
+struct LargeData {
+    map_records: Vec<MapRecord<&'static str, u32>>,
+    // Owns the record storage that `hs_index_unsorted` points into; never read directly.
+    #[allow(dead_code)]
+    hs_records: Vec<HashSortedMapRecord<&'static str, u32>>,
+    hs_index_unsorted: Vec<HashBackref<&'static str, u32>>,
+    sweep: Vec<(u64, u32)>,
+    hot: [(u64, u32); 3],
+    miss: [u64; 3],
+}
+
+static LARGE: LazyLock<LargeData> = LazyLock::new(|| {
+    let keys: Vec<&'static str> = (0..N_LARGE)
+        .map(|i| Box::leak(format!("key{i:05}").into_boxed_str()) as &'static str)
+        .collect();
+
+    let map_records: Vec<MapRecord<&'static str, u32>> = keys
+        .iter()
+        .enumerate()
+        .map(|(i, &k)| MapRecord::new(k, i as u32, const_hash!(k)))
+        .collect();
+
+    let hs_records: Vec<HashSortedMapRecord<&'static str, u32>> = keys
+        .iter()
+        .enumerate()
+        .map(|(i, &k)| HashSortedMapRecord::new(k, i as u32))
+        .collect();
+
+    // Raw pointers reference the records' (stable) heap storage; moving the `Vec` into
+    // `LargeData` does not move its allocation.
+    let hs_index_unsorted: Vec<HashBackref<&'static str, u32>> = hs_records
+        .iter()
+        .map(|record| HashBackref::new(const_hash!(record.key), record as *const _))
+        .collect();
+
+    // Scrambled order (stride coprime with `N_LARGE`) so a full sweep spills cache.
+    let sweep: Vec<(u64, u32)> = (0..N_LARGE)
+        .map(|i| {
+            let j = (i * 24_999) % N_LARGE;
+            (const_hash!(keys[j]), j as u32)
+        })
+        .collect();
+
+    let hot: [(u64, u32); 3] = [
+        (const_hash!(keys[25_000]), 25_000),
+        (const_hash!(keys[100]), 100),
+        (const_hash!(keys[49_999]), 49_999),
+    ];
+    let miss: [u64; 3] = [
+        const_hash!("key50000"),
+        const_hash!("key75000"),
+        const_hash!("key99999"),
+    ];
+
+    LargeData {
+        map_records,
+        hs_records,
+        hs_index_unsorted,
+        sweep,
+        hot,
+        miss,
+    }
+});
+
+/// Heap-resident equivalent of [`HashSortedBenchState`] for the 50k benches.
+struct LargeHashSortedState {
+    index: Vec<HashBackref<&'static str, u32>>,
+    tags: Vec<Tag>,
+    radix: RadixLookupTables,
+    scratch: Vec<HashBackref<&'static str, u32>>,
+    counts: Vec<u32>,
+}
+
+impl LargeHashSortedState {
+    fn new() -> Self {
+        Self {
+            index: LARGE
+                .hs_index_unsorted
+                .iter()
+                .map(|h| HashBackref::new(h.hash, h.record))
+                .collect(),
+            tags: vec![0; N_LARGE + TAG_BLOCK_SIZE],
+            radix: RADIX_TABLES_ZERO,
+            scratch: Vec::with_capacity(N_LARGE),
+            counts: Vec::new(),
+        }
+    }
+
+    fn reset_index(&mut self) {
+        // SAFETY: both buffers hold `N_LARGE` `HashBackref`s and do not overlap.
+        unsafe {
+            ptr::copy_nonoverlapping(
+                LARGE.hs_index_unsorted.as_ptr(),
+                self.index.as_mut_ptr(),
+                N_LARGE,
+            );
+        }
+    }
+
+    fn init(&mut self) {
+        initialize_hash_sorted_map_index_with_scratch(
+            &mut self.index,
+            &mut self.tags,
+            &mut self.radix,
+            &mut self.scratch,
+            &mut self.counts,
+        );
+    }
+}
+
+#[divan::bench]
+fn scattered_map_build_50k(bencher: Bencher) {
+    let refs_len = safe_byte_count_for_capacity(N_LARGE);
+    let mut refs = vec![0_u8; refs_len];
+    let refs = (&mut refs as *mut Vec<u8>).cast_const().cast_mut();
+    bencher
+        .with_inputs(|| unsafe {
+            ptr::write_bytes((*refs).as_mut_ptr(), 0, refs_len);
+        })
+        .bench_local_values(|()| unsafe {
+            initialize_scattered_map(
+                &LARGE.map_records,
+                std::mem::transmute((*refs).as_mut_slice()),
+            );
+        });
+}
+
+#[divan::bench]
+fn scattered_map_lookup_50k(bencher: Bencher) {
+    let mut refs = vec![0_u8; safe_byte_count_for_capacity(N_LARGE)];
+    let table = initialize_scattered_map(&LARGE.map_records, unsafe {
+        std::mem::transmute(refs.as_mut_slice())
+    });
+
+    bencher.bench_local(|| {
+        for &(hash, n) in &LARGE.hot {
+            let offset = (table.lookup_fn)(&table, divan::black_box(hash));
+            let value = offset.map(|offset| &LARGE.map_records[offset as usize].value);
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+fn scattered_map_lookup_sweep_50k(bencher: Bencher) {
+    let mut refs = vec![0_u8; safe_byte_count_for_capacity(N_LARGE)];
+    let table = initialize_scattered_map(&LARGE.map_records, unsafe {
+        std::mem::transmute(refs.as_mut_slice())
+    });
+
+    bencher.bench_local(|| {
+        for &(hash, n) in &LARGE.sweep {
+            let offset = (table.lookup_fn)(&table, divan::black_box(hash));
+            let value = offset.map(|offset| &LARGE.map_records[offset as usize].value);
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+fn scattered_map_lookup_miss_50k(bencher: Bencher) {
+    let mut refs = vec![0_u8; safe_byte_count_for_capacity(N_LARGE)];
+    let table = initialize_scattered_map(&LARGE.map_records, unsafe {
+        std::mem::transmute(refs.as_mut_slice())
+    });
+
+    bencher.bench_local(|| {
+        for &hash in &LARGE.miss {
+            assert_eq!((table.lookup_fn)(&table, divan::black_box(hash)), None);
+        }
+    });
+}
+
+#[divan::bench]
+fn hash_sorted_map_build_50k(bencher: Bencher) {
+    let mut state = LargeHashSortedState::new();
+    let state = (&mut state as *mut LargeHashSortedState)
+        .cast_const()
+        .cast_mut();
+    bencher
+        .with_inputs(|| unsafe {
+            (*state).reset_index();
+        })
+        .bench_local_values(|()| unsafe {
+            (*state).init();
+        });
+}
+
+#[divan::bench]
+fn hash_sorted_map_lookup_50k(bencher: Bencher) {
+    let mut state = LargeHashSortedState::new();
+    state.init();
+
+    bencher.bench_local(|| {
+        for &(hash, n) in &LARGE.hot {
+            let idx = hybrid_interpolation_search(
+                &state.index,
+                &state.tags,
+                Some(&state.radix),
+                divan::black_box(hash),
+            );
+            let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+fn hash_sorted_map_lookup_sweep_50k(bencher: Bencher) {
+    let mut state = LargeHashSortedState::new();
+    state.init();
+
+    bencher.bench_local(|| {
+        for &(hash, n) in &LARGE.sweep {
+            let idx = hybrid_interpolation_search(
+                &state.index,
+                &state.tags,
+                Some(&state.radix),
+                divan::black_box(hash),
+            );
+            let value = idx.map(|idx| unsafe { &(*state.index[idx].record).value });
+            assert_eq!(value, Some(&n));
+        }
+    });
+}
+
+#[divan::bench]
+fn hash_sorted_map_lookup_miss_50k(bencher: Bencher) {
+    let mut state = LargeHashSortedState::new();
+    state.init();
+
+    bencher.bench_local(|| {
+        for &hash in &LARGE.miss {
+            let idx = hybrid_interpolation_search(
+                &state.index,
+                &state.tags,
+                Some(&state.radix),
+                divan::black_box(hash),
+            );
+            assert_eq!(idx, None);
+        }
+    });
+}
+
 fn main() {
-    // Run registered benchmarks.
     divan::main();
 }

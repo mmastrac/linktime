@@ -29,32 +29,37 @@ pub const TAG_GATHER_PADDING: [Tag; TAG_BLOCK_SIZE] = [0; TAG_BLOCK_SIZE];
 #[doc(hidden)]
 pub const TAG_SCATTER_ZERO: Tag = 0;
 
-/// Number of top-byte partition slots (`0..=256`, with `starts[256] == len`).
-pub const TOP_BYTE_SLOTS: usize = 257;
+/// Maximum top hash bits used to partition the index. Init uses up to this many (fewer
+/// for small maps), keeping buckets ≈ `len / 2^RADIX_BITS` so lookups stay in the linear
+/// SIMD path as the map grows.
+pub const RADIX_BITS: usize = 12;
 
-/// Precomputed radix metadata: exact bucket starts and interpolation reciprocals.
+/// Number of radix partition slots: one per bucket plus a trailing `starts[n] == len`.
+pub const RADIX_SLOTS: usize = (1 << RADIX_BITS) + 1;
+
+/// Precomputed radix metadata: exact bucket starts plus the shift selecting the bucket.
 #[repr(C)]
 pub struct RadixLookupTables {
-    /// Exact partition start for each top hash byte; `starts[256] == len`.
-    pub starts: [u16; TOP_BYTE_SLOTS],
-    /// Per-bucket `floor(range * 2^64 / span)` for multiply-based interpolation.
-    pub interp_mul: [u64; 256],
+    /// Exact partition start for each bucket; `starts[bucket_count] == len`.
+    pub starts: [u16; RADIX_SLOTS],
+    /// Right-shift applied to a hash to select its bucket (`64 - dispatch_bits`).
+    pub shift: u8,
 }
 
 impl RadixLookupTables {
     /// Zero-filled tables written at gather and populated during initialization.
     pub const ZERO: Self = Self {
-        starts: [0; TOP_BYTE_SLOTS],
-        interp_mul: [0; 256],
+        starts: [0; RADIX_SLOTS],
+        shift: 0,
     };
 }
 
-/// Legacy alias for the precomputed top-byte partition starts.
-pub type TopByteIndex = [u16; TOP_BYTE_SLOTS];
+/// The radix partition starts array.
+pub type RadixStarts = [u16; RADIX_SLOTS];
 
 /// Zero-filled radix tables written at gather.
 #[doc(hidden)]
-pub const TOP_BYTE_INDEX_ZERO: RadixLookupTables = RadixLookupTables::ZERO;
+pub const RADIX_TABLES_ZERO: RadixLookupTables = RadixLookupTables::ZERO;
 
 /// One gathered map entry.
 #[repr(C)]
@@ -204,15 +209,15 @@ impl<K: 'static, V: 'static> ScatteredHashSortedMap<K, V> {
         self.tags.as_slice()
     }
 
-    /// Precomputed radix partition starts and interpolation reciprocals.
+    /// Precomputed radix partition starts and bucket shift.
     #[inline]
     pub fn radix_tables(&self) -> &RadixLookupTables {
         radix_tables(self.radix.as_slice())
     }
 
-    /// Exact top-byte partition starts (`starts[256] == len`).
+    /// Exact radix partition starts (`starts[bucket_count] == len`).
     #[inline]
-    pub fn top_byte_index(&self) -> &TopByteIndex {
+    pub fn radix_starts(&self) -> &RadixStarts {
         &self.radix_tables().starts
     }
 
@@ -276,7 +281,7 @@ impl<K: 'static, V: 'static> IntoIterator for &'static ScatteredHashSortedMap<K,
 
 /// The low [`Tag`] bits of a hash, used for SIMD tag filtering.
 #[inline]
-pub const fn hash_tag(hash: u64) -> Tag {
+pub(crate) const fn hash_tag(hash: u64) -> Tag {
     hash as Tag
 }
 
@@ -301,27 +306,19 @@ pub fn initialize_hash_sorted_map_index<K, V>(
     tags: &mut [Tag],
     radix: &mut RadixLookupTables,
 ) {
-    let len = index.len();
-    if len == 0 {
-        *radix = RadixLookupTables::ZERO;
-        return;
-    }
-    if len > tags.len() {
-        panic!("tag section must have at least as many entries as the hash index (need {len})");
-    }
-
-    let mut scratch = ::std::vec::Vec::with_capacity(len);
-    sort_index_by_top_byte_bucket(index, radix, &mut scratch);
-    finish_sorted_index(index, tags, radix);
+    let mut scratch = ::std::vec::Vec::new();
+    let mut counts = ::std::vec::Vec::new();
+    initialize_hash_sorted_map_index_with_scratch(index, tags, radix, &mut scratch, &mut counts);
 }
 
-/// Like [`initialize_hash_sorted_map_index`], but reuses `scratch` for the scatter buffer.
-#[doc(hidden)]
-pub fn initialize_hash_sorted_map_index_with_scratch<K, V>(
+/// Like [`initialize_hash_sorted_map_index`], but reuses the `scratch` and `counts`
+/// buffers across calls (the gather constructor allocates them fresh per map).
+pub(crate) fn initialize_hash_sorted_map_index_with_scratch<K, V>(
     index: &mut [HashBackref<K, V>],
     tags: &mut [Tag],
     radix: &mut RadixLookupTables,
     scratch: &mut ::std::vec::Vec<HashBackref<K, V>>,
+    counts: &mut ::std::vec::Vec<u32>,
 ) {
     let len = index.len();
     if len == 0 {
@@ -332,16 +329,20 @@ pub fn initialize_hash_sorted_map_index_with_scratch<K, V>(
         panic!("tag section must have at least as many entries as the hash index (need {len})");
     }
 
-    sort_index_by_top_byte_bucket(index, radix, scratch);
-    finish_sorted_index(index, tags, radix);
+    sort_index_by_predicted_position(index, radix, scratch, counts);
+    finish_sorted_index(index, tags);
 }
 
-/// Count by top hash byte, scatter into bucket ranges, then sort each bucket slice.
+/// Distribution sort for uniform hashes: a counting sort on the top `bits` of the hash
+/// (≈ one bucket per record), then one insertion-sort cleanup. Each record lands within
+/// a bucket of its final slot, so the whole sort is O(n) with no per-bucket comparison
+/// sort. `counts` is a reusable bucket-offset buffer.
 #[allow(unsafe_code)]
-fn sort_index_by_top_byte_bucket<K, V>(
+fn sort_index_by_predicted_position<K, V>(
     index: &mut [HashBackref<K, V>],
     radix: &mut RadixLookupTables,
     scratch: &mut ::std::vec::Vec<HashBackref<K, V>>,
+    counts: &mut ::std::vec::Vec<u32>,
 ) {
     let len = index.len();
     if len > u16::MAX as usize {
@@ -351,82 +352,76 @@ fn sort_index_by_top_byte_bucket<K, V>(
         );
     }
 
-    let mut count = [0u32; 256];
+    // ≈ one fine bucket per record: smallest `2^bits >= len`, clamped so buckets still
+    // nest inside the dispatch radix (>= 8) and the count array stays bounded (<= 1 << 16).
+    let bits = (usize::BITS - (len.max(1) - 1).leading_zeros()).clamp(8, 16);
+    let num_buckets = 1usize << bits;
+    let fine_shift = 64 - bits;
+
+    counts.clear();
+    counts.resize(num_buckets + 1, 0);
     for entry in index.iter() {
-        count[(entry.hash >> 56) as usize] += 1;
+        counts[(entry.hash >> fine_shift) as usize] += 1;
     }
 
-    let mut pos = 0_u16;
-    for (bucket, start) in radix.starts.iter_mut().enumerate().take(256) {
-        *start = pos;
-        pos += count[bucket] as u16;
+    // Exclusive prefix sum: `counts[b]` becomes the start offset of fine bucket `b`.
+    let mut acc = 0u32;
+    for slot in counts.iter_mut() {
+        let next = acc + *slot;
+        *slot = acc;
+        acc = next;
     }
-    radix.starts[256] = len as u16;
 
+    // Read the dispatch table off the fine prefix sums, capped at `RADIX_BITS` so the
+    // lookup table stays a fixed `RADIX_SLOTS`. Dispatch bucket `b` starts at fine bucket
+    // `b << (bits - dispatch_bits)`.
+    let dispatch_bits = bits.min(RADIX_BITS as u32);
+    let dispatch_buckets = 1usize << dispatch_bits;
+    let fine_per_dispatch = 1usize << (bits - dispatch_bits);
+    for (b, start) in radix.starts.iter_mut().enumerate().take(dispatch_buckets) {
+        *start = counts[b * fine_per_dispatch] as u16;
+    }
+    radix.starts[dispatch_buckets] = len as u16;
+    radix.shift = (64 - dispatch_bits) as u8;
+
+    // Scatter into fine buckets (within a bucket, entries keep scatter order).
     scratch.clear();
     scratch.reserve(len);
     unsafe {
         ::core::ptr::copy_nonoverlapping(index.as_ptr(), scratch.as_mut_ptr(), len);
         scratch.set_len(len);
     }
-
-    let mut cursors = radix.starts;
     for entry in scratch.iter() {
-        let bucket = (entry.hash >> 56) as usize;
-        let dest = cursors[bucket] as usize;
+        let bucket = (entry.hash >> fine_shift) as usize;
+        let dest = counts[bucket] as usize;
         unsafe {
             ::core::ptr::write(
                 index.get_unchecked_mut(dest),
                 ::core::ptr::read(entry as *const HashBackref<K, V>),
             );
         }
-        cursors[bucket] += 1;
+        counts[bucket] += 1;
     }
 
-    for bucket in 0..256 {
-        let lo = radix.starts[bucket] as usize;
-        let hi = radix.starts[bucket + 1] as usize;
-        if hi > lo + 1 {
-            index[lo..hi].sort_unstable_by_key(|entry| entry.hash);
+    // Cleanup: only entries sharing a fine bucket can be out of order, and they sit
+    // adjacent, so each entry moves O(bucket size) ≈ O(1).
+    for i in 1..len {
+        let mut j = i;
+        while j > 0 && index[j - 1].hash > index[j].hash {
+            index.swap(j - 1, j);
+            j -= 1;
         }
     }
 }
 
-/// Write SIMD tags and interpolation reciprocals for a sorted `index`.
-///
-/// `radix.starts` must already reflect top-byte partition boundaries.
-fn finish_sorted_index<K, V>(
-    index: &[HashBackref<K, V>],
-    tags: &mut [Tag],
-    radix: &mut RadixLookupTables,
-) {
+/// Write the SIMD tags (low [`Tag`] bits of each sorted hash) plus zero padding.
+fn finish_sorted_index<K, V>(index: &[HashBackref<K, V>], tags: &mut [Tag]) {
     let len = index.len();
-    if len > u16::MAX as usize {
-        panic!(
-            "ScatteredHashSortedMap supports at most {} records",
-            u16::MAX
-        );
-    }
-
     for (tag, entry) in tags.iter_mut().zip(index.iter()).take(len) {
         *tag = hash_tag(entry.hash);
     }
     for tag in tags.iter_mut().skip(len) {
         *tag = 0;
-    }
-
-    for b in 0..256 {
-        let lo = radix.starts[b] as usize;
-        let hi_exclusive = radix.starts[b + 1] as usize;
-        if hi_exclusive <= lo || hi_exclusive - lo < RADIX_LINEAR_THRESHOLD {
-            radix.interp_mul[b] = 0;
-            continue;
-        }
-        let hi = hi_exclusive - 1;
-        let lo_hash = index[lo].hash;
-        let hi_hash = index[hi].hash;
-        let span = hi_hash.wrapping_sub(lo_hash);
-        radix.interp_mul[b] = interpolate_reciprocal(hi - lo, span);
     }
 }
 
@@ -445,38 +440,24 @@ pub fn radix_tables_mut(bytes: &mut [RadixLookupTables]) -> &mut RadixLookupTabl
 
 /// Precompute `floor(range * 2^64 / span)` for multiply/shift interpolation.
 #[inline]
-pub fn interpolate_reciprocal(range: usize, span: u64) -> u64 {
+pub(crate) fn interpolate_reciprocal(range: usize, span: u64) -> u64 {
     if range == 0 || span == 0 {
         return 0;
     }
     (((range as u128) << 64) / span as u128) as u64
 }
 
-/// Decode an exact `[low, high]` window from precomputed top-byte partition starts.
-fn top_byte_window<K, V>(
-    _index: &[HashBackref<K, V>],
-    radix: &RadixLookupTables,
-    hash: u64,
-    _steps: &mut SearchStepCounts,
-) -> (usize, usize) {
-    let bucket = (hash >> 56) as usize;
+/// Decode the `[low, high]` window for `hash` from the radix partition starts, or
+/// `None` if its bucket is empty.
+fn radix_window(radix: &RadixLookupTables, hash: u64) -> Option<(usize, usize)> {
+    let bucket = (hash >> radix.shift) as usize;
     let low = radix.starts[bucket] as usize;
     let hi_exclusive = radix.starts[bucket + 1] as usize;
-    if hi_exclusive <= low {
-        return (0, 0);
-    }
-    (low, hi_exclusive - 1)
+    (hi_exclusive > low).then(|| (low, hi_exclusive - 1))
 }
 
 #[inline]
-fn interpolate_pos(
-    lo: usize,
-    hi: usize,
-    lo_hash: u64,
-    hi_hash: u64,
-    hash: u64,
-    recip: Option<u64>,
-) -> usize {
+fn interpolate_pos(lo: usize, hi: usize, lo_hash: u64, hi_hash: u64, hash: u64) -> usize {
     let span = hi_hash.wrapping_sub(lo_hash);
     if span == 0 {
         return lo;
@@ -484,15 +465,17 @@ fn interpolate_pos(
 
     let off = hash.wrapping_sub(lo_hash);
     let range = hi - lo;
-    let mul = recip.unwrap_or_else(|| interpolate_reciprocal(range, span));
+    let mul = interpolate_reciprocal(range, span);
     let offset = (((off as u128) * mul as u128) >> 64) as usize;
     (lo + offset).clamp(lo, hi)
 }
 
-/// Scalar interpolation search for a hash in a sorted hash index.
+/// Scalar interpolation search for a hash in a sorted hash index. Used as a baseline
+/// in tests and benchmarks; the production lookup uses [`hybrid_interpolation_search`].
 ///
 /// Average-case complexity is `O(log log n)` when hashes are uniformly distributed.
-pub fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Option<usize> {
+#[cfg(any(test, feature = "__internal"))]
+pub(crate) fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Option<usize> {
     if index.is_empty() {
         return None;
     }
@@ -515,7 +498,7 @@ pub fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Opt
                 .map(|offset| lo + offset);
         }
 
-        let pos = interpolate_pos(lo, hi, lo_hash, hi_hash, hash, None);
+        let pos = interpolate_pos(lo, hi, lo_hash, hi_hash, hash);
 
         if index[pos].hash == hash {
             return Some(pos);
@@ -533,7 +516,7 @@ pub fn interpolation_search<K, V>(index: &[HashBackref<K, V>], hash: u64) -> Opt
 }
 
 /// Hybrid lookup: coarse interpolation jumps, then SIMD tag filtering, then full-hash verification.
-pub fn hybrid_interpolation_search<K, V>(
+pub(crate) fn hybrid_interpolation_search<K, V>(
     index: &[HashBackref<K, V>],
     tags: &[Tag],
     radix: Option<&RadixLookupTables>,
@@ -543,7 +526,7 @@ pub fn hybrid_interpolation_search<K, V>(
 }
 
 /// Hybrid lookup with per-phase step counts for analysis.
-pub fn hybrid_interpolation_search_with_steps<K, V>(
+pub(crate) fn hybrid_interpolation_search_with_steps<K, V>(
     index: &[HashBackref<K, V>],
     tags: &[Tag],
     radix: Option<&RadixLookupTables>,
@@ -555,14 +538,12 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
         return (None, steps);
     }
 
-    let bucket = (hash >> 56) as usize;
-    let (mut low, mut high) = if let Some(radix) = radix {
-        if radix.starts[bucket] == radix.starts[bucket + 1] {
-            return (None, steps);
-        }
-        top_byte_window(index, radix, hash, &mut steps)
-    } else {
-        (0, len - 1)
+    let (mut low, mut high) = match radix {
+        Some(radix) => match radix_window(radix, hash) {
+            Some(window) => window,
+            None => return (None, steps),
+        },
+        None => (0, len - 1),
     };
 
     if low > high || hash < index[low].hash || hash > index[high].hash {
@@ -589,13 +570,7 @@ pub fn hybrid_interpolation_search_with_steps<K, V>(
             break;
         }
 
-        let recip = radix.and_then(|tables| {
-            let bucket_lo = tables.starts[bucket] as usize;
-            let bucket_hi = tables.starts[bucket + 1] as usize;
-            (low == bucket_lo && high + 1 == bucket_hi && tables.interp_mul[bucket] != 0)
-                .then_some(tables.interp_mul[bucket])
-        });
-        let pos = interpolate_pos(low, high, low_val, high_val, hash, recip);
+        let pos = interpolate_pos(low, high, low_val, high_val, hash);
 
         if index[pos].hash == hash {
             return (Some(pos), steps);
@@ -699,6 +674,39 @@ fn simd_verify_tag_block<K, V>(
     None
 }
 
+/// Search and init primitives exposed to benchmarks under the `__internal` feature.
+#[cfg(feature = "__internal")]
+pub mod internal {
+    /// See [`super::hybrid_interpolation_search`].
+    pub fn hybrid_interpolation_search<K, V>(
+        index: &[super::HashBackref<K, V>],
+        tags: &[super::Tag],
+        radix: Option<&super::RadixLookupTables>,
+        hash: u64,
+    ) -> Option<usize> {
+        super::hybrid_interpolation_search(index, tags, radix, hash)
+    }
+
+    /// See [`super::interpolation_search`].
+    pub fn interpolation_search<K, V>(
+        index: &[super::HashBackref<K, V>],
+        hash: u64,
+    ) -> Option<usize> {
+        super::interpolation_search(index, hash)
+    }
+
+    /// See [`super::initialize_hash_sorted_map_index_with_scratch`].
+    pub fn initialize_hash_sorted_map_index_with_scratch<K, V>(
+        index: &mut [super::HashBackref<K, V>],
+        tags: &mut [super::Tag],
+        radix: &mut super::RadixLookupTables,
+        scratch: &mut ::std::vec::Vec<super::HashBackref<K, V>>,
+        counts: &mut ::std::vec::Vec<u32>,
+    ) {
+        super::initialize_hash_sorted_map_index_with_scratch(index, tags, radix, scratch, counts);
+    }
+}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __hash_sorted_map {
@@ -747,7 +755,7 @@ macro_rules! __hash_sorted_map {
             $crate::__support::link_section::declarative::in_section!(
                 #[in_section(unsafe, type = mutable, name = $name :: $unique :: TOP_BYTE)]
                 const _: $crate::hash_sorted_map::RadixLookupTables =
-                    $crate::hash_sorted_map::TOP_BYTE_INDEX_ZERO;
+                    $crate::hash_sorted_map::RADIX_TABLES_ZERO;
             );
 
             $crate::__support::ctor::declarative::ctor!(
@@ -810,8 +818,8 @@ macro_rules! __hash_sorted_map {
 #[cfg(all(test, not(miri)))]
 mod link_tests {
     use super::{
-        HashBackref, MapRecord, ScatteredHashSortedMap, SearchStepCounts, TAG_BLOCK_SIZE,
-        TOP_BYTE_INDEX_ZERO, Tag, hash_tag, hybrid_interpolation_search,
+        HashBackref, MapRecord, RADIX_TABLES_ZERO, ScatteredHashSortedMap, SearchStepCounts,
+        TAG_BLOCK_SIZE, Tag, hash_tag, hybrid_interpolation_search,
         hybrid_interpolation_search_with_steps, initialize_hash_sorted_map_index,
         interpolation_search,
     };
@@ -835,8 +843,10 @@ mod link_tests {
         assert_eq!(TEST_MAP.tags()[1], hash_tag(index[1].hash));
     }
 
+    /// Small input (below 256 records, so `bits` clamps to 8) — the distribution sort
+    /// still matches a full comparison sort and drives correct lookups.
     #[test]
-    fn top_byte_bucket_sort_matches_full_sort() {
+    fn distribution_sort_small_input_matches_full_sort() {
         use crate::hash::ConstHash;
 
         let records = [
@@ -855,26 +865,84 @@ mod link_tests {
                 HashBackref::new(ConstHash::hash(&records[2].key), &records[2] as *const _),
             ]
         };
-        let mut bucket_sorted = make_index();
+        let mut dist_sorted = make_index();
         let mut full_sorted = make_index();
-        let mut radix = TOP_BYTE_INDEX_ZERO;
+        let mut radix = RADIX_TABLES_ZERO;
         let mut tags = [0 as Tag; 5 + TAG_BLOCK_SIZE];
         let mut scratch = Vec::new();
+        let mut counts = Vec::new();
 
-        super::sort_index_by_top_byte_bucket(&mut bucket_sorted, &mut radix, &mut scratch);
+        super::sort_index_by_predicted_position(
+            &mut dist_sorted,
+            &mut radix,
+            &mut scratch,
+            &mut counts,
+        );
         full_sorted.sort_unstable_by_key(|entry| entry.hash);
 
-        for (left, right) in bucket_sorted.iter().zip(full_sorted.iter()) {
+        for (left, right) in dist_sorted.iter().zip(full_sorted.iter()) {
             assert_eq!(left.hash, right.hash);
             assert_eq!(left.record, right.record);
         }
 
-        super::finish_sorted_index(&bucket_sorted, &mut tags, &mut radix);
+        super::finish_sorted_index(&dist_sorted, &mut tags);
         for record in &records {
             let hash = ConstHash::hash(&record.key);
-            let idx = hybrid_interpolation_search(&bucket_sorted, &tags, Some(&radix), hash)
-                .expect("sorted bucket map should find hash");
-            assert_eq!(unsafe { &*bucket_sorted[idx].record }.key, record.key);
+            let idx = hybrid_interpolation_search(&dist_sorted, &tags, Some(&radix), hash)
+                .expect("sorted map should find hash");
+            assert_eq!(unsafe { &*dist_sorted[idx].record }.key, record.key);
+        }
+    }
+
+    #[test]
+    fn distribution_sort_matches_full_sort() {
+        use crate::hash::ConstHash;
+
+        const NUM_RECORDS: usize = 5000;
+        let strings: Vec<&'static str> = (0..NUM_RECORDS)
+            .map(|i| Box::leak(format!("key{i:04}").into_boxed_str()) as &'static str)
+            .collect();
+        let records: Vec<MapRecord<&'static str, u32>> = strings
+            .iter()
+            .enumerate()
+            .map(|(i, s)| MapRecord::new(*s, i as u32))
+            .collect();
+        let make_index = || -> Vec<HashBackref<&'static str, u32>> {
+            records
+                .iter()
+                .map(|record| {
+                    HashBackref::new(ConstHash::hash(&record.key), record as *const _ as *const _)
+                })
+                .collect()
+        };
+
+        let mut dist_sorted = make_index();
+        let mut full_sorted = make_index();
+        let mut radix = RADIX_TABLES_ZERO;
+        let mut scratch = Vec::new();
+        let mut counts = Vec::new();
+
+        super::sort_index_by_predicted_position(
+            &mut dist_sorted,
+            &mut radix,
+            &mut scratch,
+            &mut counts,
+        );
+        full_sorted.sort_by_key(|entry| entry.hash);
+
+        // Fully sorted by hash, identical to a comparison sort.
+        for (left, right) in dist_sorted.iter().zip(full_sorted.iter()) {
+            assert_eq!(left.hash, right.hash);
+        }
+
+        // The derived top-byte dispatch table drives correct lookups.
+        let mut tags = vec![0 as Tag; NUM_RECORDS + TAG_BLOCK_SIZE];
+        super::finish_sorted_index(&dist_sorted, &mut tags);
+        for record in &records {
+            let hash = ConstHash::hash(&record.key);
+            let idx = hybrid_interpolation_search(&dist_sorted, &tags, Some(&radix), hash)
+                .expect("dist-sorted map should find hash");
+            assert_eq!(unsafe { &*dist_sorted[idx].record }.key, record.key);
         }
     }
 
@@ -891,7 +959,7 @@ mod link_tests {
             HashBackref::new(crate::const_hash!("b"), &records[1] as *const _),
         ];
         let mut tags = [0 as Tag; 3 + TAG_BLOCK_SIZE];
-        let mut radix = TOP_BYTE_INDEX_ZERO;
+        let mut radix = RADIX_TABLES_ZERO;
         initialize_hash_sorted_map_index(&mut index, &mut tags, &mut radix);
 
         for key in ["a", "b", "c"] {
@@ -931,7 +999,7 @@ mod link_tests {
             })
             .collect();
         let mut tags = vec![0 as Tag; NUM_RECORDS + TAG_BLOCK_SIZE];
-        let mut radix = TOP_BYTE_INDEX_ZERO;
+        let mut radix = RADIX_TABLES_ZERO;
         initialize_hash_sorted_map_index(&mut index, &mut tags, &mut radix);
 
         let mut hybrid_totals = SearchStepCounts::default();
@@ -970,7 +1038,7 @@ mod link_tests {
                 if span == 0 {
                     break;
                 }
-                let pos = super::interpolate_pos(lo, hi, lo_hash, hi_hash, hash, None);
+                let pos = super::interpolate_pos(lo, hi, lo_hash, hi_hash, hash);
                 if index[pos].hash == hash {
                     break;
                 }
@@ -984,7 +1052,7 @@ mod link_tests {
             }
             scalar_steps += scalar as u64;
 
-            let bucket = (hash >> 56) as usize;
+            let bucket = (hash >> radix.shift) as usize;
             let low = radix.starts[bucket] as usize;
             let high = radix.starts[bucket + 1] as usize;
             if high > low {
