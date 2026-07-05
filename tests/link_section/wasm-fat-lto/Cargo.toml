@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["section-def", "items", "app"]
+
+# Fat LTO with a single codegen unit is the configuration that used to collapse
+# the per-item marker bytes in the old WASM implementation, reporting a count of
+# 1 for the two identical items below (see
+# https://github.com/mmastrac/linktime/issues/488).
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1

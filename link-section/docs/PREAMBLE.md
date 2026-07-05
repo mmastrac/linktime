@@ -150,8 +150,8 @@ pub fn callback() {
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
-| WASM                     | ✅ Fully supported, via emulation (§2) (§3)     |
-| AIX                      | ✅ Supported (§4) (§5)                          |
+| WASM                     | ✅ Fully supported, via emulation (§2)          |
+| AIX                      | ✅ Supported (§3) (§4)                          |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
 
 (§1) Orphan section handling is a feature of the linker that allows sections to
@@ -161,13 +161,10 @@ be defined without a pre-defined name.
 data to a contiguous section. To access link-section slices in WASM in `#[ctor]`
 functions, make sure to use at least `#[ctor(priority = 1)]`.
 
-(§3) Host environment support (by calling the exported `read_custom_section`
-function) is required to register each section with the runtime.
-
-(§4) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
+(§3) AIX requires `-C link-arg=-bdbg:namedsects:ss` which enables functionality
 similar to LLVM/GCC's orphan section handling.
 
-(§5) Empty sections are not currently supported: ensure every section has at least
+(§4) Empty sections are not currently supported: ensure every section has at least
 one item, or pass the `-C link-arg=-berok` linker flag to ignore errors.
 
 ## Platform Details
@@ -217,53 +214,33 @@ for more details about the alphabetical sorting rule.
 - Has start/end symbols: ❌
 - Supports linker sorting: ❌
 
-On WASM platforms, Rust emits data into custom sections which do not support
-ordering, and are stored out-of-band. The host environment is responsible for
-registering this out-of-band section with this library as this data is not
-accessible by the WASM runtime.
+On WASM platforms there are no linker-provided start/end symbols and no linker
+ordering. Normally, WASM does not support placing arbitrary data in link
+sections - only non-pointer data is supported. To work around this, the WASM
+support uses `const` items and pre-`main` construction functions to gather each
+entry into a contiguous section allocated at startup.
 
-Normally, WASM does not support placing arbitrary data in link sections - only
-non-pointer data is supported. However, the WASM support uses `const` items and
-pre-main construction functions to copy each entry into a contiguous section
-allocated at startup. The number of items in a link-section is computed by
-generating a custom data section containing one byte per item.
+Each submitted item emits a plain (linear-memory) static "list node" plus an
+`.init_array.0` constructor that threads the node onto an intrusive linked list
+rooted in the section. Because these nodes are interior-mutable and have their
+address taken, the linker cannot merge them even under fat LTO, so the item
+count is always exact.
 
-The WASM support expects a function named `read_custom_section` in the module's
-environment with four `usize` / pointer parameters; the embedder should close
-over `WebAssembly.Module` and `WebAssembly.Memory` from compile/instantiate when
-installing the import and pass them to the function below:
+The list is materialized into one contiguous allocation by an eager,
+ordered constructor. Item submissions run at `.init_array.0` (priority 0), and
+each section emits a finalization constructor at `.init_array.1` (priority 1).
+Because wasm-ld orders `.init_array.*` by the integer value of the suffix, the
+finalizer is guaranteed to run after every submission and before any
+`#[ctor(priority >= 2)]` and before `main` — a well-defined pre-`main` time
+rather than "whenever the section is first read".
 
-```js
-/**
- * Support function for `link-section` crate.
- */
-export function readCustomSection(
-  wasmModule: WebAssembly.Module,
-  wasmInstance: WebAssembly.Instance,
-  namePtr: number,
-  nameLength: number,
-  targetPtr: number,
-  targetLength: number,
-): number {
-    const memory = wasmInstance.exports.memory as WebAssembly.Memory;
-    const nameBytes = new Uint8Array(memory.buffer, namePtr, nameLength);
-    const sectionName = new TextDecoder().decode(nameBytes);
-
-    const sections = WebAssembly.Module.customSections(wasmModule, sectionName);
-    if (sections.length === 0) {
-        return 0;
-    }
-
-    const section = sections[0];
-    const need = section.byteLength;
-    if (targetLength < need) {
-        return need;
-    }
-
-    new Uint8Array(memory.buffer, targetPtr, need).set(new Uint8Array(section));
-    return need;
-}
-```
+[`Ref`] / [`MovableRef`] handles carry a pointer to their owning section and also
+flatten it on first dereference. That lazy path is an idempotent backstop for the
+one remaining tie: an explicit `#[ctor(priority = 1)]` that runs before the
+finalizer. As a result the `#[ctor]` priority requirement is the same as
+elsewhere: to read a link section or dereference a [`Ref`] / [`MovableRef`]
+handle from a `#[ctor]`, use at least `#[ctor(priority = 1)]`. Reads from `main`
+(or any later constructor) are always safe.
 
 ### AIX
 

@@ -1,0 +1,9 @@
+[package]
+name = "items"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+link-section = { path = "../../../../link-section" }
+section-def = { path = "../section-def" }

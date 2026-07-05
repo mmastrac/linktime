@@ -22,7 +22,20 @@ impl FOO {
                         static __LINK_SECTION_INFO:
                             ::link_section::__support::wasm::LinkSectionInfoLock<::link_section::__support::wasm::LinkSectionInfo>
                             =
-                            ::link_section::__support::wasm::LinkSectionInfoLock::new(::link_section::__support::wasm::LinkSectionInfo::new::<(fn())>(__LINK_SECTION_NAME));
+                            ::link_section::__support::wasm::LinkSectionInfoLock::new(::link_section::__support::wasm::LinkSectionInfo::new::<(fn())>(__LINK_SECTION_NAME,
+                                    false));
+                        #[link_section = ".init_array.1"]
+                        #[used]
+                        #[allow(non_snake_case)]
+                        static __LINK_SECTION_FLATTEN_FN_REF: extern "C" fn() =
+                            {
+                                extern "C" fn __LINK_SECTION_FLATTEN_FN() {
+                                    unsafe {
+                                        ::link_section::__support::wasm::flatten_wasm_link_section(&raw const __LINK_SECTION_INFO);
+                                    }
+                                }
+                                __LINK_SECTION_FLATTEN_FN
+                            };
                         unsafe {
                             ::link_section::__support::Bounds::new(&raw const __LINK_SECTION_INFO)
                         }
@@ -68,8 +81,11 @@ fn foo() {
                     ::link_section::__support::SectionItemType>::Item;
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
                 #[used]
-                #[link_section = ".data.link_section.FOO"]
-                static __LINK_SECTION_COUNTING_ITEM: u8 = 0;
+                static __LINK_SECTION_CELL:
+                    ::link_section::__support::wasm::LinkCell<__InSecStoredTy,
+                    ::link_section::__support::wasm::LinkMeta> =
+                    <::link_section::__support::wasm::LinkCell<__InSecStoredTy,
+                            ::link_section::__support::wasm::LinkMeta>>::new(__LINK_SECTION_CONST_ITEM_VALUE);
                 #[allow(missing_unsafe_on_extern)]
                 extern "C" {
                     #[link_name = ".data.link_section.FOO.bounds"]
@@ -89,10 +105,8 @@ fn foo() {
                                 return;
                             }
                             unsafe {
-                                let ptr =
-                                    ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO);
-                                ::core::ptr::write(ptr as *mut _,
-                                    __LINK_SECTION_CONST_ITEM_VALUE);
+                                ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO,
+                                    __LINK_SECTION_CELL.as_cell_ptr());
                             }
                         }
                         __LINK_SECTION_ITEM_FN

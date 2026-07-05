@@ -10,8 +10,6 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readCustomSection } from "./link-section.mts";
-
 const here = dirname(fileURLToPath(import.meta.url));
 const wasmPath = join(here, "../rust/target/wasm32-unknown-unknown/debug/wasm_rust.wasm");
 
@@ -54,7 +52,6 @@ async function main(): Promise<void> {
     env: {
         write,
         atexit,
-        read_custom_section: (...args: [number, number, number, number]) => readCustomSection.apply(null, [wasmModule, instance, ...args]),
     },
   });
   console.log("Instantiated");

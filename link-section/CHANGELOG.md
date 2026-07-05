@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- WASM: item counts no longer collapse under fat LTO. Items are gathered through
+  address-significant intrusive list nodes that survive LTO. Fixes
+  [#488](https://github.com/mmastrac/linktime/issues/488).
+
+### Changed
+
+- WASM: the `read_custom_section` host import is no longer required. Sections
+  are gathered in-module via `.init_array.0` submissions and an `.init_array.1`
+  finalizer; the `#[ctor]` priority contract is unchanged.
+- WASM: each item now lives in a single intrusive `LinkCell<T>` static (value
+  plus trailing list metadata) instead of a separate value static and cell.
+
 ## [0.18.3] - 2026-06-23
 
 ### Fixed

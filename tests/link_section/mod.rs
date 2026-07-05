@@ -125,3 +125,35 @@ $ cargo run --quiet
 ! link-section-no-default-features:main
 "#
 );
+
+// Regression for https://github.com/mmastrac/linktime/issues/488
+//
+// Two identical items are submitted from a dependency crate and the whole
+// workspace is built with fat LTO. The old WASM implementation counted items by
+// the byte length of a per-item marker custom section, which fat LTO folded down
+// to a single byte.
+clitest!(
+    wasm_fat_lto,
+    r#"
+set RUSTFLAGS "";
+cd "link_section/wasm-fat-lto";
+$ command -v node >/dev/null 2>&1 && echo 1 || echo 0
+%SET has_node
+*
+if has_node == "0" {
+    exit script;
+}
+defer {
+    $ cargo clean --quiet
+}
+# Build the fat-LTO app and run it. TODO: WASM tests should probably live in their own top-level file.
+$ cargo build -p app --release --target wasm32-unknown-unknown 2>&1 && node run.mjs target/wasm32-unknown-unknown/release/app.wasm 2>&1
+%EXIT any
+*
+choice {
+    ! items_len=2 items_sum=14
+    ! %{DATA}can't find crate for %{DATA}
+}
+*
+"#
+);
