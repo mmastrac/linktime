@@ -1,6 +1,6 @@
 [package]
 name = "linktime"
-version = "0.17.0"
+version = "0.18.0"
 authors.workspace = true
 edition = "2021"
 description = "Link-time registration patterns for Rust (ctors, dtors, link-time slices and sections)"

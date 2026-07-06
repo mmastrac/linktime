@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3] - 2026-07-06
+
+- Bumped `link-section` dependency to 0.19.0 to fix WASM LTO issues.
+
 ## [0.21.2] - 2026-06-26
 
 ### Fixes

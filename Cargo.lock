@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.7"
+version = "1.0.8"
 dependencies = [
  "libc-print",
  "link-section",
@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.18.3"
+version = "0.19.0"
 dependencies = [
  "linktime-proc-macro",
  "macrotest",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "linktime"
-version = "0.17.0"
+version = "0.18.0"
 dependencies = [
  "ctor",
  "dtor",
@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "ctor",
  "divan",
