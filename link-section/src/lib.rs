@@ -401,7 +401,7 @@ pub mod __support {
                 type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
-                $crate::__register_wasm_item!(mutable, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
+                $crate::__register_wasm_item!(mutable, type=__InSecStoredTy, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
 
                 $crate::__if_wasm!(() (
                     $crate::__add_section_link_attribute!(
@@ -430,12 +430,20 @@ pub mod __support {
                     {
                         $crate::__register_wasm_item!(
                             movable,
+                            type=__InSecStoredTy,
                             value=__LINK_SECTION_CONST_ITEM_VALUE,
                             slot=$crate::MovableRef::slot_ptr(&raw const $ident),
                             section=$section
                         );
 
-                        $crate::MovableRef::new(::core::ptr::null())
+                        // Import the section info so the handle can lazily flatten.
+                        $crate::__import_section_info!(
+                            $crate::__support::wasm::LinkSectionMovableInfo,
+                            __LINK_SECTION_MOVABLE_INFO,
+                            $section
+                        );
+
+                        $crate::MovableRef::new($crate::__support::MovableRefStorage::new(::core::ptr::null(), &raw const __LINK_SECTION_MOVABLE_INFO))
                     }
                 )(
                     {
@@ -458,10 +466,10 @@ pub mod __support {
                             );
                         );
 
-                        $crate::MovableRef::new(
+                        $crate::MovableRef::new($crate::__support::MovableRefStorage::new(
                             (&raw const __LINK_SECTION_CONST_ITEM)
                                 .cast::<__InSecStoredTy>(),
-                        )
+                        ))
                     }
                 ))
             };
@@ -479,7 +487,7 @@ pub mod __support {
                 const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
 
                 $crate::__if_wasm!((
-                    $crate::__register_wasm_item!($section_type, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
+                    $crate::__register_wasm_item!($section_type, type=__InSecStoredTy, value=__LINK_SECTION_CONST_ITEM_VALUE, section=$section);
                 ) (
                     $crate::__add_section_link_attribute!(
                         item data section $section
@@ -499,18 +507,24 @@ pub mod __support {
                     $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = {
                         type __InSecStoredTy = $crate::__in_section_crate!(@type_select $path);
                         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
-                        $crate::__register_wasm_item!(reference, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section);
-                        $crate::reference::Ref::new()
+                        $crate::__register_wasm_item!(reference, type=__InSecStoredTy, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section);
+                        // Import the section info so the handle can lazily flatten.
+                        $crate::__import_section_info!(
+                            $crate::__support::wasm::LinkSectionInfo,
+                            __LINK_SECTION_REF_INFO,
+                            $section
+                        );
+                        $crate::reference::Ref::new($crate::__support::RefStorage::new(&raw const __LINK_SECTION_REF_INFO))
                     };
                 )
                 (
-                    // On non-WASM platforms, we can store the value directly (repr(transparent) allows this).
+                    // Layout-compatible with the value, so stored directly in the section.
                     #[cfg(not(target_family="wasm"))]
                     $crate::__add_section_link_attribute!(
                         item data section $section
                         #[link_section = __]
                         $($meta)*
-                        $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = $crate::reference::Ref::new($value);
+                        $vis static $ident: $crate::reference::Ref<$crate::__in_section_crate!(@type_select $path)> = $crate::reference::Ref::new($crate::__support::RefStorage::new($value));
                     );
                 )
             );

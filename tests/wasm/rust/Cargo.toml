@@ -11,8 +11,3 @@ linktime = { path = "../../../linktime" }
 libc-print = "0.5"
 
 [workspace]
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(wasmtime)',
-] }

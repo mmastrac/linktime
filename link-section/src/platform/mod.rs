@@ -16,9 +16,9 @@ pub use wasm::{get_section, section_name};
 #[cfg(target_os = "windows")]
 pub use windows::{get_section, section_name};
 
-// Select the appropriate bounds type for the platform.
+// Select the appropriate bounds and reference-storage types for the platform.
 #[cfg(target_family = "wasm")]
-pub use {wasm::Bounds, wasm::MovableBounds};
+pub use wasm::{Bounds, MovableBounds, MovableRefStorage, RefStorage};
 #[cfg(not(target_family = "wasm"))]
 pub use {PtrBounds as Bounds, PtrMovableBounds as MovableBounds};
 
@@ -56,6 +56,87 @@ pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
     }
 }
 
+/// An immutable snapshot of a section's `[start, end)` range.
+///
+/// Callers resolve a section's bounds once (via [`Bounds::range`] and friends)
+/// and then compute length, slices, and offsets from the snapshot without
+/// re-locking. `start` and `end` share provenance.
+#[derive(Clone, Copy)]
+pub struct SectionRange {
+    start: *const (),
+    end: *const (),
+}
+
+impl SectionRange {
+    /// A range covering `[start, end)`. `start` and `end` must share provenance.
+    #[inline(always)]
+    pub const fn new(start: *const (), end: *const ()) -> Self {
+        Self { start, end }
+    }
+
+    /// Section start address.
+    #[inline(always)]
+    pub const fn start_ptr(&self) -> *const () {
+        self.start
+    }
+
+    /// One byte past the last section byte.
+    #[inline(always)]
+    pub const fn end_ptr(&self) -> *const () {
+        self.end
+    }
+
+    /// Length in bytes (`end - start`).
+    #[inline(always)]
+    pub fn byte_len(&self) -> usize {
+        // Provenance-insensitive difference.
+        self.end.addr() - self.start.addr()
+    }
+
+    /// The range as a typed slice. `stride` must divide `byte_len()`. This is
+    /// the shared body of every `as_slice` accessor (see `sections.rs`), kept
+    /// here so the empty-range fast path and the `from_raw_parts` cast have one
+    /// source of truth.
+    ///
+    /// The returned slice borrows the underlying section memory, not this
+    /// snapshot (which is just two pointers and may be a temporary). The output
+    /// lifetime is unbound and the caller must tie it to the real borrow.
+    ///
+    /// # Safety
+    ///
+    /// `self` must denote a valid, aligned, readable range of `len = byte_len()
+    /// / stride` consecutive `T`s, and the returned slice's lifetime must not
+    /// outlive that memory. Callers holding `&section` tie the lifetime to that
+    /// borrow.
+    #[inline]
+    pub unsafe fn slice_of<'a, T>(self, stride: usize) -> &'a [T] {
+        let len = self.byte_len() / stride;
+        if len == 0 {
+            &[]
+        } else {
+            unsafe { ::core::slice::from_raw_parts(self.start as *const T, len) }
+        }
+    }
+
+    /// The mutable counterpart to [`Self::slice_of`].
+    ///
+    /// # Safety
+    ///
+    /// As [`Self::slice_of`], plus: the caller must uphold exclusivity — no
+    /// other reference (shared or mutable) to the same memory may exist for the
+    /// returned slice's lifetime. Calling this twice on the same range without
+    /// an intervening reborrow is UB.
+    #[inline]
+    pub unsafe fn slice_of_mut<'a, T>(self, stride: usize) -> &'a mut [T] {
+        let len = self.byte_len() / stride;
+        if len == 0 {
+            &mut []
+        } else {
+            unsafe { ::core::slice::from_raw_parts_mut(self.start as *mut T, len) }
+        }
+    }
+}
+
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
     /// Section start address.
@@ -69,26 +150,16 @@ impl PtrBounds {
     pub const fn new(start: *const (), end: *const ()) -> Self {
         Self { start, end }
     }
-}
 
-impl PtrBounds {
+    /// Resolve the section into an immutable [`SectionRange`].
     #[inline(always)]
-    /// Start pointer as an opaque pointer, with the same provenance as the end pointer.
-    pub fn start_ptr(&self) -> *const () {
-        launder_pointer_provenance(self.start)
-    }
-
-    #[inline(always)]
-    /// End pointer for the section, with the same provenance as the start pointer.
-    pub fn end_ptr(&self) -> *const () {
-        unsafe { (self.start_ptr() as *const u8).add(self.byte_len()) as *const () }
-    }
-
-    #[inline(always)]
-    /// Length in bytes (`end - start`).
-    pub fn byte_len(&self) -> usize {
-        // Provenance-insensitive difference.
-        self.end.addr() - self.start.addr()
+    pub fn range(&self) -> SectionRange {
+        // Launder the start's provenance and derive the end from it, so both
+        // pointers share provenance while the length stays provenance-free.
+        let start = launder_pointer_provenance(self.start);
+        let byte_len = self.end.addr() - self.start.addr();
+        let end = unsafe { (start as *const u8).add(byte_len) as *const () };
+        SectionRange::new(start, end)
     }
 }
 
@@ -106,30 +177,16 @@ impl PtrMovableBounds {
         Self { values, refs }
     }
 
-    /// Start pointer for the movable item section.
+    /// Resolve the movable item section into an immutable [`SectionRange`].
     #[inline(always)]
-    pub fn start_ptr(&self) -> *const () {
-        self.values.start_ptr()
+    pub fn range(&self) -> SectionRange {
+        self.values.range()
     }
-    /// End pointer for the movable item section.
+
+    /// Resolve the movable backref section into an immutable [`SectionRange`].
     #[inline(always)]
-    pub fn end_ptr(&self) -> *const () {
-        self.values.end_ptr()
-    }
-    /// Length in bytes of the movable item section.
-    #[inline(always)]
-    pub fn byte_len(&self) -> usize {
-        self.values.byte_len()
-    }
-    /// Start pointer for the movable backref section.
-    #[inline(always)]
-    pub fn backrefs_start_ptr(&self) -> *const () {
-        self.refs.start_ptr()
-    }
-    /// Length in bytes of the movable backref section.
-    #[inline(always)]
-    pub fn backrefs_byte_len(&self) -> usize {
-        self.refs.byte_len()
+    pub fn backrefs_range(&self) -> SectionRange {
+        self.refs.range()
     }
 }
 
@@ -157,6 +214,62 @@ impl<T> SyncUnsafeCell<T> {
 
 unsafe impl<T> Sync for SyncUnsafeCell<T> {}
 unsafe impl<T> Send for SyncUnsafeCell<T> {}
+
+/// Platform storage backing a [`crate::Ref`] off WASM: the value lives inline
+/// (and is placed directly in the linker section), so the handle is layout-
+/// compatible with `T`.
+#[cfg(not(target_family = "wasm"))]
+#[repr(C)]
+pub struct RefStorage<T: 'static> {
+    t: T,
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl<T> RefStorage<T> {
+    /// Storage holding `t` inline.
+    pub const fn new(t: T) -> Self {
+        Self { t }
+    }
+
+    /// Pointer to the inline value.
+    pub fn as_ptr(&self) -> *const T {
+        &self.t as *const T
+    }
+
+    /// The inline value.
+    pub fn get(&self) -> &T {
+        &self.t
+    }
+}
+
+/// Platform storage backing a [`crate::MovableRef`] off WASM: a stable pointer
+/// slot updated in place when the section is reordered. `slot` is the sole
+/// field, so [`crate::MovableRef::slot_ptr`] is an offset-0 cast.
+#[cfg(not(target_family = "wasm"))]
+#[repr(C)]
+pub struct MovableRefStorage<T: 'static> {
+    slot: SyncUnsafeCell<*const T>,
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl<T> MovableRefStorage<T> {
+    /// Storage whose slot initially points at `ptr`.
+    pub const fn new(ptr: *const T) -> Self {
+        Self {
+            slot: SyncUnsafeCell::new(ptr),
+        }
+    }
+
+    /// The current slot pointer.
+    pub const fn as_ptr(&self) -> *const T {
+        unsafe { *self.slot.get() }
+    }
+
+    /// The item currently referenced by the slot.
+    pub fn get(&self) -> &T {
+        unsafe { self.as_ptr().as_ref().expect("MovableRef not initialized") }
+    }
+}
 
 /// A non-zero-sized type that is used to align the start and end of the
 /// section.

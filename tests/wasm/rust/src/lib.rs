@@ -7,12 +7,6 @@ pub fn ctor() {
     libc_println!("ctor");
 }
 
-#[cfg(all(
-    // WASI p2 doesn't support custom imports
-    not(all(target_os = "wasi", target_env = "p2")), 
-    // wasmtime doesn't support custom imports
-    not(wasmtime)
-))]
 mod link_section {
     use linktime::ctor;
     use libc_print::*;
@@ -128,12 +122,6 @@ pub extern "C" fn _start() {
 
     libc_println!("start");
 
-    #[cfg(all(
-        // WASI p2 doesn't support custom imports
-        not(all(target_os = "wasi", target_env = "p2")), 
-        // wasmtime doesn't support custom imports
-        not(wasmtime)
-    ))]
     link_section::test_link_section();
 
     #[cfg(all(target_os = "wasi", target_env = "p2"))]

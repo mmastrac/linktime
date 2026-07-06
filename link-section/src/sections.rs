@@ -2,7 +2,7 @@
 use core::sync::atomic::{AtomicU8, Ordering};
 use core::{cell::UnsafeCell, ptr};
 
-use crate::__support::{Bounds, MovableBounds, SyncUnsafeCell};
+use crate::__support::{Bounds, MovableBounds};
 
 /// An untyped link section that can be used to store any type. The underlying
 /// data is not enumerable.
@@ -25,18 +25,18 @@ impl Section {
     /// The byte length of the section.
     #[inline]
     pub fn byte_len(&self) -> usize {
-        self.bounds.byte_len()
+        self.bounds.range().byte_len()
     }
 
     /// The start address of the section.
     #[inline]
     pub fn start_ptr(&self) -> *const () {
-        self.bounds.start_ptr()
+        self.bounds.range().start_ptr()
     }
     /// The end address of the section.
     #[inline]
     pub fn end_ptr(&self) -> *const () {
-        unsafe { (self.start_ptr() as *const u8).add(self.byte_len()) as *const () }
+        self.bounds.range().end_ptr()
     }
 
     /// Ensures that a section exists at the given path.
@@ -89,13 +89,13 @@ macro_rules! impl_bounds_fns {
         /// The start address of the section.
         #[inline(always)]
         pub fn start_ptr(&self) -> *const T {
-            self.bounds.start_ptr() as *const T
+            self.bounds.range().start_ptr() as *const T
         }
 
         /// The end address of the section.
         #[inline(always)]
         pub fn end_ptr(&self) -> *const T {
-            self.bounds.end_ptr() as *const T
+            self.bounds.range().end_ptr() as *const T
         }
 
         /// The stride of the typed section.
@@ -111,7 +111,7 @@ macro_rules! impl_bounds_fns {
         /// The byte length of the section.
         #[inline]
         pub fn byte_len(&self) -> usize {
-            self.bounds.byte_len()
+            self.bounds.range().byte_len()
         }
 
         /// The number of elements in the section.
@@ -129,11 +129,11 @@ macro_rules! impl_bounds_fns {
         /// The section as a slice.
         #[inline]
         pub fn as_slice(&self) -> &[T] {
-            if self.is_empty() {
-                &[]
-            } else {
-                unsafe { ::core::slice::from_raw_parts(self.start_ptr(), self.len()) }
-            }
+            // SAFETY: `bounds.range()` is the section's valid, aligned,
+            // readable range of `T`s (linker-resolved or WASM-materialised),
+            // and the returned slice is borrowed from `&self`, so it cannot
+            // outlive the section.
+            unsafe { self.bounds.range().slice_of::<T>(self.stride()) }
         }
 
         /// The offset of the item in the section, if it is in the section.
@@ -141,11 +141,15 @@ macro_rules! impl_bounds_fns {
         /// This is O(1), as it performs direct pointer arithmetic.
         #[inline]
         pub fn offset_of(&self, item: impl $crate::SectionItemLocation<T>) -> Option<usize> {
+            // Resolve the bounds up-front (complex operation on some platforms)
+            let range = self.bounds.range();
+            let start = range.start_ptr() as *const T;
+            let end = range.end_ptr() as *const T;
             let ptr = item.item_ptr();
-            if ptr < self.start_ptr() || ptr >= self.end_ptr() {
+            if ptr < start || ptr >= end {
                 None
             } else {
-                Some(unsafe { ptr.offset_from(self.start_ptr()) as usize })
+                Some(unsafe { ptr.offset_from(start) as usize })
             }
         }
     };
@@ -238,13 +242,13 @@ impl<T: 'static> TypedMutableSection<T> {
     /// The start address of the section.
     #[inline]
     pub fn start_ptr_mut(&self) -> *mut T {
-        self.bounds.start_ptr() as *mut T
+        self.bounds.range().start_ptr() as *mut T
     }
 
     /// The start address of the section.
     #[inline]
     pub fn end_ptr_mut(&self) -> *mut T {
-        self.bounds.end_ptr() as *mut T
+        self.bounds.range().end_ptr() as *mut T
     }
 
     /// The section as a mutable slice.
@@ -256,11 +260,9 @@ impl<T: 'static> TypedMutableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        if self.is_empty() {
-            &mut []
-        } else {
-            unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
-        }
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the section's valid, aligned `T` range.
+        unsafe { self.bounds.range().slice_of_mut::<T>(self.stride()) }
     }
 }
 
@@ -318,11 +320,9 @@ impl<T: 'static> TypedMovableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        if self.is_empty() {
-            &mut []
-        } else {
-            unsafe { ::core::slice::from_raw_parts_mut(self.start_ptr() as *mut T, self.len()) }
-        }
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the section's valid, aligned `T` range.
+        unsafe { self.bounds.range().slice_of_mut::<T>(self.stride()) }
     }
 
     /// The backrefs as a mutable slice, ordered to match the current value
@@ -337,17 +337,11 @@ impl<T: 'static> TypedMovableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
-        let backrefs_len =
-            self.bounds.backrefs_byte_len() / ::core::mem::size_of::<MovableBackref<T>>();
-        let backrefs = if backrefs_len == 0 {
-            &mut []
-        } else {
-            unsafe {
-                ::core::slice::from_raw_parts_mut(
-                    self.bounds.backrefs_start_ptr() as *mut MovableBackref<T>,
-                    backrefs_len,
-                )
-            }
+        let range = self.bounds.backrefs_range();
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the backref section's valid, aligned `MovableBackref<T>` range.
+        let backrefs = unsafe {
+            range.slice_of_mut::<MovableBackref<T>>(::core::mem::size_of::<MovableBackref<T>>())
         };
         #[cfg(not(target_family = "wasm"))]
         unsafe {
@@ -460,36 +454,40 @@ impl_bounds_traits!(TypedMovableSection<T>);
 /// The slot is updated when a [`TypedMovableSection`] is reordered (for example
 /// by [`TypedMovableSection::sort_unstable`]). Do not keep an `&T` from
 /// dereferencing this handle across such an update.
-#[repr(transparent)]
+///
+/// The platform-specific representation lives in [`MovableRefStorage`], whose
+/// `slot` is its first field so [`MovableRef::slot_ptr`] is an offset-0 cast.
+///
+/// [`MovableRefStorage`]: crate::__support::MovableRefStorage
+#[repr(C)]
 pub struct MovableRef<T: 'static> {
-    slot: SyncUnsafeCell<*const T>,
+    storage: crate::__support::MovableRefStorage<T>,
 }
 
 impl<T> MovableRef<T> {
     #[doc(hidden)]
-    pub const fn new(ptr: *const T) -> Self {
-        Self {
-            slot: SyncUnsafeCell::new(ptr),
-        }
+    pub const fn new(storage: crate::__support::MovableRefStorage<T>) -> Self {
+        Self { storage }
     }
 
-    /// Get a raw pointer to the stable pointer slot inside this handle. Note
-    /// that both this and the SyncUnsafeCell are transparent.
+    /// Get a raw pointer to the stable pointer slot inside this handle. `slot`
+    /// is the first field of the storage, so this is an offset-0 cast.
     #[doc(hidden)]
     pub const fn slot_ptr(this: *const Self) -> *const UnsafeCell<*const T> {
         this.cast::<UnsafeCell<*const T>>()
     }
 
-    /// Raw pointer to the value currently referenced by this slot.
-    pub const fn as_ptr(&self) -> *const T {
-        unsafe { *self.slot.get() }
+    /// Raw pointer to the value currently referenced by this slot, read without
+    /// flattening.
+    pub(crate) const fn as_ptr(&self) -> *const T {
+        self.storage.as_ptr()
     }
 }
 
 impl<T> ::core::ops::Deref for MovableRef<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        unsafe { self.as_ptr().as_ref().expect("MovableRef not initialized") }
+        self.storage.get()
     }
 }
 
@@ -568,64 +566,29 @@ impl_bounds_traits!(TypedReferenceSection<T>);
 /// A reference to a value in a link section. This allows platforms like WASM
 /// to reference the value, even though the final location is not known until
 /// after initialization.
-#[repr(transparent)]
+#[repr(C)]
 pub struct Ref<T: 'static> {
-    #[cfg(target_family = "wasm")]
-    ptr: ::core::cell::UnsafeCell<*const T>,
-    #[cfg(not(target_family = "wasm"))]
-    t: T,
+    storage: crate::__support::RefStorage<T>,
 }
 
 impl<T> Ref<T> {
-    #[cfg(not(target_family = "wasm"))]
     #[doc(hidden)]
-    pub const fn new(t: T) -> Self {
-        Self { t }
+    pub const fn new(storage: crate::__support::RefStorage<T>) -> Self {
+        Self { storage }
     }
 
-    #[cfg(target_family = "wasm")]
-    #[doc(hidden)]
-    pub const fn new() -> Self {
-        Self {
-            ptr: ::core::cell::UnsafeCell::new(::core::ptr::null()),
-        }
-    }
-
-    /// # Safety
-    ///
-    /// For macro/runtime registration only. `ptr` must refer to the item's final
-    /// location in the WASM link section. Requires exclusive access. See
-    /// [Exclusive access](crate#exclusive-access) for more information.
-    #[cfg(target_family = "wasm")]
-    #[doc(hidden)]
-    pub unsafe fn set(&self, ptr: *const T) {
-        *self.ptr.get() = ptr;
-    }
-
-    /// Raw pointer to the value (WASM: cell; otherwise `&T` as `*const T`).
-    pub fn as_ptr(&self) -> *const T {
-        #[cfg(target_family = "wasm")]
-        {
-            unsafe { *self.ptr.get() }
-        }
-        #[cfg(not(target_family = "wasm"))]
-        {
-            &self.t as *const T
-        }
+    /// Raw pointer to the value, read without flattening on WASM. Internal
+    /// plumbing for [`SectionItemLocation`](crate::SectionItemLocation):
+    /// `offset_of` flattens via the section bounds first. Use `Deref` otherwise.
+    pub(crate) fn as_ptr(&self) -> *const T {
+        self.storage.as_ptr()
     }
 }
 
 impl<T> ::core::ops::Deref for Ref<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        #[cfg(target_family = "wasm")]
-        unsafe {
-            ::core::ptr::read(self.ptr.get())
-                .as_ref()
-                .expect("Ref not initialized")
-        }
-        #[cfg(not(target_family = "wasm"))]
-        &self.t
+        self.storage.get()
     }
 }
 
