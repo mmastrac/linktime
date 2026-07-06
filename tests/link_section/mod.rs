@@ -132,6 +132,11 @@ $ cargo run --quiet
 // workspace is built with fat LTO. The old WASM implementation counted items by
 // the byte length of a per-item marker custom section, which fat LTO folded down
 // to a single byte.
+//
+// Skips when `node` or the `wasm32-unknown-unknown` target is missing (so a
+// misconfigured runner skips rather than silently passing). A build or run
+// failure otherwise fails the test — do not add an `%EXIT any` / `choice` arm
+// that swallows it, or the regression stops being checked.
 clitest!(
     wasm_fat_lto,
     r#"
@@ -143,17 +148,23 @@ $ command -v node >/dev/null 2>&1 && echo 1 || echo 0
 if has_node == "0" {
     exit script;
 }
+$ rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$' && echo 1 || echo 0
+%SET has_wasm_target
+*
+if has_wasm_target == "0" {
+    exit script;
+}
 defer {
     $ cargo clean --quiet
 }
-# Build the fat-LTO app and run it. TODO: WASM tests should probably live in their own top-level file.
+# Build the fat-LTO app and run it. No `%EXIT any`: a build or run failure must
+# fail the test (the target probe above already handles the skip case). The `*`
+# consumes cargo's `Compiling ...` stderr; `choice` then matches the success
+# output without order-sensitivity.
 $ cargo build -p app --release --target wasm32-unknown-unknown 2>&1 && node run.mjs target/wasm32-unknown-unknown/release/app.wasm 2>&1
-%EXIT any
 *
 choice {
     ! items_len=2 items_sum=14
-    ! %{DATA}can't find crate for %{DATA}
 }
-*
 "#
 );

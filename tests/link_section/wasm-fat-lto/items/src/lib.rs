@@ -11,6 +11,4 @@ const ITEM_1: section_def::Item = section_def::Item(7);
 /// Referenced by `app` so the linker pulls in this crate (and therefore its
 /// `#[in_section]` constructors) even though nothing else uses it directly.
 #[inline(never)]
-pub fn touch() {
-    core::hint::black_box(());
-}
+pub fn touch() {}

@@ -437,12 +437,10 @@ pub mod __support {
                         );
 
                         // Import the section info so the handle can lazily flatten.
-                        $crate::__add_section_link_attribute!(
-                            item data bounds $section
-                            #[link_name = __]
-                            extern "C" {
-                                static __LINK_SECTION_MOVABLE_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionMovableInfo>;
-                            }
+                        $crate::__import_section_info!(
+                            $crate::__support::wasm::LinkSectionMovableInfo,
+                            __LINK_SECTION_MOVABLE_INFO,
+                            $section
                         );
 
                         $crate::MovableRef::new($crate::__support::MovableRefStorage::new(::core::ptr::null(), &raw const __LINK_SECTION_MOVABLE_INFO))
@@ -511,12 +509,10 @@ pub mod __support {
                         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = $value;
                         $crate::__register_wasm_item!(reference, type=__InSecStoredTy, value=__LINK_SECTION_CONST_ITEM_VALUE, ref=$ident, section=$section);
                         // Import the section info so the handle can lazily flatten.
-                        $crate::__add_section_link_attribute!(
-                            item data bounds $section
-                            #[link_name = __]
-                            extern "C" {
-                                static __LINK_SECTION_REF_INFO: $crate::__support::wasm::LinkSectionInfoLock<$crate::__support::wasm::LinkSectionInfo>;
-                            }
+                        $crate::__import_section_info!(
+                            $crate::__support::wasm::LinkSectionInfo,
+                            __LINK_SECTION_REF_INFO,
+                            $section
                         );
                         $crate::reference::Ref::new($crate::__support::RefStorage::new(&raw const __LINK_SECTION_REF_INFO))
                     };

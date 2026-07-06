@@ -39,13 +39,13 @@ impl FOO {
                             {
                                 extern "C" fn __LINK_SECTION_FLATTEN_FN() {
                                     unsafe {
-                                        ::link_section::__support::wasm::flatten_wasm_link_section(&raw const __LINK_SECTION_INFO);
+                                        ::link_section::__support::wasm::flatten(&raw const __LINK_SECTION_INFO);
                                     }
                                 }
                                 __LINK_SECTION_FLATTEN_FN
                             };
                         unsafe {
-                            ::link_section::__support::Bounds::new(&raw const __LINK_SECTION_INFO)
+                            <::link_section::__support::Bounds>::new(&raw const __LINK_SECTION_INFO)
                         }
                     };
                 let name = ".data.link_section.FOO";
@@ -106,12 +106,6 @@ const DRIVER: Driver =
             static __LINK_SECTION_ITEM_FN_REF: extern "C" fn() =
                 {
                     extern "C" fn __LINK_SECTION_ITEM_FN() {
-                        static DISARMED: ::core::sync::atomic::AtomicBool =
-                            ::core::sync::atomic::AtomicBool::new(false);
-                        if DISARMED.swap(true,
-                                ::core::sync::atomic::Ordering::Relaxed) {
-                            return;
-                        }
                         unsafe {
                             ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO,
                                 __LINK_SECTION_CELL.as_cell_ptr());

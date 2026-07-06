@@ -92,6 +92,37 @@ impl SectionRange {
         // Provenance-insensitive difference.
         self.end.addr() - self.start.addr()
     }
+
+    /// The range as a typed slice. `stride` must divide `byte_len()`; this is
+    /// the shared body of every `as_slice` accessor (see `sections.rs`), kept
+    /// here so the empty-range fast path and the `from_raw_parts` cast have one
+    /// source of truth.
+    ///
+    /// The returned slice borrows the underlying section memory, not this
+    /// snapshot (which is just two pointers and may be a temporary). The output
+    /// lifetime is therefore unbound and gets tied to the caller's borrow —
+    /// `sections.rs` calls this under `&section`, so the slice lives as long as
+    /// that borrow.
+    #[inline]
+    pub fn slice_of<'a, T>(self, stride: usize) -> &'a [T] {
+        let len = self.byte_len() / stride;
+        if len == 0 {
+            &[]
+        } else {
+            unsafe { ::core::slice::from_raw_parts(self.start as *const T, len) }
+        }
+    }
+
+    /// The mutable counterpart to [`Self::slice_of`].
+    #[inline]
+    pub fn slice_of_mut<'a, T>(self, stride: usize) -> &'a mut [T] {
+        let len = self.byte_len() / stride;
+        if len == 0 {
+            &mut []
+        } else {
+            unsafe { ::core::slice::from_raw_parts_mut(self.start as *mut T, len) }
+        }
+    }
 }
 
 /// Constant bounds for a pointer-based section.

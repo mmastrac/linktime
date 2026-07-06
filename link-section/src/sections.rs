@@ -129,14 +129,7 @@ macro_rules! impl_bounds_fns {
         /// The section as a slice.
         #[inline]
         pub fn as_slice(&self) -> &[T] {
-            // Resolve the bounds up-front (complex operation on some platforms)
-            let range = self.bounds.range();
-            let len = range.byte_len() / self.stride();
-            if len == 0 {
-                &[]
-            } else {
-                unsafe { ::core::slice::from_raw_parts(range.start_ptr() as *const T, len) }
-            }
+            self.bounds.range().slice_of::<T>(self.stride())
         }
 
         /// The offset of the item in the section, if it is in the section.
@@ -263,13 +256,7 @@ impl<T: 'static> TypedMutableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        let range = self.bounds.range();
-        let len = range.byte_len() / self.stride();
-        if len == 0 {
-            &mut []
-        } else {
-            unsafe { ::core::slice::from_raw_parts_mut(range.start_ptr() as *mut T, len) }
-        }
+        self.bounds.range().slice_of_mut::<T>(self.stride())
     }
 }
 
@@ -327,13 +314,7 @@ impl<T: 'static> TypedMovableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        let range = self.bounds.range();
-        let len = range.byte_len() / self.stride();
-        if len == 0 {
-            &mut []
-        } else {
-            unsafe { ::core::slice::from_raw_parts_mut(range.start_ptr() as *mut T, len) }
-        }
+        self.bounds.range().slice_of_mut::<T>(self.stride())
     }
 
     /// The backrefs as a mutable slice, ordered to match the current value
@@ -349,17 +330,9 @@ impl<T: 'static> TypedMovableSection<T> {
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
         let range = self.bounds.backrefs_range();
-        let backrefs_len = range.byte_len() / ::core::mem::size_of::<MovableBackref<T>>();
-        let backrefs = if backrefs_len == 0 {
-            &mut []
-        } else {
-            unsafe {
-                ::core::slice::from_raw_parts_mut(
-                    range.start_ptr() as *mut MovableBackref<T>,
-                    backrefs_len,
-                )
-            }
-        };
+        let backrefs = range.slice_of_mut::<MovableBackref<T>>(
+            ::core::mem::size_of::<MovableBackref<T>>(),
+        );
         #[cfg(not(target_family = "wasm"))]
         unsafe {
             self.fixup_backrefs(backrefs)

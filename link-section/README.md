@@ -223,10 +223,10 @@ entry into a contiguous section allocated at startup.
 Each submitted item emits a plain (linear-memory) static "list node" plus an
 `.init_array.0` constructor that threads the node onto an intrusive linked list
 rooted in the section. Because these nodes are interior-mutable and have their
-address taken, the linker cannot merge them even under fat LTO, so the item
+address taken, LLVM cannot merge them even under fat LTO, so the item
 count is always exact.
 
-The list is materialized into one contiguous allocation by an eager,
+The list is materialised into one contiguous allocation by an eager,
 ordered constructor. Item submissions run at `.init_array.0` (priority 0), and
 each section emits a finalization constructor at `.init_array.1` (priority 1).
 Because wasm-ld orders `.init_array.*` by the integer value of the suffix, the
@@ -241,6 +241,12 @@ finalizer. As a result the `#[ctor]` priority requirement is the same as
 elsewhere: to read a link section or dereference a [`Ref`] / [`MovableRef`]
 handle from a `#[ctor]`, use at least `#[ctor(priority = 1)]`. Reads from `main`
 (or any later constructor) are always safe.
+
+A `#[ctor(priority = 0)]` that reads section *bounds* (not a [`Ref`]) is the one
+corner that breaks: it interleaves with `.init_array.0` submissions, triggers an
+early lazy flatten, and then any later submission panics (the section is already
+materialised). The contract — use at least priority 1 — is unchanged, but the
+panic now names the section and the likely cause.
 
 ### AIX
 
@@ -299,7 +305,7 @@ desired.
 
 A typed section can be created from either `static` or `const` items.
 
-For `const` items: a copy of the `const` is materialized at link time, while the
+For `const` items: a copy of the `const` is materialised at link time, while the
 constant itself remains available for use as a constant in `const` contexts.
 
 For `static` items: the static is stored directly in the link section.
