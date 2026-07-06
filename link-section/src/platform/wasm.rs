@@ -647,7 +647,10 @@ impl WasmSection for LinkSectionMovableInfo {
         // states the `#[repr(C)]` layout invariant in code.
         self.base.materialise(|i, slot| unsafe {
             let br = (backrefs as *mut crate::MovableBackref<()>).add(i);
-            ptr::write(br, crate::MovableBackref::new(slot as *const UnsafeCell<*const ()>));
+            ptr::write(
+                br,
+                crate::MovableBackref::new(slot as *const UnsafeCell<*const ()>),
+            );
         });
 
         self.backrefs_start = backrefs as *const ();
@@ -665,10 +668,7 @@ impl WasmSection for LinkSectionMovableInfo {
 /// [`LinkCell::as_cell_ptr`]). The cell's trailing meta must be [`LinkMetaSlot`]
 /// iff the section was created with `has_slot`. Must run single-threaded,
 /// pre-`main`, before the section is flattened.
-pub unsafe fn register<S: WasmSection>(
-    info_ptr: *const LinkSectionInfoLock<S>,
-    cell: *mut u8,
-) {
+pub unsafe fn register<S: WasmSection>(info_ptr: *const LinkSectionInfoLock<S>, cell: *mut u8) {
     let link_section = unsafe { LinkSection::new(info_ptr) };
     unsafe { link_section.lock().info_mut().push(cell) };
 }
@@ -688,13 +688,13 @@ pub unsafe fn flatten<S: WasmSection>(info_ptr: *const LinkSectionInfoLock<S>) {
 // Back-compat aliases so the macro `register = register_wasm_link_section_*`
 // arms keep resolving. Prefer [`register`] / [`flatten`] in new code.
 #[doc(hidden)]
-pub use register as register_wasm_link_section_item;
-#[doc(hidden)]
-pub use register as register_wasm_link_section_movable_item;
-#[doc(hidden)]
 pub use flatten as flatten_wasm_link_section;
 #[doc(hidden)]
 pub use flatten as flatten_wasm_link_section_movable;
+#[doc(hidden)]
+pub use register as register_wasm_link_section_item;
+#[doc(hidden)]
+pub use register as register_wasm_link_section_movable_item;
 
 #[cfg(target_family = "wasm")]
 unsafe fn allocate(layout: Layout) -> *mut () {

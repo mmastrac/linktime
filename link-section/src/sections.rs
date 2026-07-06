@@ -330,9 +330,8 @@ impl<T: 'static> TypedMovableSection<T> {
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
         let range = self.bounds.backrefs_range();
-        let backrefs = range.slice_of_mut::<MovableBackref<T>>(
-            ::core::mem::size_of::<MovableBackref<T>>(),
-        );
+        let backrefs =
+            range.slice_of_mut::<MovableBackref<T>>(::core::mem::size_of::<MovableBackref<T>>());
         #[cfg(not(target_family = "wasm"))]
         unsafe {
             self.fixup_backrefs(backrefs)
