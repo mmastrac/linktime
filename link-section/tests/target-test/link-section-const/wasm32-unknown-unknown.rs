@@ -107,7 +107,7 @@ const DRIVER: Driver =
                 {
                     extern "C" fn __LINK_SECTION_ITEM_FN() {
                         unsafe {
-                            ::link_section::__support::wasm::register_wasm_link_section_item(&raw const __LINK_SECTION_INFO,
+                            ::link_section::__support::wasm::register(&raw const __LINK_SECTION_INFO,
                                 __LINK_SECTION_CELL.as_cell_ptr());
                         }
                     }

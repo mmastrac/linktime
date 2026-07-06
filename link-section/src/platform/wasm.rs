@@ -154,7 +154,6 @@ macro_rules! __register_wasm_item {
     (movable, type=$ty:ty, value=$value:expr, slot=$slot:expr, section=$section:tt) => {
         $crate::__register_wasm_item!(@emit
             info_ty = ($crate::__support::wasm::LinkSectionMovableInfo),
-            register = register_wasm_link_section_movable_item,
             ty = ($ty),
             meta = ($crate::__support::wasm::LinkMetaSlot),
             new = ($value, $slot as *const ()),
@@ -165,7 +164,6 @@ macro_rules! __register_wasm_item {
     ($section_type:ident, type=$ty:ty, value=$value:expr, ref=$ident:ident, section=$section:tt) => {
         $crate::__register_wasm_item!(@emit
             info_ty = ($crate::__support::wasm::LinkSectionInfo),
-            register = register_wasm_link_section_item,
             ty = ($ty),
             meta = ($crate::__support::wasm::LinkMetaSlot),
             new = ($value, &$ident as *const _ as *const ()),
@@ -176,7 +174,6 @@ macro_rules! __register_wasm_item {
     ($section_type:ident, type=$ty:ty, value=$value:expr, section=$section:tt) => {
         $crate::__register_wasm_item!(@emit
             info_ty = ($crate::__support::wasm::LinkSectionInfo),
-            register = register_wasm_link_section_item,
             ty = ($ty),
             meta = ($crate::__support::wasm::LinkMeta),
             new = ($value),
@@ -185,7 +182,6 @@ macro_rules! __register_wasm_item {
     };
     (@emit
         info_ty = ($info_ty:ty),
-        register = $register:ident,
         ty = ($ty:ty),
         meta = ($meta:ty),
         new = ($($new_args:expr),*),
@@ -208,7 +204,7 @@ macro_rules! __register_wasm_item {
                 // is skipped inside `push` via the cell's `UNREGISTERED`
                 // sentinel, so there's no per-item disarm flag here.
                 unsafe {
-                    $crate::__support::wasm::$register(
+                    $crate::__support::wasm::register(
                         &raw const __LINK_SECTION_INFO,
                         __LINK_SECTION_CELL.as_cell_ptr(),
                     );
@@ -257,9 +253,9 @@ pub struct LinkMetaSlot {
 }
 
 /// Sentinel stored in a cell's `next` field until [`LinkSectionInfo::push`]
-/// threads it onto the list. Lets `push` detect and reject a double-registration
+/// threads it onto the list. Lets `push` detect and skip a double-registration
 /// (e.g. if `__wasm_call_ctors` runs twice) without a per-item disarm flag.
-/// `NonNull::<u8>::dangling()` (pointer value 1): non-null so it stays distinct
+/// `ptr::dangling_mut::<u8>()` (pointer value 1): non-null so it stays distinct
 /// from the list-tail `null`, and a well-formed aligned dangling pointer.
 const UNREGISTERED: *mut u8 = ::core::ptr::dangling_mut::<u8>();
 
@@ -503,7 +499,7 @@ impl LinkSectionInfo {
     /// For each cell, if `has_slot`, points its fix-up slot at the item's final
     /// location and invokes `on_slot(index, slot)` (used by movable sections to
     /// record backrefs).
-    fn materialise(&mut self, mut on_slot: impl FnMut(usize, *const ())) {
+    fn materialise_with(&mut self, mut on_slot: impl FnMut(usize, *const ())) {
         if self.state == LinkSectionState::Flattened as u8 {
             return;
         }
@@ -557,7 +553,7 @@ impl LinkSectionInfo {
         self.state = LinkSectionState::Flattened as u8;
     }
 
-    /// The flattened item range. Only valid once [`materialise`](Self::materialise) has run.
+    /// The flattened item range. Only valid once [`materialise_with`](Self::materialise_with) has run.
     fn range(&self) -> SectionRange {
         SectionRange::new(self.start, self.end)
     }
@@ -585,7 +581,7 @@ impl LinkSectionMovableInfo {
         }
     }
 
-    /// The flattened backref range. Only valid once [`materialise`] has run.
+    /// The flattened backref range. Only valid once [`materialise_with`] has run.
     fn backrefs_range(&self) -> SectionRange {
         SectionRange::new(self.backrefs_start, self.backrefs_end)
     }
@@ -610,7 +606,7 @@ impl WasmSection for LinkSectionInfo {
         self
     }
     fn materialise(&mut self) {
-        LinkSectionInfo::materialise(self, |_, _| {});
+        LinkSectionInfo::materialise_with(self, |_, _| {});
     }
 }
 
@@ -645,7 +641,7 @@ impl WasmSection for LinkSectionMovableInfo {
         // Copy values and record a backref at each item's fixed-up slot. Writing
         // a `MovableBackref` per item (rather than byte math into the array)
         // states the `#[repr(C)]` layout invariant in code.
-        self.base.materialise(|i, slot| unsafe {
+        self.base.materialise_with(|i, slot| unsafe {
             let br = (backrefs as *mut crate::MovableBackref<()>).add(i);
             ptr::write(
                 br,
@@ -655,7 +651,7 @@ impl WasmSection for LinkSectionMovableInfo {
 
         self.backrefs_start = backrefs as *const ();
         self.backrefs_end = unsafe { backrefs.add(backref_bytes) } as *const ();
-        self.base.state = LinkSectionState::Flattened as u8;
+        // `base.state = Flattened` is already set inside `materialise_with`.
     }
 }
 
@@ -685,22 +681,13 @@ pub unsafe fn flatten<S: WasmSection>(info_ptr: *const LinkSectionInfoLock<S>) {
     link_section.lock().materialise();
 }
 
-// Back-compat aliases so the macro `register = register_wasm_link_section_*`
-// arms keep resolving. Prefer [`register`] / [`flatten`] in new code.
-#[doc(hidden)]
-pub use flatten as flatten_wasm_link_section;
-#[doc(hidden)]
-pub use flatten as flatten_wasm_link_section_movable;
-#[doc(hidden)]
-pub use register as register_wasm_link_section_item;
-#[doc(hidden)]
-pub use register as register_wasm_link_section_movable_item;
-
 #[cfg(target_family = "wasm")]
 unsafe fn allocate(layout: Layout) -> *mut () {
     use alloc::alloc::alloc;
 
-    alloc(layout) as _
+    // SAFETY: `layout` has non-zero size (callers check `count > 0` before
+    // allocating).
+    unsafe { alloc(layout) as _ }
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -728,7 +715,7 @@ impl Bounds {
     /// Takes the section lock; see [`MovableBounds::range`] for the contract.
     pub fn range(&self) -> SectionRange {
         let mut info = self.0.lock();
-        WasmSection::materialise(&mut *info);
+        info.materialise();
         info.range()
     }
 }
@@ -773,12 +760,13 @@ impl MovableBounds {
 ///
 /// Synchronization: the slot is written once, pre-`main`, under the section
 /// lock by `materialise`, and read post-`main` via [`Self::get`]. The pre-`main`
-/// write happens-before any post-`main` read through the thread-spawn edge (the
-/// only way to reach multi-threaded WASM is `wasm32-wasip2`'s `thread.spawn`),
-/// so the non-atomic `UnsafeCell` access is sound under the documented
-/// single-threaded-pre-`main` contract. [`MovableRefStorage`] has the same
-/// shape; its post-`main` writes (via `sort_unstable`) are governed by the
-/// section's exclusive-access contract.
+/// write happens-before any post-`main` read through whatever thread-spawn edge
+/// a multi-threaded WASM target uses (e.g. `wasm32-wasip2`'s `thread.spawn`,
+/// `wasm32-wasip1-threads`, or shared-memory workers), so the non-atomic
+/// `UnsafeCell` access is sound under the documented single-threaded-pre-`main`
+/// contract. [`MovableRefStorage`] has the same shape; its post-`main` writes
+/// (via `sort_unstable`) are governed by the section's exclusive-access
+/// contract.
 #[repr(C)]
 pub struct RefStorage<T: 'static> {
     ptr: UnsafeCell<*const T>,

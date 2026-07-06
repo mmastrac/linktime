@@ -159,12 +159,9 @@ defer {
 }
 # Build the fat-LTO app and run it. No `%EXIT any`: a build or run failure must
 # fail the test (the target probe above already handles the skip case). The `*`
-# consumes cargo's `Compiling ...` stderr; `choice` then matches the success
-# output without order-sensitivity.
+# consumes cargo's `Compiling ...` stderr.
 $ cargo build -p app --release --target wasm32-unknown-unknown 2>&1 && node run.mjs target/wasm32-unknown-unknown/release/app.wasm 2>&1
 *
-choice {
-    ! items_len=2 items_sum=14
-}
+! items_len=2 items_sum=14
 "#
 );

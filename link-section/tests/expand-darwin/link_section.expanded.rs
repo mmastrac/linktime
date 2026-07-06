@@ -19,7 +19,7 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "\u{1}section$start$__DATA$FOO0oQeuvPbYet"]
+                            #[link_name = "\u{1}section$start$__DATA$FOO8uHtVN3Ttdb"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -27,14 +27,14 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "\u{1}section$end$__DATA$FOO0oQeuvPbYet"]
+                            #[link_name = "\u{1}section$end$__DATA$FOO8uHtVN3Ttdb"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
                     },
                 )
             };
-            let name = "__DATA,FOO0oQeuvPbYet";
+            let name = "__DATA,FOO8uHtVN3Ttdb";
             ::link_section::__support::validate_section_name(name);
             unsafe { <TypedSection<fn()>>::new(name, section) }
         };
@@ -76,7 +76,7 @@ fn foo() {
         type __InSecStoredTy = <FOO as ::link_section::__support::SectionItemType>::Item;
         const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
         #[used]
-        #[link_section = "__DATA,FOO0oQeuvPbYet,regular,no_dead_strip"]
+        #[link_section = "__DATA,FOO8uHtVN3Ttdb,regular,no_dead_strip"]
         static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
         __LINK_SECTION_CONST_ITEM_VALUE
     };

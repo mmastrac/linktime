@@ -93,18 +93,23 @@ impl SectionRange {
         self.end.addr() - self.start.addr()
     }
 
-    /// The range as a typed slice. `stride` must divide `byte_len()`; this is
+    /// The range as a typed slice. `stride` must divide `byte_len()`. This is
     /// the shared body of every `as_slice` accessor (see `sections.rs`), kept
     /// here so the empty-range fast path and the `from_raw_parts` cast have one
     /// source of truth.
     ///
     /// The returned slice borrows the underlying section memory, not this
     /// snapshot (which is just two pointers and may be a temporary). The output
-    /// lifetime is therefore unbound and gets tied to the caller's borrow —
-    /// `sections.rs` calls this under `&section`, so the slice lives as long as
-    /// that borrow.
+    /// lifetime is unbound and the caller must tie it to the real borrow.
+    ///
+    /// # Safety
+    ///
+    /// `self` must denote a valid, aligned, readable range of `len = byte_len()
+    /// / stride` consecutive `T`s, and the returned slice's lifetime must not
+    /// outlive that memory. Callers holding `&section` tie the lifetime to that
+    /// borrow.
     #[inline]
-    pub fn slice_of<'a, T>(self, stride: usize) -> &'a [T] {
+    pub unsafe fn slice_of<'a, T>(self, stride: usize) -> &'a [T] {
         let len = self.byte_len() / stride;
         if len == 0 {
             &[]
@@ -114,8 +119,15 @@ impl SectionRange {
     }
 
     /// The mutable counterpart to [`Self::slice_of`].
+    ///
+    /// # Safety
+    ///
+    /// As [`Self::slice_of`], plus: the caller must uphold exclusivity — no
+    /// other reference (shared or mutable) to the same memory may exist for the
+    /// returned slice's lifetime. Calling this twice on the same range without
+    /// an intervening reborrow is UB.
     #[inline]
-    pub fn slice_of_mut<'a, T>(self, stride: usize) -> &'a mut [T] {
+    pub unsafe fn slice_of_mut<'a, T>(self, stride: usize) -> &'a mut [T] {
         let len = self.byte_len() / stride;
         if len == 0 {
             &mut []

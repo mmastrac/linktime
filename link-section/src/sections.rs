@@ -129,7 +129,11 @@ macro_rules! impl_bounds_fns {
         /// The section as a slice.
         #[inline]
         pub fn as_slice(&self) -> &[T] {
-            self.bounds.range().slice_of::<T>(self.stride())
+            // SAFETY: `bounds.range()` is the section's valid, aligned,
+            // readable range of `T`s (linker-resolved or WASM-materialised),
+            // and the returned slice is borrowed from `&self`, so it cannot
+            // outlive the section.
+            unsafe { self.bounds.range().slice_of::<T>(self.stride()) }
         }
 
         /// The offset of the item in the section, if it is in the section.
@@ -256,7 +260,9 @@ impl<T: 'static> TypedMutableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        self.bounds.range().slice_of_mut::<T>(self.stride())
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the section's valid, aligned `T` range.
+        unsafe { self.bounds.range().slice_of_mut::<T>(self.stride()) }
     }
 }
 
@@ -314,7 +320,9 @@ impl<T: 'static> TypedMovableSection<T> {
     #[allow(clippy::mut_from_ref)]
     #[inline]
     pub unsafe fn as_mut_slice(&self) -> &mut [T] {
-        self.bounds.range().slice_of_mut::<T>(self.stride())
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the section's valid, aligned `T` range.
+        unsafe { self.bounds.range().slice_of_mut::<T>(self.stride()) }
     }
 
     /// The backrefs as a mutable slice, ordered to match the current value
@@ -330,8 +338,11 @@ impl<T: 'static> TypedMovableSection<T> {
     #[inline]
     pub unsafe fn as_mut_backrefs(&self) -> &mut [MovableBackref<T>] {
         let range = self.bounds.backrefs_range();
-        let backrefs =
-            range.slice_of_mut::<MovableBackref<T>>(::core::mem::size_of::<MovableBackref<T>>());
+        // SAFETY: caller upholds exclusivity (see `# Safety` above); the range
+        // is the backref section's valid, aligned `MovableBackref<T>` range.
+        let backrefs = unsafe {
+            range.slice_of_mut::<MovableBackref<T>>(::core::mem::size_of::<MovableBackref<T>>())
+        };
         #[cfg(not(target_family = "wasm"))]
         unsafe {
             self.fixup_backrefs(backrefs)
