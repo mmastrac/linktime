@@ -23,6 +23,7 @@ use super::{SectionRange, SyncUnsafeCell};
 
 #[doc(hidden)]
 #[macro_export]
+#[allow(unknown_lints, edition_2024_expr_fragment_specifier)]
 macro_rules! __get_section_wasm {
     (movable, name=$name:tt, type=$generic_ty:ty) => {
         $crate::__get_section_wasm!(@emit
