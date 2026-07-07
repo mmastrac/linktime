@@ -1,8 +1,8 @@
-use clitest_lib::clitest;
+use crok_lib::crok;
 
 // Apple: dylibs + crt-static unsupported here.
 #[cfg(not(target_vendor = "apple"))]
-clitest!(
+crok!(
     crt_static,
     r#"
 set RUSTFLAGS "-C target-feature=+crt-static";
@@ -29,7 +29,7 @@ if TARGET_OS != "openbsd" {
 "#
 );
 
-clitest!(
+crok!(
     doctest,
     r#"
 set RUSTFLAGS "";
@@ -48,7 +48,7 @@ $ cargo test --doc --quiet
 "#
 );
 
-clitest!(
+crok!(
     edition_2018,
     r#"
 set RUSTFLAGS "";
@@ -64,7 +64,7 @@ $ cargo run --quiet
 "#
 );
 
-clitest!(
+crok!(
     edition_2021,
     r#"
 set RUSTFLAGS "";
@@ -80,7 +80,7 @@ $ cargo run --quiet
 "#
 );
 
-clitest!(
+crok!(
     edition_2024,
     r#"
 set RUSTFLAGS "";
@@ -96,7 +96,7 @@ $ cargo run --quiet
 "#
 );
 
-clitest!(
+crok!(
     no_std,
     r#"
 set RUSTFLAGS "";
@@ -109,7 +109,7 @@ $ cargo build --quiet
 "#
 );
 
-clitest!(
+crok!(
     priority,
     r#"
 set RUSTFLAGS "";
@@ -147,7 +147,7 @@ unordered {
 "#
 );
 
-clitest!(
+crok!(
     system_no_crt_static,
     r#"
 set RUSTFLAGS "-C target-feature=-crt-static";
@@ -182,7 +182,7 @@ unordered {
 // Only Windows supports +crt-static w/dylibs, but we may be able to work around
 // this: https://github.com/rust-lang/rust/issues/71651#issuecomment-864265118
 #[cfg(windows)]
-clitest!(
+crok!(
     system_crt_static,
     r#"
 set RUSTFLAGS "-C target-feature=+crt-static";
@@ -221,7 +221,7 @@ unordered {
 "#
 );
 
-clitest!(
+crok!(
     warn_unsafe,
     r#"
 set RUSTFLAGS "";
@@ -268,7 +268,7 @@ error: could not compile `warn-unsafe` (bin "warn-unsafe") due to 2 previous err
 "#
 );
 
-clitest!(
+crok!(
     warn_unsafe_disabled,
     r#"
 set RUSTFLAGS "";
@@ -286,7 +286,7 @@ reject {
 "#
 );
 
-clitest!(
+crok!(
     no_default_features,
     r#"
 set RUSTFLAGS "";

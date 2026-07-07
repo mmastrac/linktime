@@ -1,4 +1,4 @@
-//! `clitest` tests.
+//! `crok` tests.
 
 #![cfg(not(miri))]
 

@@ -1,6 +1,6 @@
-use clitest_lib::clitest;
+use crok_lib::crok;
 
-clitest!(
+crok!(
     basic,
     r#"
 set RUSTFLAGS "";
@@ -35,7 +35,7 @@ choice {
 "#
 );
 
-clitest!(
+crok!(
     copied,
     r#"
 set RUSTFLAGS "";
@@ -54,7 +54,7 @@ OK
 "#
 );
 
-clitest!(
+crok!(
     interior_mut,
     r#"
 set RUSTFLAGS "";
@@ -73,7 +73,7 @@ unordered {
 "#
 );
 
-clitest!(
+crok!(
     link_section_mut,
     r#"
 set RUSTFLAGS "";
@@ -111,7 +111,7 @@ movable item: 40
 "#
 );
 
-clitest!(
+crok!(
     no_default_features,
     r#"
 set RUSTFLAGS "";
@@ -137,7 +137,7 @@ $ cargo run --quiet
 // misconfigured runner skips rather than silently passing). A build or run
 // failure otherwise fails the test — do not add an `%EXIT any` / `choice` arm
 // that swallows it, or the regression stops being checked.
-clitest!(
+crok!(
     wasm_fat_lto,
     r#"
 set RUSTFLAGS "";

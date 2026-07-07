@@ -5,7 +5,7 @@ set -xeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# The `cargo test -p tests -- wasm` clitest leg runs on stable only (the other
+# The `cargo test -p tests -- wasm` crok leg runs on stable only (the other
 # legs build the 1.85 MSRV). It gates the WASM link-section regression suite,
 # which doesn't need nightly.
 if [ "${TOOLCHAIN:-}" = "stable" ]; then
