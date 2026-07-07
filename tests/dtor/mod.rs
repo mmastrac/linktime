@@ -1,6 +1,6 @@
-use clitest_lib::clitest;
+use crok_lib::crok;
 
-clitest!(
+crok!(
     no_default_features,
     r#"
 set RUSTFLAGS "";
@@ -15,7 +15,7 @@ $ cargo run --quiet
 );
 
 // Run link-section with and without static CRT
-clitest!(
+crok!(
     link_section_no_crt_static,
     r#"
 set RUSTFLAGS "-C target-feature=-crt-static";
@@ -43,7 +43,7 @@ if TARGET_OS == "openbsd" {
 "#
 );
 
-clitest!(
+crok!(
     link_section_crt_static,
     r#"
 set RUSTFLAGS "-C target-feature=+crt-static";
