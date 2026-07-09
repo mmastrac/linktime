@@ -63,8 +63,8 @@ pub(crate) fn location_hash(tokens: TokenStream, ignore_base: Option<&Path>) -> 
         buffer.clear();
         buffer.extend_from_slice(&last_hash.to_be_bytes());
 
-        let ignored = ignore_base.is_some_and(|base| {
-            crate::fallback::local_file(&span).is_some_and(|file| file.starts_with(base))
+        let ignored = ignore_base.map_or(false, |base| {
+            crate::fallback::local_file(&span).map_or(false, |file| file.starts_with(base))
         });
 
         if ignored {
