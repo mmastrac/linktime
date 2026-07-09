@@ -1,7 +1,7 @@
 #![allow(unstable_name_collisions)] // Intentional!
 
 use proc_macro::Span;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Trait providing a fallback method for `Span` methods.
 #[allow(unused)]
@@ -9,6 +9,7 @@ pub(crate) trait FallbackSpan {
     fn line(&self) -> usize;
     fn column(&self) -> usize;
     fn file(&self) -> String;
+    fn local_file(&self) -> Option<PathBuf>;
     fn source_text(&self) -> Option<String>;
 }
 
@@ -26,6 +27,10 @@ impl FallbackSpan for &Span {
     #[inline(always)]
     fn file(&self) -> String {
         String::new()
+    }
+    #[inline(always)]
+    fn local_file(&self) -> Option<PathBuf> {
+        None
     }
     #[inline(always)]
     fn source_text(&self) -> Option<String> {
@@ -59,6 +64,11 @@ pub(crate) fn file(span: &Span) -> String {
 #[inline(always)]
 pub(crate) fn line(span: &Span) -> usize {
     span.line()
+}
+
+#[inline(always)]
+pub(crate) fn local_file(span: &Span) -> Option<PathBuf> {
+    span.local_file()
 }
 
 #[inline(always)]
