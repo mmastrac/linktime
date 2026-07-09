@@ -1,0 +1,26 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "-C target-feature=-crt-static";
+set CARGO_TARGET_DIR "target/system_no_crt_static";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --lib --examples --quiet
+*
+$ cargo run --example dylib_load --quiet
+unordered {
+    ! + Foo::ctor
+    ! + ctor bin
+}
+! ++ main start
+unordered {
+    ! +++ ctor STATIC_INT
+    ! +++ ctor lib (-crt-static)
+}
+unordered {
+    ! -- main end
+    ! --- dtor lib
+}
+unordered {
+    ! - Foo::dtor
+    ! - dtor bin
+}

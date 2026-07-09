@@ -1,0 +1,8 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! ctor-no-default-features:ctor
+! ctor-no-default-features:main

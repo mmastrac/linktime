@@ -1,0 +1,9 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! link-section-no-default-features:in-section
+! link-section-no-default-features:in-section-aux
+! link-section-no-default-features:main

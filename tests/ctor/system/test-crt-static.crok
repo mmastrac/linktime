@@ -1,0 +1,39 @@
+#!/usr/bin/env crok --v0
+# Only Windows supports +crt-static w/dylibs (was #[cfg(windows)]), but we may be
+# able to work around this:
+# https://github.com/rust-lang/rust/issues/71651#issuecomment-864265118
+if TARGET_OS != "windows" {
+    exit script;
+}
+set RUSTFLAGS "-C target-feature=+crt-static";
+set CARGO_TARGET_DIR "target/system_crt_static";
+defer {
+    $ cargo clean --quiet
+}
+$ rustc -vV
+%SET TARGET "$target"
+*
+! host: %{DATA:target}
+*
+$ cargo build --lib --examples --quiet
+*
+$ find $CARGO_TARGET_DIR
+*
+$ cargo run --example dylib_load --quiet
+unordered {
+    ! + Foo::ctor
+    ! + ctor bin
+}
+! ++ main start
+unordered {
+    ! +++ ctor STATIC_INT
+    ! +++ ctor lib (+crt-static)
+}
+unordered {
+    ! -- main end
+    ! --- dtor lib
+}
+unordered {
+    ! - Foo::dtor
+    ! - dtor bin
+}
