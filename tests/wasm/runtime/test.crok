@@ -1,0 +1,103 @@
+#!/usr/bin/env crok --v0
+# Runs `wasm-rust` (ctor / dtor / link_section together) for all three wasm
+# targets and checks the program output under both `wasmtime` and `node`.
+set RUSTFLAGS "";
+
+# Prerequisites: skip on non-wasm CI, require on the wasm CI leg
+$ sh -c '[ -n "${CI:-}" ] && echo 1 || echo 0'
+%SET is_ci
+*
+$ sh -c '[ -n "${WASM_PLATFORM:-}" ] && echo 1 || echo 0'
+%SET require
+*
+if is_ci == "1" {
+    if require == "0" {
+        exit script;
+    }
+}
+$ command -v node >/dev/null 2>&1 && command -v wasmtime >/dev/null 2>&1 && echo 1 || echo 0
+%SET has_tools
+*
+$ n=$(rustup target list --installed 2>/dev/null | grep -cE '^wasm32-(unknown-unknown|wasip1|wasip2)$'); [ "$n" = 3 ] && echo 1 || echo 0
+%SET has_targets
+*
+if has_tools == "0" {
+    if require == "1" {
+        $ echo "node and wasmtime are required on this runner but missing"; false
+        *
+    }
+    exit script;
+}
+if has_targets == "0" {
+    if require == "1" {
+        $ echo "the wasm32-* targets are required on this runner but missing"; false
+        *
+    }
+    exit script;
+}
+
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --target wasm32-unknown-unknown --target wasm32-wasip1 --target wasm32-wasip2 --quiet 2>&1
+*
+
+# wasm32-unknown-unknown via node (env::write shim + atexit collection)
+$ node ../js/loader.mjs target/wasm32-unknown-unknown/debug/wasm_rust.wasm
+unordered {
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+}
+! ctor
+! start
+! test_link_section
+! DRIVER: driver
+! driver
+! dtor
+
+# wasm32-wasip1 via wasmtime
+$ wasmtime run target/wasm32-wasip1/debug/wasm_rust.wasm 2>&1
+unordered {
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+}
+! ctor
+! start
+! test_link_section
+! DRIVER: driver
+! driver
+! dtor
+
+# wasm32-wasip1 via node (WASI preview1)
+$ node --no-warnings ../js/loader-wasi.mjs target/wasm32-wasip1/debug/wasm_rust.wasm
+unordered {
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+}
+! ctor
+! start
+! test_link_section
+! DRIVER: driver
+! driver
+! dtor
+
+# wasm32-wasip2 via wasmtime
+$ wasmtime run target/wasm32-wasip2/debug/wasm_rust.wasm 2>&1
+unordered {
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+}
+! ctor
+! start
+! test_link_section
+! DRIVER: driver
+! driver
+! dtor

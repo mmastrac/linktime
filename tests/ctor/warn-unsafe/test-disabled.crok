@@ -1,0 +1,13 @@
+#!/usr/bin/env crok --v0
+# `--cfg linktime_no_fail_on_missing_unsafe` suppresses the enforcement error.
+set RUSTFLAGS "";
+set CARGO_TARGET_DIR "target/warn_no";
+defer {
+    $ cargo clean --quiet
+}
+$ RUSTFLAGS="--cfg linktime_no_fail_on_missing_unsafe" cargo build
+reject {
+    ! warning: %{DATA}
+}
+*
+!     Finished `dev` profile %{DATA}

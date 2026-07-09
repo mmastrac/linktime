@@ -1,0 +1,55 @@
+#!/usr/bin/env crok --v0
+# Regression for https://github.com/mmastrac/linktime/issues/488
+#
+# Two identical items are submitted from a dependency crate and the whole
+# workspace is built with fat LTO. The old WASM implementation counted items by
+# the byte length of a per-item marker custom section, which fat LTO folded down
+# to a single byte.
+#
+# Only needs `node` and the `wasm32-unknown-unknown` target (no `wasmtime`), so
+# it probes separately from `runtime`. A build or run failure fails the test —
+# do not add an `%EXIT any` / `choice` arm that swallows it, or the regression
+# stops being checked.
+set RUSTFLAGS "";
+
+$ sh -c '[ -n "${CI:-}" ] && echo 1 || echo 0'
+%SET is_ci
+*
+$ sh -c '[ -n "${WASM_PLATFORM:-}" ] && echo 1 || echo 0'
+%SET require
+*
+if is_ci == "1" {
+    if require == "0" {
+        exit script;
+    }
+}
+$ command -v node >/dev/null 2>&1 && echo 1 || echo 0
+%SET has_node
+*
+$ rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$' && echo 1 || echo 0
+%SET has_target
+*
+if has_node == "0" {
+    if require == "1" {
+        $ echo "node is required on this runner but missing"; false
+        *
+    }
+    exit script;
+}
+if has_target == "0" {
+    if require == "1" {
+        $ echo "the wasm32-unknown-unknown target is required on this runner but missing"; false
+        *
+    }
+    exit script;
+}
+
+defer {
+    $ cargo clean --quiet
+}
+# Build the fat-LTO app and run it. No `%EXIT any`: a build or run failure must
+# fail the test (the target probe above already handles the skip case). The `*`
+# consumes cargo's `Compiling ...` stderr.
+$ cargo build -p app --release --target wasm32-unknown-unknown 2>&1 && node run.mjs target/wasm32-unknown-unknown/release/app.wasm 2>&1
+*
+! items_len=2 items_sum=14

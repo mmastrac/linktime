@@ -1,0 +1,42 @@
+#!/usr/bin/env crok --v0
+# Missing `unsafe` on `#[ctor]` must fail the build by default.
+set RUSTFLAGS "";
+set CARGO_TARGET_DIR "target/warn_yes";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build
+%EXIT 101
+*
+! Compiling warn-unsafe v0.0.0 %{DATA}
+"""
+error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
+
+
+       #[ctor]
+       ^^^^^^^------- replace this with #[ctor(unsafe)]
+"""
+? ^\s*--> .*main\.rs:%{NUMBER}:1
+"""
+  |
+5 | #[ctor]
+  | ^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Missing unsafe keyword in #[ctor] annotation. Use #[ctor(unsafe)]. This error can be suppressed by passing `--cfg linktime_no_fail_on_missing_unsafe` in `RUSTFLAGS` or placing this in your `config.toml` file.
+
+
+       #[ctor]
+       ^^^^^^^------- replace this with #[ctor(unsafe)]
+"""
+? ^\s*--> .*main\.rs:%{NUMBER}:1
+"""
+   |
+22 | #[ctor]
+   | ^^^^^^^
+   |
+   = note: this error originates in the macro `$crate::__ctor_parse_impl` which comes from the expansion of the attribute macro `ctor` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: could not compile `warn-unsafe` (bin "warn-unsafe") due to 2 previous errors
+"""

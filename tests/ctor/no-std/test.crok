@@ -1,0 +1,7 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --quiet
+*

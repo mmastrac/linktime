@@ -1,0 +1,8 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo run --quiet
+! dtor-no-default-features:main
+! dtor-no-default-features:dtor

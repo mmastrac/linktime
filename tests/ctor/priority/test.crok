@@ -1,0 +1,32 @@
+#!/usr/bin/env crok --v0
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --quiet
+*
+$ cargo run --quiet
+! 0
+! 1
+! 2
+! 3
+! 4
+! 5
+! 6
+! 7
+! 8
+! 9
+! 10
+unordered {
+    ! early
+    ! early
+}
+unordered {
+    ! no priority
+    ! no priority
+    ! default
+    ! default
+}
+! late
+! late
+! main

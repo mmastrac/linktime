@@ -14,7 +14,7 @@ minimal_crates=(
   
   tests/link_section/basic
   tests/link_section/interior_mut
-  tests/link_section/mut
+  tests/link_section/mutable
   tests/link_section/no-default-features
 )
 for dir in "${minimal_crates[@]}"; do

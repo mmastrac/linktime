@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 if [ "${TOOLCHAIN:-}" = "stable" ]; then
   WASM_PLATFORM=1 cargo test -p tests -- wasm::
 else
-  cd "$ROOT/tests/wasm/rust"
+  cd "$ROOT/tests/wasm/runtime"
   cargo build --target wasm32-unknown-unknown
   cargo build --target wasm32-wasip1
   cargo build --target wasm32-wasip2
