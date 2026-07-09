@@ -13,3 +13,7 @@ mod dtor;
 /// `link-section` tests
 #[cfg(test)]
 mod link_section;
+
+/// WASM runtime tests
+#[cfg(test)]
+mod wasm;
