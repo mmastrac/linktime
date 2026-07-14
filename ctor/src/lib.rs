@@ -86,6 +86,23 @@ pub mod collect {
     ///
     /// If another copy of this function is running, we will return early, but
     /// the constructors will not have been guaranteed to have run.
+    /// The `extern "C"` entry point registered as a real initializer by each
+    /// `#[ctor]` expansion site. Registering from the expansion site -- rather
+    /// than only from this crate's own object -- keeps the registration in an
+    /// object the linker is already loading, which is what makes constructors
+    /// survive a `staticlib` linked by a foreign linker.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`run_constructors`]: safe to call any number of times, as the
+    /// guard section admits a single runner and each record is marked
+    /// `PROCESSED` before it is invoked.
+    #[doc(hidden)]
+    #[allow(unsafe_code)]
+    pub unsafe extern "C" fn run_constructors_entry() {
+        unsafe { run_constructors() }
+    }
+
     #[allow(unsafe_code)]
     pub(crate) unsafe fn run_constructors() {
         // Multiple ctor crates may contribute multiple guards, but there will
@@ -167,6 +184,11 @@ pub mod collect {
             $crate::__register_ctor!(priority = ($crate::collect::LATE), fn = $fn);
         };
         (priority = $priority:tt, fn = $fn:ident) => {
+            #[used]
+            #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+            static __CTOR_DISPATCH: unsafe extern "C" fn() =
+                $crate::collect::run_constructors_entry;
+
             $crate::__support::in_section!(
                 #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
                 const _: $crate::collect::Constructor = $crate::collect::Constructor {
@@ -176,6 +198,11 @@ pub mod collect {
             );
         };
         (priority = $priority:tt, fn = (array $array:ident)) => {
+            #[used]
+            #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+            static __CTOR_DISPATCH: unsafe extern "C" fn() =
+                $crate::collect::run_constructors_entry;
+
             $crate::__support::in_section!(
                 #[in_section(unsafe, type = mutable, name = _CTOR0_ISIZE_FN)]
                 const _: [$crate::collect::Constructor; if $array.len() == 0 { 1 } else { $array.len() }] = {

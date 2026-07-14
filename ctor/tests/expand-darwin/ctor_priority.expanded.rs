@@ -10,6 +10,9 @@ fn early() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
@@ -41,6 +44,9 @@ fn priority1() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
@@ -72,6 +78,9 @@ fn priority900() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
@@ -103,6 +112,9 @@ fn late() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
@@ -134,6 +146,9 @@ fn priority_default() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
@@ -165,6 +180,9 @@ fn priority_unspecified() {
         extern "C" fn __ctor_private() {
             { { __ctor_private_inner() } }
         }
+        #[used]
+        #[link_section = "__DATA,__mod_init_func,mod_init_funcs"]
+        static __CTOR_DISPATCH: unsafe extern "C" fn() = ::ctor::collect::run_constructors_entry;
         const _: ::ctor::collect::Constructor = const {
             type __InSecStoredTy = <::link_section::TypedSection<
                 ::ctor::collect::Constructor,
