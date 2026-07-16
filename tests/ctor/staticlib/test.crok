@@ -7,18 +7,28 @@
 # constructors silently never run. Fat LTO hides this by collapsing objects.
 #
 # `rustc -l static` uses the same archive-member selection as clang/ld64.
+
+# NOTE: We can run this on Linux as well
 if TARGET_OS != "macos" {
     if TARGET_OS != "linux" {
         exit script;
     }
 }
+
 set RUSTFLAGS "";
 defer {
     $ cargo clean --quiet
 }
+
 $ cargo build --quiet
 *
 $ rustc main.rs -L target/debug -l static=staticlib -o target/debug/staticlib-demo
 *
+
 $ ./target/debug/staticlib-demo
 ! RAN
+
+$ nm ./target/debug/staticlib-demo
+*
+! %{DATA} _ctor_ap_%{DATA}
+*
