@@ -159,6 +159,7 @@ pub mod collect {
     #[cfg(all(feature = "priority", target_vendor = "apple"))]
     #[used]
     #[doc(hidden)]
+    #[allow(unsafe_code)]
     #[cfg_attr(clippy, allow(unknown_lints, unsafe_attr_outside_unsafe))]
     #[export_name = concat!(
         "ctor_ap_",
