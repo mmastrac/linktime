@@ -31,7 +31,7 @@ macro_rules! __get_section_wasm {
             ($crate::__support::wasm::LinkSectionMovableInfo),
             ($crate::__support::wasm::LinkSectionMovableInfo::new::<$generic_ty>(__LINK_SECTION_NAME)),
             ($crate::__support::MovableBounds)
-        );
+        )
     };
     ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         $crate::__get_section_wasm!(@emit
@@ -43,7 +43,7 @@ macro_rules! __get_section_wasm {
                 $crate::__support::wasm::section_has_slot!($section_type),
             )),
             ($crate::__support::Bounds)
-        );
+        )
     };
     (@emit
         ($name:tt),
