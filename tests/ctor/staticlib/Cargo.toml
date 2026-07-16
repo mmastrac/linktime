@@ -1,0 +1,18 @@
+[package]
+name = "staticlib"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+ctor = { path = "../../../ctor" }
+
+[profile.dev]
+# This will run the ctor in `mod another_ctor` as well!
+#codegen-units = 1
+codegen-units = 99
+
+[workspace]

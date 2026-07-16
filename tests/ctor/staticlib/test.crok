@@ -1,0 +1,36 @@
+#!/usr/bin/env crok --v0
+# Regression for https://github.com/mmastrac/linktime/issues/496
+#
+# On Apple with priority (default), the only real __mod_init_func registration
+# lives in ctor's archive member. Linking a Rust staticlib with a foreign linker
+# that only pulls members for referenced symbols skips that member, so
+# constructors silently never run. Fat LTO hides this by collapsing objects.
+#
+# `rustc -l static` uses the same archive-member selection as clang/ld64.
+
+# NOTE: We can run this on Linux as well
+if TARGET_OS != "macos" {
+    if TARGET_OS != "linux" {
+        exit script;
+    }
+}
+
+set RUSTFLAGS "";
+defer {
+    $ cargo clean --quiet
+}
+
+$ cargo build --quiet
+*
+$ rustc main.rs -L target/debug -l static=staticlib -o target/debug/staticlib-demo
+*
+
+$ ./target/debug/staticlib-demo
+! RAN
+
+if target_os == "macos" {
+    $ nm ./target/debug/staticlib-demo
+    *
+    ! %{DATA} _ctor_ap_%{DATA}
+    *
+}

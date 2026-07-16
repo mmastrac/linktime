@@ -17,6 +17,11 @@ const _: () = {
     extern "C" fn __ctor_private() {
         { _ = &*STATIC_CTOR }
     }
+    /// Force `ld64` to pull the archive member owning `APPLE_PRIORITY_ANCHOR`
+    /// (see https://github.com/mmastrac/linktime/issues/496).
+    const _: () = {
+        mod __ctor_force {}
+    };
     const _: ::ctor::collect::Constructor = const {
         type __InSecStoredTy = <::link_section::TypedSection<
             ::ctor::collect::Constructor,
