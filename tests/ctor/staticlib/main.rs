@@ -5,6 +5,10 @@ extern "C" {
 }
 
 fn main() {
-    let ran = unsafe { ctor_ran() } != 0;
-    println!("{}", if ran { "RAN" } else { "DID NOT RUN" });
+    let ran = unsafe { ctor_ran() };
+    match ran {
+        0 => println!("DID NOT RUN"),
+        1 => println!("RAN"),
+        _ => panic!("ctor_ran returned unexpected value: {}", ran),
+    }
 }

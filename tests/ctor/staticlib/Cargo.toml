@@ -10,4 +10,8 @@ crate-type = ["staticlib"]
 [dependencies]
 ctor = { path = "../../../ctor" }
 
+[profile.dev]
+# This will run the ctor in `mod another_ctor` as well!
+#codegen-units = 1
+
 [workspace]
