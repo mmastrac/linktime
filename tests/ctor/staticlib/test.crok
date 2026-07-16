@@ -8,7 +8,9 @@
 #
 # `rustc -l static` uses the same archive-member selection as clang/ld64.
 if TARGET_OS != "macos" {
-    exit script;
+    if TARGET_OS != "linux" {
+        exit script;
+    }
 }
 set RUSTFLAGS "";
 defer {
