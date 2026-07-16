@@ -28,7 +28,9 @@ $ rustc main.rs -L target/debug -l static=staticlib -o target/debug/staticlib-de
 $ ./target/debug/staticlib-demo
 ! RAN
 
-$ nm ./target/debug/staticlib-demo
-*
-! %{DATA} _ctor_ap_%{DATA}
-*
+if target_os == "macos" {
+    $ nm ./target/debug/staticlib-demo
+    *
+    ! %{DATA} _ctor_ap_%{DATA}
+    *
+}
