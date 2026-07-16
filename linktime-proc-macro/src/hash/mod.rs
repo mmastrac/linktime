@@ -50,6 +50,7 @@ fn token_content(token: &TokenTree) -> String {
 /// makes the hash stable against source movement within the "ignored" crate
 /// (e.g. the tokens a declarative macro synthesizes at its own definition site),
 /// while still distinguishing genuinely different tokens.
+#[allow(clippy::unnecessary_map_or)]
 pub(crate) fn location_hash(tokens: TokenStream, ignore_base: Option<&Path>) -> u64 {
     let iterator = TokenTreeDeepIterator {
         stack: vec![tokens.into_iter()],
