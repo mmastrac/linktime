@@ -100,6 +100,19 @@ impl<T: Sync> Deref for Static<T> {
     type Target = T;
     #[inline]
     fn deref(&self) -> &Self::Target {
+        if self.initialized.load(Ordering::Acquire) == INITIALIZED {
+            // SAFETY: We only access the static variable if the initialized
+            // state is `INITIALIZED`
+            unsafe { self.get_unchecked() }
+        } else {
+            self.deref_slow()
+        }
+    }
+}
+
+impl<T: Sync> Static<T> {
+    #[cold]
+    fn deref_slow(&self) -> &T {
         struct PanicGuard<'a> {
             initialized: &'a AtomicU8,
         }
