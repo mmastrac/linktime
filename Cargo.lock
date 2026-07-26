@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.10"
+version = "1.0.11"
 dependencies = [
  "libc-print",
  "link-section 0.19.1",
@@ -439,7 +439,7 @@ dependencies = [
 name = "linktime"
 version = "0.18.0"
 dependencies = [
- "ctor 1.0.10",
+ "ctor 1.0.11",
  "dtor 1.0.5",
  "libc-print",
  "link-section 0.19.1",
@@ -683,7 +683,7 @@ dependencies = [
 name = "scattered-collect"
 version = "0.21.3"
 dependencies = [
- "ctor 1.0.10",
+ "ctor 1.0.11",
  "divan",
  "link-section 0.19.1",
  "linktime 0.18.0",

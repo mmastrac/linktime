@@ -181,6 +181,8 @@ pub mod collect {
                 mod __ctor_force {
                     ::core::arch::global_asm!(
                         ".pushsection __DATA,__ctor_force,regular,no_dead_strip\n",
+                        // Pointer-align a `.quad` with the anchor
+                        ".p2align 3\n",
                         ".quad {0}\n",
                         ".popsection\n",
                         sym $crate::collect::APPLE_PRIORITY_ANCHOR,
