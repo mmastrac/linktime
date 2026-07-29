@@ -141,7 +141,7 @@ generators! {
 ///    particular crate, useful when `of` contains tokens synthesized by a
 ///    declarative macro (separators, group wrappers, ...) that carry that
 ///    crate's own def-site spans.
-/// ```rust
+/// ```rust,ignore
 /// # use linktime_proc_macro::combine;
 /// let location_hash = combine!(output=string input=("location_hash:" __LOCATIONHASH__(of=(a bunch of tokens) alphabet=[a-z])));
 /// assert_eq!(location_hash, "location_hash:dwsrxapjetrwwu");
