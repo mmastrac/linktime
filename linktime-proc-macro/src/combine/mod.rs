@@ -120,20 +120,13 @@ fn parse_stream(s: &mut String, arg: &str, output: OutputType, input: TokenStrea
     }
 }
 
-/// Resolve the optional `ignore_base` argument of `__LOCATIONHASH__` into a base
+/// Resolve `__LOCATIONHASH__`'s optional `ignore_base` into a crate-root
 /// directory.
 ///
-/// The argument is a single token (typically a string literal such as
-/// `"src/lib.rs"`) written in the source of the crate whose tokens should be
-/// treated as position-independent. Its *span* yields that crate's local file
-/// path and its *string value* is the suffix to strip off the end, leaving the
-/// base directory. Any token whose local file lives under that directory is then
-/// hashed by content rather than by location.
-///
-/// Returns `None` (i.e. "ignore nothing") when the marker has no local file
-/// (older compilers or remapped paths), when the path does not actually end with
-/// the given suffix, or when stripping it would yield a degenerate base (empty or
-/// filesystem root) that would match every token.
+/// The marker token's span locates the crate and its string value is a path
+/// suffix stripped to reach that crate's root. Returns `None` (ignore nothing)
+/// when `local_file` is unavailable, the suffix does not match, or the base
+/// would be empty/filesystem-root (would match every token).
 fn pop_ignore_base(args: &mut HashMap<String, TokenTree>, ident: &str) -> Option<PathBuf> {
     let token = args.remove("ignore_base")?;
     let span = <Span as Argument>::from_token_tree(token.clone())
@@ -145,10 +138,8 @@ fn pop_ignore_base(args: &mut HashMap<String, TokenTree>, ident: &str) -> Option
     if !file.ends_with(&suffix) {
         return None;
     }
-    // Strip one ancestor per component of the suffix to reach the base directory.
     let components = Path::new(&suffix).components().count();
     let base = file.ancestors().nth(components)?;
-    // Refuse degenerate bases that would match every token.
     if base.as_os_str().is_empty() || base.parent().is_none() {
         return None;
     }

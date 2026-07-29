@@ -137,10 +137,9 @@ generators! {
 ///    using the characters in the `alphabet`. No zero padding is applied in this
 ///    case.
 ///
-///    `ignore_base` makes the hash stable against source movement within a
-///    particular crate, useful when `of` contains tokens synthesized by a
-///    declarative macro (separators, group wrappers, ...) that carry that
-///    crate's own def-site spans.
+///    `ignore_base` hashes tokens from that crate by content instead of location,
+///    so macro-synthesized def-site spans don't shift the hash when that crate
+///    is edited.
 /// ```rust,ignore
 /// # use linktime_proc_macro::combine;
 /// let location_hash = combine!(output=string input=("location_hash:" __LOCATIONHASH__(of=(a bunch of tokens) alphabet=[a-z])));

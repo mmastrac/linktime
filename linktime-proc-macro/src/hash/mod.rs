@@ -25,10 +25,9 @@ impl Iterator for TokenTreeDeepIterator {
     }
 }
 
-/// A stable, position-independent identity for a single token: its own textual
-/// content (for leaves) or its delimiter (for groups). Group contents are
-/// visited separately by the deep iterator, so the delimiter alone is enough to
-/// keep groups distinct without pulling in the (potentially large) subtree.
+/// Content (position-independent) identity for an ignored token. Groups
+/// contribute only their delimiter and the deep iterator visits children
+/// separately.
 fn token_content(token: &TokenTree) -> String {
     match token {
         TokenTree::Group(group) => match group.delimiter() {
@@ -43,13 +42,8 @@ fn token_content(token: &TokenTree) -> String {
     }
 }
 
-/// Hashes the location (file/line/column) of every token within `tokens`.
-///
-/// If `ignore_base` is set, any token whose local source file lives under that
-/// base directory contributes its textual content instead of its location. This
-/// makes the hash stable against source movement within the "ignored" crate
-/// (e.g. the tokens a declarative macro synthesizes at its own definition site),
-/// while still distinguishing genuinely different tokens.
+/// Hash location of every token in `tokens`. Tokens under `ignore_base` contribute
+/// content instead, so def-site spans from that crate don't shift the hash.
 #[allow(clippy::unnecessary_map_or)]
 pub(crate) fn location_hash(tokens: TokenStream, ignore_base: Option<&Path>) -> u64 {
     let iterator = TokenTreeDeepIterator {
@@ -69,8 +63,6 @@ pub(crate) fn location_hash(tokens: TokenStream, ignore_base: Option<&Path>) -> 
         });
 
         if ignored {
-            // Content-only: neutralize file/line/column so edits to the ignored
-            // crate's own source don't perturb the hash.
             buffer.extend_from_slice(token_content(&token).as_bytes());
         } else {
             let line = crate::fallback::line(&span);
