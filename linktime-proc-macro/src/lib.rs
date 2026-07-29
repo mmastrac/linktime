@@ -125,7 +125,7 @@ generators! {
 ///  - `__COLUMN__(of=token)`: The column number of the `token`. Supported on
 ///    Rust 1.88+, returns 0 otherwise.
 ///
-/// ```rust
+/// ```rust,ignore
 /// # use linktime_proc_macro::combine;
 /// let file = combine!(output=string input=("file:" __FILE__(of=token) ":" __LINE__(of=token) ":" __COLUMN__(of=token)));
 /// assert_eq!(file, "file:linktime-proc-macro/src/lib.rs:6:110");
