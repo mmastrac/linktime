@@ -141,7 +141,7 @@ version = "1.0.12"
 dependencies = [
  "libc-print",
  "link-section 0.19.2",
- "linktime-proc-macro 0.2.1",
+ "linktime-proc-macro 0.2.2",
  "macrotest",
  "tempfile",
  "trybuild",
@@ -246,7 +246,7 @@ name = "dtor"
 version = "1.0.5"
 dependencies = [
  "libc-print",
- "linktime-proc-macro 0.2.1",
+ "linktime-proc-macro 0.2.2",
  "macrotest",
  "tempfile",
  "trybuild",
@@ -428,7 +428,7 @@ dependencies = [
 name = "link-section"
 version = "0.19.2"
 dependencies = [
- "linktime-proc-macro 0.2.1",
+ "linktime-proc-macro 0.2.2",
  "macrotest",
  "tempfile",
  "trybuild",
@@ -443,7 +443,7 @@ dependencies = [
  "dtor 1.0.5",
  "libc-print",
  "link-section 0.19.2",
- "linktime-proc-macro 0.2.1",
+ "linktime-proc-macro 0.2.2",
 ]
 
 [[package]]
@@ -466,7 +466,7 @@ checksum = "8c7b0a3383c2a1002d11349c92c85a666a5fb679e96c79d782cf0dbe557fd6ee"
 
 [[package]]
 name = "linktime-proc-macro"
-version = "0.2.1"
+version = "0.2.2"
 
 [[package]]
 name = "linux-raw-sys"
@@ -687,7 +687,7 @@ dependencies = [
  "divan",
  "link-section 0.19.2",
  "linktime 0.18.0",
- "linktime-proc-macro 0.2.1",
+ "linktime-proc-macro 0.2.2",
  "scattered-collect 0.21.3",
  "trybuild",
  "wide",
