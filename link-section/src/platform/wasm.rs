@@ -581,7 +581,7 @@ impl LinkSectionMovableInfo {
         }
     }
 
-    /// The flattened backref range. Only valid once [`materialise_with`] has run.
+    /// The flattened backref range. Only valid once [`LinkSectionInfo::materialise_with`] has run.
     fn backrefs_range(&self) -> SectionRange {
         SectionRange::new(self.backrefs_start, self.backrefs_end)
     }

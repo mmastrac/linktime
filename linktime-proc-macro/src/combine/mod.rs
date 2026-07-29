@@ -1,11 +1,13 @@
 mod args;
 
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use proc_macro::{Group, Ident, Literal, Span, TokenStream, TokenTree};
 
 use self::args::{
-    parse_arguments, pop_argument, pop_optional_argument, OutputType, PatternString,
+    parse_arguments, pop_argument, pop_optional_argument, Argument, OutputType, PatternString,
     TranslateString,
 };
 
@@ -118,6 +120,32 @@ fn parse_stream(s: &mut String, arg: &str, output: OutputType, input: TokenStrea
     }
 }
 
+/// Resolve `__LOCATIONHASH__`'s optional `ignore_base` into a crate-root
+/// directory.
+///
+/// The marker token's span locates the crate and its string value is a path
+/// suffix stripped to reach that crate's root. Returns `None` (ignore nothing)
+/// when `local_file` is unavailable, the suffix does not match, or the base
+/// would be empty/filesystem-root (would match every token).
+fn pop_ignore_base(args: &mut HashMap<String, TokenTree>, ident: &str) -> Option<PathBuf> {
+    let token = args.remove("ignore_base")?;
+    let span = <Span as Argument>::from_token_tree(token.clone())
+        .unwrap_or_else(|e| panic!("{ident}: Invalid argument 'ignore_base': {e}"));
+    let suffix = <String as Argument>::from_token_tree(token)
+        .unwrap_or_else(|e| panic!("{ident}: Invalid argument 'ignore_base': {e}"));
+
+    let file = crate::fallback::local_file(&span)?;
+    if !file.ends_with(&suffix) {
+        return None;
+    }
+    let components = Path::new(&suffix).components().count();
+    let base = file.ancestors().nth(components)?;
+    if base.as_os_str().is_empty() || base.parent().is_none() {
+        return None;
+    }
+    Some(base.to_path_buf())
+}
+
 fn parse_function(
     s: &mut String,
     arg: &str,
@@ -187,7 +215,8 @@ fn parse_function(
         "LOCATIONHASH" => {
             let input = pop_argument::<TokenStream>(&mut args, ident, "of");
             let alphabet = pop_optional_argument::<TranslateString>(&mut args, ident, "alphabet");
-            let mut hash = crate::hash::location_hash(input);
+            let ignore_base = pop_ignore_base(&mut args, ident);
+            let mut hash = crate::hash::location_hash(input, ignore_base.as_deref());
             if let Some(alphabet) = alphabet {
                 if hash == 0 {
                     s.push(alphabet.char(0));

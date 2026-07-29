@@ -193,7 +193,8 @@ pub mod __support {
                 )
             ))
         };
-        // Safe sections are always hashed.
+        // Safe sections are always hashed. Note: `ignore_base` below avoids
+        // churn on the expansion tests.
         ($definition:tt $prefix:tt $name:tt $suffix:tt $hash_length:literal $max_length:literal $valid_section_chars:literal) => {
             $crate::__support::combine!(output=string input=(
                 $prefix
@@ -201,9 +202,7 @@ pub mod __support {
                     __SUBSTRING__(input=(
                         __TOIDENT__(input=(__RAW__(input=($name))))
                     ) end=(__SUB__(a=$max_length b=$hash_length)))
-                    // Hash the location information for the full
-                    // definition and computed name.
-                    __LOCATIONHASH__(of=($definition $name) alphabet=[_0-9a-zA-Z])
+                    __LOCATIONHASH__(of=($definition $name) alphabet=[_0-9a-zA-Z] ignore_base=("src/lib.rs"))
                 ) length=$max_length)
                 $suffix
             ))

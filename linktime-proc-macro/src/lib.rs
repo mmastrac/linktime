@@ -131,12 +131,16 @@ generators! {
 /// assert_eq!(file, "file:linktime-proc-macro/src/lib.rs:6:110");
 /// ```
 ///
-///  - `__LOCATIONHASH__(of=token, alphabet=[chars...])`: Returns a hash of
-///    location information for all tokens within the tree of `token`. If
-///    `alphabet` is specified, the hash is converted to a string using the
-///    characters in the `alphabet`. No zero padding is applied in this case.
+///  - `__LOCATIONHASH__(of=token, alphabet=[chars...], ignore_base=token)`:
+///    Returns a hash of location information for all tokens within the tree of
+///    `token`. If `alphabet` is specified, the hash is converted to a string
+///    using the characters in the `alphabet`. No zero padding is applied in this
+///    case.
 ///
-/// ```rust
+///    `ignore_base` hashes tokens from that crate by content instead of location,
+///    so macro-synthesized def-site spans don't shift the hash when that crate
+///    is edited.
+/// ```rust,ignore
 /// # use linktime_proc_macro::combine;
 /// let location_hash = combine!(output=string input=("location_hash:" __LOCATIONHASH__(of=(a bunch of tokens) alphabet=[a-z])));
 /// assert_eq!(location_hash, "location_hash:dwsrxapjetrwwu");
