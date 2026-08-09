@@ -98,7 +98,7 @@ jobs:
       if: ${{ contains(matrix.target, 'i686') }}
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-multilib
+        sudo apt-get install -y gcc-multilib lib32z1 lib32stdc++6
 
     # rustup refuses non-host toolchains without --force-non-host
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }}, non-host)
