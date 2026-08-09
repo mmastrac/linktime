@@ -185,17 +185,17 @@ jobs:
       - uses: actions/checkout@v6
       # macrotest needs `cargo expand`. Cache `CARGO_HOME` under the workspace (registry/git/bin)
       # so vmactions copyback + actions/cache reuse downloads and the installed `cargo-expand`.
-      # `cargo clean` after tests drops `target/` so copyback stays small.
       - uses: actions/cache@v5
         with:
           path: .cache/ci/vmactions/freebsd
           key: vmactions-freebsd-14.4-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-freebsd-14.4-
-      # Build must run in the same vmactions step as host→VM sync: copyback only runs when this
-      # action finishes. A later `shell: freebsd` step updates the VM only — the runner workspace
-      # never gets the new binary, so actions/cache would save an empty/stale path.
-      - name: Build and test
+      # Cache-relevant work (registry, installed bins) must happen in the VM action
+      # step: copyback runs when it finishes, before (and regardless of) the tests.
+      # Tests run in a `shell: freebsd` step so failures aren't buried in the
+      # action's collapsed log group behind "ssh exited with code 1".
+      - name: Provision VM
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.4"
@@ -218,9 +218,15 @@ jobs:
             if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
               cargo install cargo-expand --locked
             fi
-            cargo build
-            cargo test
-            cargo clean
+            cargo fetch
+      - name: Build and test
+        shell: freebsd {0}
+        run: |
+          set -xe
+          export CARGO_HOME="$(pwd)/.cache/ci/vmactions/freebsd/cargo-home"
+          export PATH="${CARGO_HOME}/bin:${PATH}"
+          cargo build
+          cargo test
 
   vmactions-openbsd:
     runs-on: ubuntu-latest
@@ -235,7 +241,8 @@ jobs:
           key: vmactions-openbsd-7.8-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-openbsd-7.8-
-      - name: Build and test
+      # Same provision/test split as the FreeBSD job (cache copyback + visible failures).
+      - name: Provision VM
         uses: vmactions/openbsd-vm@v1
         with:
           release: "7.8"
@@ -251,9 +258,15 @@ jobs:
             if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
               cargo install cargo-expand --locked
             fi
-            cargo build
-            cargo test
-            cargo clean
+            cargo fetch
+      - name: Build and test
+        shell: openbsd {0}
+        run: |
+          set -xe
+          export CARGO_HOME="$(pwd)/.cache/ci/vmactions/openbsd/cargo-home"
+          export PATH="${CARGO_HOME}/bin:${PATH}"
+          cargo build
+          cargo test
 
   vmactions-netbsd:
     runs-on: ubuntu-latest
