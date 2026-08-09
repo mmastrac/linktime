@@ -1,6 +1,6 @@
 [package]
 name = "ctor"
-version = "1.0.12"
+version = "1.0.13"
 authors.workspace = true
 edition = "2021"
 description = "Global, no_std-compatible constructors for all platforms that run before main (like C/C++ __attribute__((constructor)))"

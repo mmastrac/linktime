@@ -5,14 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.19.3] - 2026-08-09
+
+### Changed
+
+- Bump `linktime-proc-macro` dependency to 0.2.3 (consistent 64-bit hash chunks
+  and cross-crate section-name fix).
 
 ### Documentation
 
 - Documented the `crate_path` override and surfaced the generated attribute
   reference (including `crate_path`) in the crate docs and README.
-
-## [0.19.3] - 2026-08-09
 
 ### Fixed
 
