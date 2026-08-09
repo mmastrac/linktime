@@ -71,8 +71,36 @@ stable per executable build.
 
 ## Re-exporting the scatter/gather macros
 
-The scatter/gather macros can be easily re-exported from other crates using the
-[`declarative`] module.
+If you wrap these collections in your own library so that downstream users don't
+need to depend on `scattered-collect` directly, you have two options.
+
+The (preferred) option is to re-export the [`declarative`] forms of the macros.
+They resolve their support paths back to `scattered-collect` through the
+re-exporting crate, so no extra configuration is needed:
+
+```rust,ignore
+// In your library crate:
+pub use scattered_collect::declarative::{gather, scatter};
+pub use scattered_collect::slice::ScatteredSlice;
+```
+
+Downstream users then invoke them as `gather! { #[gather] ... }` and
+`scatter! { #[scatter(COLLECTION)] ... }`.
+
+Alternatively, the proc-macro `#[scatter]` / `#[gather]` attribute forms emit a
+fixed `::scattered_collect` path and so require a direct dependency by default.
+Pass `crate_path = <path>` to redirect them to wherever `scattered-collect` has
+been re-exported:
+
+```rust
+# use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+# fn main() {}
+#[gather(crate_path = ::scattered_collect)]
+static ITEMS: ScatteredSlice<u32>;
+
+#[scatter(crate_path = ::scattered_collect, ITEMS)]
+const _: u32 = 1;
+```
 
 ## Scatter/Gather syntax
 

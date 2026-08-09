@@ -380,3 +380,76 @@ mod my_registry {
 ## Inspiration
 
 `link-section` would have been far more challenging to implement without dtolnay's great `linkme` project paving the way.
+# Re-exporting from another crate
+
+The macros assume this crate is available as a direct dependency, resolving their
+support paths through the crate's own name. If you re-export this crate's items as
+part of your own crate (so that downstream users don't need to depend on it
+directly), you have two options:
+
+- (preferred) use the declarative macro form. It resolves its support paths
+  relative to your re-export, so no extra configuration is required.
+- Alternatively, pass the `crate_path` attribute to redirect the macro's
+  generated output to the path where this crate has been re-exported.
+
+See the `crate_path` entry in the *Macro Attributes* section below for the exact
+syntax for this crate.
+# Crate Features
+
+| Cargo feature | Description |
+| --- | --- |
+| `proc_macro` |  Crate feature `proc_macro` (enables the `#[section]` attribute shim). |
+
+# Macro Attributes
+
+<table><tr><th>Attribute</th><th>Description</th></tr>
+<tr><td><code>aux(main = path::to::MAIN_SECTION)</code></td><td>
+
+ Auxiliary sections are stored in a section near the main section. The
+ aux path must be a valid reference to the main section.
+
+
+</td></tr>
+<tr><td><code>crate_path = ::path::to::link_section</code></td><td>
+
+ The path to the `link-section` crate containing the support macros. If
+ you re-export `link-section` items as part of your crate, you can use
+ this to redirect the macro's output to the correct crate.
+
+ Using the declarative [`section!`][s] form is
+ preferred over this parameter.
+
+ [s]: crate::declarative::section!
+
+
+</td></tr>
+<tr><td><code>name = my_crate::SECTION_NAME</code></td><td>
+
+ Specify a custom section name to allow the section to be used without a
+ direct reference. If not specified, the section name will be generated
+ using the item name and a path to the section.
+
+ It is valid to specify multiple sections with the same name, and the linker
+ will ensure that both sections contain the same items. The multiple sections
+ must contain the same type, otherwise the section will `panic!` at runtime.
+
+ While `name` accepts a path, this path does not refer to a specific Rust
+ item path.
+
+
+</td></tr>
+<tr><td><code>untyped | typed | mutable | movable | reference</code></td><td>
+
+ The type of the section.
+
+
+</td></tr>
+<tr><td><code>unsafe</code></td><td>
+
+ Allow the section to be used without a direct reference.
+
+
+</td></tr>
+</table>
+
+# Defaults

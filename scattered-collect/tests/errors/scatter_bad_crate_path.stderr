@@ -1,0 +1,5 @@
+error[E0433]: cannot find `whatever` in the crate root
+ --> tests/errors/scatter_bad_crate_path.rs:7:26
+  |
+7 | #[scatter(crate_path = ::whatever, ITEMS)]
+  |                          ^^^^^^^^ could not find `whatever` in the list of imported crates
