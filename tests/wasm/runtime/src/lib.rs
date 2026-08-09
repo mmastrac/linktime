@@ -50,10 +50,7 @@ mod link_section {
         #[in_section(DRIVERS)]
         pub static DRIVER: Driver = Driver::new("driver", || libc_println!("driver"));
 
-        // `const` items don't hand out a `Ref`, but must still share the
-        // slot-bearing cell layout of the reference section (issue fixed in
-        // #511: the old layout made materialisation read past the cell and
-        // write through a garbage slot pointer).
+        // Interleave const/static items.
         #[in_section(DRIVERS)]
         pub const DRIVER_CONST: Driver =
             Driver::new("driver_const", || libc_println!("driver_const"));

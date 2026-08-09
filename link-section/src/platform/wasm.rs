@@ -171,7 +171,7 @@ macro_rules! __register_wasm_item {
         );
     };
     // Reference-section const items do not expose a `Ref`, but their cells must
-    // still match the slot-bearing layout selected for the whole section.
+    // match the layout for static items.
     (reference, type=$ty:ty, value=$value:expr, section=$section:tt) => {
         $crate::__register_wasm_item!(@emit
             info_ty = ($crate::__support::wasm::LinkSectionInfo),
