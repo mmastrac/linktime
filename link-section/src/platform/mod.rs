@@ -38,7 +38,7 @@ pub const fn validate_section_name(name: &str) {
 
 /// Launder a pointer's provenance so it appears as an "exposed" pointer.
 pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
-    #[cfg(not(windows))]
+    #[cfg(any(not(windows), miri))]
     {
         core::ptr::with_exposed_provenance(ptr.expose_provenance())
     }
@@ -48,11 +48,18 @@ pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
     // exposed provenance and reverts it, which it then traces to the marker allocation which
     // it then believes all slice loads come from.
     //
-    // Treating this provenance round-trip as a no-op is arguably an LLVM optimization issue
-    // somewhere between Rust and LLVM.
-    #[cfg(windows)]
+    // Treating this provenance round-trip as a no-op is arguably an LLVM optimization issue.
+    #[cfg(all(windows, not(miri)))]
     {
-        core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
+        unsafe extern "C" {
+            #[link_name = crate::__ls_provenance_symbol!()]
+            static LS_PROVENANCE_DONOR: u8;
+        }
+
+        // Copy provenance from a non-Rust symbol ineligible for many
+        // optimizations to the pointer. It is far less likely for early optimization
+        // passes to fold the pointer into the marker's allocation.
+        (&raw const LS_PROVENANCE_DONOR).with_addr(ptr.addr()) as *const T
     }
 }
 
@@ -140,9 +147,9 @@ impl SectionRange {
 /// Constant bounds for a pointer-based section.
 pub struct PtrBounds {
     /// Section start address.
-    pub start: *const (),
+    start: *const (),
     /// One byte past the last section byte.
-    pub end: *const (),
+    end: *const (),
 }
 
 impl PtrBounds {
