@@ -50,3 +50,9 @@ if TARGET_OS == "windows" {
 if TARGET_OS == "openbsd" {
     ! dtor-link-section:dtor
 }
+if TARGET_OS == "netbsd" {
+    ! dtor-link-section:dtor
+}
+if TARGET_OS == "dragonfly" {
+    ! dtor-link-section:dtor
+}

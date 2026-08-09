@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs inside vmactions BSD VMs (plain sh; BSD base systems have no bash).
-# Usage: vmactions.sh provision|test
+# Runs inside vmactions BSD VMs
+# Usage: vmactions.sh provision|doctest
 set -xe
 
 mode="$1"
@@ -57,38 +57,16 @@ provision() {
       ;;
   esac
 
-  # macrotest needs `cargo expand` (full-test OSes only - on NetBSD its dep
-  # tree fails to build against kqueue udata typing).
-  case "$os" in
-    FreeBSD|OpenBSD)
-      if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
-        cargo install cargo-expand --locked
-      fi
-      ;;
-  esac
-
   cargo fetch
 }
 
-run_tests() {
-  case "$os" in
-    FreeBSD|OpenBSD)
-      cargo build
-      cargo test
-      ;;
-    *)
-      cargo build --examples -p ctor -p dtor -p link-section
-      for example in ctor-basic ctor-example ctor-advanced ctor-priority; do
-        cargo run -p ctor --example "$example"
-      done
-      cargo run -p dtor --example dtor-example
-      cargo run -p link-section --example link-section-example
-      ;;
-  esac
+# macrotest/compile-fail need cargo-expand, tier-1 only
+run_doctests() {
+  cargo test --doc
 }
 
 case "$mode" in
   provision) provision ;;
-  test) run_tests ;;
-  *) echo "usage: $0 provision|test"; exit 1 ;;
+  doctest) run_doctests ;;
+  *) echo "usage: $0 provision|doctest"; exit 1 ;;
 esac
