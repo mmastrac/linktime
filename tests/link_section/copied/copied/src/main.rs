@@ -9,12 +9,18 @@ use copied_types::{IMMUTABLE_LINK_SECTION, MUT_LINK_SECTION, VALUES};
 use register_a as _;
 use register_b as _;
 
+// Never called, the reference alone keeps libthread_xu in DT_NEEDED.
+#[cfg(target_os = "dragonfly")]
+extern "C" {
+    fn pthread_key_create();
+}
+
 pub fn main() {
-    // Keep libthread_xu in DT_NEEDED under fat LTO. Without it, std's startup
+    // Keep libthread_xu linked under fat LTO. Without it, std's startup
     // pthread_key_create resolves to libc's broken stubs and aborts with a
     // KEY_SENTVAL assertion (rust-lang/rust#112180).
     #[cfg(target_os = "dragonfly")]
-    std::hint::black_box(libc::pthread_create as usize);
+    std::hint::black_box(pthread_key_create as usize);
 
     // LLVM was optimizing these copies into memsets
     let mut copied_section = MUT_LINK_SECTION.iter().copied().collect::<Vec<_>>();

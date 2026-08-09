@@ -9,9 +9,6 @@ copied-types = { path = "../copied-types" }
 register-a = { path = "../register-a" }
 register-b = { path = "../register-b" }
 
-[target.'cfg(target_os = "dragonfly")'.dependencies]
-libc = "0.2"
-
 [[bin]]
 name = "copied"
 path = "src/main.rs"
