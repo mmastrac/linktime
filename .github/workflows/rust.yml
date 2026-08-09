@@ -176,49 +176,38 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
 
   # Tier-*BSD smoke tests (QEMU); see https://github.com/vmactions
+  #
+  # All four jobs run .github/jobs/vmactions.sh, which branches on uname.
+  # Provisioning happens in the VM action step because copyback (which feeds
+  # the cache) runs when that step ends. Tests run in a `shell: <os>` step so
+  # failures show up in the log instead of a collapsed "ssh exited with code 1".
 
   vmactions-freebsd:
     runs-on: ubuntu-latest
     name: FreeBSD / test (stable)
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
-      # macrotest needs `cargo expand`. Cache `CARGO_HOME` under the workspace (registry/git/bin)
-      # so vmactions copyback + actions/cache reuse downloads and the installed `cargo-expand`.
-      # `cargo clean` after tests drops `target/` so copyback stays small.
       - uses: actions/cache@v5
         with:
           path: .cache/ci/vmactions/freebsd
           key: vmactions-freebsd-14.4-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-freebsd-14.4-
-      # Build must run in the same vmactions step as host→VM sync: copyback only runs when this
-      # action finishes. A later `shell: freebsd` step updates the VM only — the runner workspace
-      # never gets the new binary, so actions/cache would save an empty/stale path.
-      - name: Build and test
+      - name: Provision VM
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.4"
           usesh: true
-          run: |
-            set -xe
-            # Only install rust if missing. Do not use `pkg install -U`: fresh images have no
-            # repo catalog yet and fail with "Repository FreeBSD cannot be opened. pkg update required".
-            if ! command -v cargo >/dev/null 2>&1; then
-              pkg install -y rust
-            fi
-            export CARGO_HOME="${GITHUB_WORKSPACE}/.cache/ci/vmactions/freebsd/cargo-home"
-            mkdir -p "${CARGO_HOME}/bin"
-            export PATH="${CARGO_HOME}/bin:${PATH}"
-            if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
-              cargo install cargo-expand --locked
-            fi
-            cargo build
-            cargo test
-            cargo clean
+          run: sh .github/jobs/vmactions.sh provision
+      - name: Build and test
+        shell: freebsd {0}
+        run: sh .github/jobs/vmactions.sh test
 
   vmactions-openbsd:
     runs-on: ubuntu-latest
     name: OpenBSD / test (stable)
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
@@ -227,77 +216,59 @@ jobs:
           key: vmactions-openbsd-7.8-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-openbsd-7.8-
-      - name: Build and test
+      - name: Provision VM
         uses: vmactions/openbsd-vm@v1
         with:
           release: "7.8"
           usesh: true
-          run: |
-            set -xe
-            if ! command -v cargo >/dev/null 2>&1; then
-              pkg_add rust
-            fi
-            export CARGO_HOME="${GITHUB_WORKSPACE}/.cache/ci/vmactions/openbsd/cargo-home"
-            mkdir -p "${CARGO_HOME}/bin"
-            export PATH="${CARGO_HOME}/bin:${PATH}"
-            if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
-              cargo install cargo-expand --locked
-            fi
-            cargo build
-            cargo test
-            cargo clean
+          run: sh .github/jobs/vmactions.sh provision
+      - name: Build and test
+        shell: openbsd {0}
+        run: sh .github/jobs/vmactions.sh test
 
   vmactions-netbsd:
     runs-on: ubuntu-latest
-    # Full `cargo test` needs `cargo-expand`; installing it pulls deps (e.g. mio) that fail on NetBSD kqueue (udata typing).
-    # Smoke-test examples only — same as DragonFly vmactions job.
+    # Examples only: `cargo test` needs `cargo-expand`, whose dep tree fails to
+    # build on NetBSD (kqueue udata typing).
     name: NetBSD / examples (stable)
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Start VM
+      - uses: actions/cache@v5
+        with:
+          path: .cache/ci/vmactions/netbsd
+          key: vmactions-netbsd-10.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            vmactions-netbsd-10.1-
+      - name: Provision VM
         uses: vmactions/netbsd-vm@v1
         with:
           release: "10.1"
           usesh: true
-      - name: Run crate examples
+          run: sh .github/jobs/vmactions.sh provision
+      - name: Build and test
         shell: netbsd {0}
-        run: |
-          set -xe
-          export PATH="/usr/pkg/sbin:/usr/pkg/bin:/usr/sbin:/usr/bin:${PATH}"
-          if [ -x /usr/pkg/bin/pkgin ]; then
-            /usr/pkg/bin/pkgin update
-            /usr/pkg/bin/pkgin -y install rust
-          else
-            export PKG_PATH="https://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/amd64/10.1/All"
-            /usr/sbin/pkg_add rust
-          fi
-          cargo build --examples -p ctor -p dtor -p link-section
-          for example in ctor-basic ctor-example ctor-advanced ctor-priority; do
-            cargo run -p ctor --example "$example"
-          done
-          cargo run -p dtor --example dtor-example
-          cargo run -p link-section --example link-section-example
+        run: sh .github/jobs/vmactions.sh test
 
   vmactions-dragonflybsd:
     runs-on: ubuntu-latest
-    # Packaged Rust is often behind crates.io; full `cargo test` needs `cargo-expand` (rustc 1.88+ as of 2025).
-    # Smoke-test published examples only (same spirit as zigbuild.sh).
+    # Examples only: packaged Rust is often behind what `cargo test` needs.
     name: DragonFly BSD / examples (stable)
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Start VM
+      - uses: actions/cache@v5
+        with:
+          path: .cache/ci/vmactions/dragonfly
+          key: vmactions-dragonfly-6.4.2-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            vmactions-dragonfly-6.4.2-
+      - name: Provision VM
         uses: vmactions/dragonflybsd-vm@v1
         with:
           release: "6.4.2"
           usesh: true
-      - name: Run crate examples
+          run: sh .github/jobs/vmactions.sh provision
+      - name: Build and test
         shell: dragonflybsd {0}
-        run: |
-          set -xe
-          pkg install -y rust
-          cargo build --examples -p ctor -p dtor -p link-section
-          for example in ctor-basic ctor-example ctor-advanced ctor-priority; do
-            cargo run -p ctor --example "$example"
-          done
-          cargo run -p dtor --example dtor-example
-          cargo run -p link-section --example link-section-example
+        run: sh .github/jobs/vmactions.sh test
