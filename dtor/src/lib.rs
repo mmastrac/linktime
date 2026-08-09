@@ -3,6 +3,7 @@
 #![doc = include_str!("../docs/BUILD.md")]
 //! # dtor
 #![doc = include_str!("../docs/PREAMBLE.md")]
+#![doc = include_str!("../docs/REEXPORT.md")]
 #![doc = include_str!("../docs/GENERATED.md")]
 
 #[cfg(feature = "std")]
@@ -22,6 +23,11 @@ pub use native::*;
 ///
 /// Multiple shutdown functions are supported, but the invocation order is not
 /// guaranteed.
+///
+/// The `dtor` crate assumes it is available as a direct dependency. If you
+/// re-export `dtor` items as part of your crate, you can use the `crate_path`
+/// parameter to redirect the macro's output to the correct crate, or use the
+/// [`declarative::dtor`] form.
 ///
 /// ```rust,ignore
 /// # use dtor::dtor;
@@ -87,7 +93,14 @@ __declare_features!(
     anonymous {
         attr: [(anonymous) => (anonymous)];
     };
-    /// Specify a custom crate path for the `dtor` crate. Used when re-exporting the dtor macro.
+    /// The path to the `dtor` crate containing the support macros. If you
+    /// re-export `dtor` items as part of your crate, you can use this to
+    /// redirect the macro's output to the correct crate.
+    ///
+    /// Using the declarative [`dtor!`][d] form is
+    /// preferred over this parameter.
+    ///
+    /// [d]: crate::declarative::dtor!
     crate_path {
         attr: [(crate_path = $path:pat) => (($path))];
         example: "crate_path = ::path::to::dtor::crate";

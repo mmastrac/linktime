@@ -134,6 +134,20 @@ fn dtor_atexit() {
     libc::atexit(dtor);
 }
 ```
+# Re-exporting from another crate
+
+The macros assume this crate is available as a direct dependency, resolving their
+support paths through the crate's own name. If you re-export this crate's items as
+part of your own crate (so that downstream users don't need to depend on it
+directly), you have two options:
+
+- (preferred) use the declarative macro form. It resolves its support paths
+  relative to your re-export, so no extra configuration is required.
+- Alternatively, pass the `crate_path` attribute to redirect the macro's
+  generated output to the path where this crate has been re-exported.
+
+See the `crate_path` entry in the *Macro Attributes* section below for the exact
+syntax for this crate.
 # Crate Features
 
 | Cargo feature | Description |
@@ -154,7 +168,14 @@ fn dtor_atexit() {
 </td></tr>
 <tr><td><code>crate_path = ::path::to::dtor::crate</code></td><td>
 
- Specify a custom crate path for the `dtor` crate. Used when re-exporting the dtor macro.
+ The path to the `dtor` crate containing the support macros. If you
+ re-export `dtor` items as part of your crate, you can use this to
+ redirect the macro's output to the correct crate.
+
+ Using the declarative [`dtor!`][d] form is
+ preferred over this parameter.
+
+ [d]: crate::declarative::dtor!
 
 
 </td></tr>
