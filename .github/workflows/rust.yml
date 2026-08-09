@@ -180,6 +180,7 @@ jobs:
   vmactions-freebsd:
     runs-on: ubuntu-latest
     name: FreeBSD / test (stable)
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
       # macrotest needs `cargo expand`. Cache `CARGO_HOME` under the workspace (registry/git/bin)
@@ -201,14 +202,19 @@ jobs:
           usesh: true
           run: |
             set -xe
-            # Only install rust if missing. Do not use `pkg install -U`: fresh images have no
-            # repo catalog yet and fail with "Repository FreeBSD cannot be opened. pkg update required".
-            if ! command -v cargo >/dev/null 2>&1; then
-              pkg install -y rust
-            fi
             export CARGO_HOME="${GITHUB_WORKSPACE}/.cache/ci/vmactions/freebsd/cargo-home"
             mkdir -p "${CARGO_HOME}/bin"
             export PATH="${CARGO_HOME}/bin:${PATH}"
+            # pkg's rustc lags stable, use rustup.
+            # Fetch the binary directly (sh.rustup.rs needs curl/wget); RUSTUP_HOME
+            # stays VM-local so the synced cache dir stays small.
+            if ! command -v rustup >/dev/null 2>&1; then
+              fetch -o /tmp/rustup-init https://static.rust-lang.org/rustup/dist/x86_64-unknown-freebsd/rustup-init
+              chmod +x /tmp/rustup-init
+              /tmp/rustup-init -y --profile minimal --default-toolchain none --no-modify-path
+            fi
+            # Installs stable into the fresh VM even when rustup came from the cache.
+            rustup default stable
             if [ ! -x "${CARGO_HOME}/bin/cargo-expand" ]; then
               cargo install cargo-expand --locked
             fi
@@ -219,6 +225,8 @@ jobs:
   vmactions-openbsd:
     runs-on: ubuntu-latest
     name: OpenBSD / test (stable)
+    # rustup has no OpenBSD dist; pkg_add only
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
@@ -250,8 +258,9 @@ jobs:
   vmactions-netbsd:
     runs-on: ubuntu-latest
     # Full `cargo test` needs `cargo-expand`; installing it pulls deps (e.g. mio) that fail on NetBSD kqueue (udata typing).
-    # Smoke-test examples only — same as DragonFly vmactions job.
+    # Smoke-test examples only
     name: NetBSD / examples (stable)
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - name: Start VM
@@ -281,8 +290,9 @@ jobs:
   vmactions-dragonflybsd:
     runs-on: ubuntu-latest
     # Packaged Rust is often behind crates.io; full `cargo test` needs `cargo-expand` (rustc 1.88+ as of 2025).
-    # Smoke-test published examples only (same spirit as zigbuild.sh).
+    # Smoke-test published examples only
     name: DragonFly BSD / examples (stable)
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - name: Start VM
