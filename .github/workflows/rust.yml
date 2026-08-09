@@ -100,7 +100,16 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gcc-multilib
 
+    # rustup refuses non-host toolchains without --force-non-host
+    - name: Install Rust toolchain (${{ matrix.rust-toolchain }}, non-host)
+      if: ${{ contains(matrix.rust-toolchain, 'i686') }}
+      shell: bash
+      run: |
+        rustup toolchain install "${{ matrix.rust-toolchain }}" --force-non-host --profile minimal --no-self-update
+        rustup override set "${{ matrix.rust-toolchain }}"
+
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }})
+      if: ${{ !contains(matrix.rust-toolchain, 'i686') }}
       uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
       with:
         toolchain: ${{ matrix.rust-toolchain }}
