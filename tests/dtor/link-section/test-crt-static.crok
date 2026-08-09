@@ -29,6 +29,13 @@ ignore {
         ! %{DATA}note: the message above does not take linker garbage collection into account
         ! %{SPACE}
     }
+    # FreeBSD cc (clang) warns -no-pie is unused
+    sequence {
+        ! %{DATA}argument unused during compilation: '-no-pie'%{DATA}
+        ! %{SPACE}|
+        ! %{SPACE}= note: `#[warn(linker_messages)]` on by default
+        ! %{SPACE}
+    }
 }
 ! dtor-link-section:main
 if TARGET_OS == "linux" {
