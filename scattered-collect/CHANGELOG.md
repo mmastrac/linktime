@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.22.0] - 2026-08-09
 
 ### Added
 
@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `crate_path = <path>` override, allowing the macros to be re-exported from
   another crate without a direct dependency on `scattered-collect`. Documented
   re-exporting via both the declarative forms and `crate_path`.
+
+### Changed
+
+- Bumped MSRV to 1.89.
+- Bumped `ctor`, `link-section`, `linktime` and `linktime-proc-macro`
+  dependencies.
 
 ## [0.21.3] - 2026-07-06
 

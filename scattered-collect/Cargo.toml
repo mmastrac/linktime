@@ -1,13 +1,13 @@
 [package]
 name = "scattered-collect"
-version = "0.21.3"
+version = "0.22.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
-rust-version = "1.85"
+rust-version = "1.89"
 
 [features]
 __internal = []
