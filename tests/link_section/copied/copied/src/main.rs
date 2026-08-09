@@ -10,6 +10,19 @@ use register_a as _;
 use register_b as _;
 
 pub fn main() {
+    // Never called, the reference alone keeps libthread_xu linked under fat
+    // LTO. Without it, std's startup pthread_key_create resolves to libc's
+    // broken stubs and aborts with a KEY_SENTVAL assertion
+    // (rust-lang/rust#112180). Must be pthread_create: it is the one symbol
+    // libc's stubs don't satisfy, so it forces the real thread library in.
+    #[cfg(target_os = "dragonfly")]
+    std::hint::black_box({
+        extern "C" {
+            fn pthread_create();
+        }
+        pthread_create as usize
+    });
+
     // LLVM was optimizing these copies into memsets
     let mut copied_section = MUT_LINK_SECTION.iter().copied().collect::<Vec<_>>();
     copied_section.sort();
