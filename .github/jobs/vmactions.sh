@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs inside vmactions BSD VMs (plain sh; BSD base systems have no bash).
-# Usage: vmactions.sh provision|doctest (crok suite runs host-side, see vm-crok.sh)
+# Runs inside vmactions BSD VMs
+# Usage: vmactions.sh provision|doctest
 set -xe
 
 mode="$1"

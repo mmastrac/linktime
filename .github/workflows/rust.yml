@@ -183,7 +183,7 @@ jobs:
         env:
           BUILD_RESULT: ${{ needs.build.result }}
 
-  # Tier-*BSD tests (QEMU); see https://github.com/vmactions
+  # Tier-*BSD tests (QEMU)
   #
   # vmactions.sh provisions the VM (copyback feeds the cache). The crok suite
   # runs host-side, driving commands into the VM via vm-run.sh. FreeBSD/OpenBSD
