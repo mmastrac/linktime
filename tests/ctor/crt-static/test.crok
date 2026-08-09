@@ -47,7 +47,18 @@ if TARGET_OS == "openbsd" {
     # Appears to be a legit Rust/OpenBSD bug?
     ! -crt-static
 }
+# crt-static not honored here either
+if TARGET_OS == "netbsd" {
+    ! -crt-static
+}
+if TARGET_OS == "dragonfly" {
+    ! -crt-static
+}
 if TARGET_OS != "openbsd" {
-    ! +crt-static
+    if TARGET_OS != "netbsd" {
+        if TARGET_OS != "dragonfly" {
+            ! +crt-static
+        }
+    }
 }
 ! main
