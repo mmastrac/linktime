@@ -68,8 +68,8 @@ pub(crate) fn location_hash(tokens: TokenStream, ignore_base: Option<&Path>) -> 
             let line = crate::fallback::line(&span);
             let column = crate::fallback::column(&span);
             let file = crate::fallback::file(&span);
-            buffer.extend_from_slice(&line.to_be_bytes());
-            buffer.extend_from_slice(&column.to_be_bytes());
+            buffer.extend_from_slice(&(line as u64).to_be_bytes());
+            buffer.extend_from_slice(&(column as u64).to_be_bytes());
             buffer.extend_from_slice(file.as_bytes());
         }
 
