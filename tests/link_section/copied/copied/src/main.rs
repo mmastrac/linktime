@@ -9,6 +9,36 @@ use copied_types::{IMMUTABLE_LINK_SECTION, MUT_LINK_SECTION, VALUES};
 use register_a as _;
 use register_b as _;
 
+// DragonFly's pthread_key_create hands out duplicate keys until libthread
+// initializes at first thread creation, so std TLS setup aborts with a
+// KEY_SENTVAL assertion (rust-lang/rust#112180). Spawn and join one no-op
+// thread ahead of everything else. Raw libc, std::thread touches the broken
+// TLS machinery itself.
+#[cfg(target_os = "dragonfly")]
+mod dragonfly_thread_init {
+    use ctor::ctor;
+
+    extern "C" fn noop(_: *mut libc::c_void) -> *mut libc::c_void {
+        core::ptr::null_mut()
+    }
+
+    #[ctor(unsafe, priority = 0)]
+    unsafe fn init_libthread() {
+        unsafe {
+            let mut thread: libc::pthread_t = core::mem::zeroed();
+            if libc::pthread_create(
+                &mut thread,
+                core::ptr::null(),
+                noop,
+                core::ptr::null_mut(),
+            ) == 0
+            {
+                libc::pthread_join(thread, core::ptr::null_mut());
+            }
+        }
+    }
+}
+
 pub fn main() {
     // LLVM was optimizing these copies into memsets
     let mut copied_section = MUT_LINK_SECTION.iter().copied().collect::<Vec<_>>();
