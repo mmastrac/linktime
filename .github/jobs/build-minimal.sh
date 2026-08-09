@@ -16,6 +16,7 @@ minimal_crates=(
   tests/link_section/interior_mut
   tests/link_section/mutable
   tests/link_section/no-default-features
+  tests/link_section/copied
 )
 for dir in "${minimal_crates[@]}"; do
   (cd "$dir" && (rm Cargo.lock || true) && cargo run --target "$TARGET")

@@ -48,14 +48,24 @@ pub(crate) fn has_1_88_span_methods(span: Span) -> bool {
 
 #[inline(always)]
 pub(crate) fn file(span: &Span) -> String {
-    // cargo expand may return a full path here.
     let file = span.file();
     let path = Path::new(&file);
-    if Path::new(&file).is_absolute() {
-        path.file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string()
+    if path.is_absolute() {
+        // Rust 1.88..1.94 reports dependency-crate spans as absolute paths when
+        // inspected from a downstream crate, while the defining crate sees the
+        // working-directory-relative form. Relativise against rustc's working
+        // directory so both agree, fall back to the file name otherwise (e.g.
+        // `cargo expand`, whose paths are not under the working directory).
+        std::env::current_dir()
+            .ok()
+            .and_then(|cwd| path.strip_prefix(&cwd).ok().map(Path::to_path_buf))
+            .map(|rel| rel.to_string_lossy().into_owned())
+            .unwrap_or_else(|| {
+                path.file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned()
+            })
     } else {
         file
     }
