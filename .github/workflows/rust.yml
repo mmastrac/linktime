@@ -94,6 +94,13 @@ jobs:
       with:
         tool: ${{ matrix.needs }}
   
+    # Build crok with preinstalled stable, before the toolchain override
+    - name: Install crok
+      if: ${{ contains(matrix.job, 'minimal') }}
+      uses: taiki-e/cache-cargo-install-action@v2
+      with:
+        tool: crok@0.9.0
+
     - name: Install 32-bit host libraries
       if: ${{ contains(matrix.target, 'i686') }}
       run: |
@@ -175,12 +182,11 @@ jobs:
         env:
           BUILD_RESULT: ${{ needs.build.result }}
 
-  # Tier-*BSD smoke tests (QEMU); see https://github.com/vmactions
+  # Tier-*BSD tests (QEMU); see https://github.com/vmactions
   #
-  # All four jobs run .github/jobs/vmactions.sh, which branches on uname.
-  # Provisioning happens in the VM action step because copyback (which feeds
-  # the cache) runs when that step ends. Tests run in a `shell: <os>` step so
-  # failures show up in the log instead of a collapsed "ssh exited with code 1".
+  # vmactions.sh provisions the VM (copyback feeds the cache). The crok suite
+  # runs host-side, driving commands into the VM via vm-run.sh. FreeBSD/OpenBSD
+  # also run in-VM doctests. macrotest/compile-fail need cargo-expand, tier-1 only.
 
   vmactions-freebsd:
     runs-on: ubuntu-latest
@@ -194,15 +200,21 @@ jobs:
           key: vmactions-freebsd-14.4-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-freebsd-14.4-
+      - name: Install crok
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: crok@0.9.0
       - name: Provision VM
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.4"
           usesh: true
           run: sh .github/jobs/vmactions.sh provision
-      - name: Build and test
+      - name: Run crok suite
+        run: bash .github/jobs/vm-crok.sh freebsd freebsd
+      - name: Doc tests
         shell: freebsd {0}
-        run: sh .github/jobs/vmactions.sh test
+        run: sh .github/jobs/vmactions.sh doctest
 
   vmactions-openbsd:
     runs-on: ubuntu-latest
@@ -216,21 +228,25 @@ jobs:
           key: vmactions-openbsd-7.8-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-openbsd-7.8-
+      - name: Install crok
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: crok@0.9.0
       - name: Provision VM
         uses: vmactions/openbsd-vm@v1
         with:
           release: "7.8"
           usesh: true
           run: sh .github/jobs/vmactions.sh provision
-      - name: Build and test
+      - name: Run crok suite
+        run: bash .github/jobs/vm-crok.sh openbsd openbsd
+      - name: Doc tests
         shell: openbsd {0}
-        run: sh .github/jobs/vmactions.sh test
+        run: sh .github/jobs/vmactions.sh doctest
 
   vmactions-netbsd:
     runs-on: ubuntu-latest
-    # Examples only: `cargo test` needs `cargo-expand`, whose dep tree fails to
-    # build on NetBSD (kqueue udata typing).
-    name: NetBSD / examples (stable)
+    name: NetBSD / test (stable)
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -240,20 +256,22 @@ jobs:
           key: vmactions-netbsd-10.1-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-netbsd-10.1-
+      - name: Install crok
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: crok@0.9.0
       - name: Provision VM
         uses: vmactions/netbsd-vm@v1
         with:
           release: "10.1"
           usesh: true
           run: sh .github/jobs/vmactions.sh provision
-      - name: Build and test
-        shell: netbsd {0}
-        run: sh .github/jobs/vmactions.sh test
+      - name: Run crok suite
+        run: bash .github/jobs/vm-crok.sh netbsd netbsd
 
   vmactions-dragonflybsd:
     runs-on: ubuntu-latest
-    # Examples only: packaged Rust is often behind what `cargo test` needs.
-    name: DragonFly BSD / examples (stable)
+    name: DragonFly BSD / test (stable)
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -263,12 +281,15 @@ jobs:
           key: vmactions-dragonfly-6.4.2-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             vmactions-dragonfly-6.4.2-
+      - name: Install crok
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: crok@0.9.0
       - name: Provision VM
         uses: vmactions/dragonflybsd-vm@v1
         with:
           release: "6.4.2"
           usesh: true
           run: sh .github/jobs/vmactions.sh provision
-      - name: Build and test
-        shell: dragonflybsd {0}
-        run: sh .github/jobs/vmactions.sh test
+      - name: Run crok suite
+        run: bash .github/jobs/vm-crok.sh dragonflybsd dragonfly

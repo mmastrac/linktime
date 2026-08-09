@@ -1,23 +1,10 @@
 #!/usr/bin/env bash
 set -xeuo pipefail
 
-. $(dirname "$0")/_init.sh
-
-# Remove Cargo.lock for testing down-level Rust versions
+# Remove Cargo.lock files for testing down-level Rust versions
 rm Cargo.lock || true
+find tests -name Cargo.lock -not -path '*/target/*' -delete
 
-minimal_crates=(
-  tests/ctor/edition-2018
-  tests/ctor/edition-2021
-  tests/dtor/link-section
-  tests/dtor/no-default-features
-  
-  tests/link_section/basic
-  tests/link_section/interior_mut
-  tests/link_section/mutable
-  tests/link_section/no-default-features
-  tests/link_section/copied
-)
-for dir in "${minimal_crates[@]}"; do
-  (cd "$dir" && (rm Cargo.lock || true) && cargo run --target "$TARGET")
-done
+# Standalone crok, the in-tree harness needs a newer rustc
+find tests -name '*.crok' -not -path '*/target/*' -not -path '*/.*' -print0 | sort -z |
+  xargs -0 crok --timeout 300
