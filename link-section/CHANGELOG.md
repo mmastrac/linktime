@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix section pinning on OpenBSD. (https://github.com/mmastrac/linktime/pull/509)
+- Fix cross-crate section-name error on Rust versions 1.88-1.94 (https://github.com/mmastrac/linktime/pull/509)
 
 ## [0.19.2] - 2026-07-29
 
