@@ -10,7 +10,6 @@ register-a = { path = "../register-a" }
 register-b = { path = "../register-b" }
 
 [target.'cfg(target_os = "dragonfly")'.dependencies]
-ctor = { path = "../../../../ctor" }
 libc = "0.2"
 
 [[bin]]
