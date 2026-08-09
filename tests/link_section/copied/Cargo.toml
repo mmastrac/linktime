@@ -1,13 +1,6 @@
-[package]
-name = "tests"
-version = "0.1.0"
-edition = "2021"
-publish = false
-
-[dependencies]
-ctor = { path = "../../../ctor" }
-link-section = { path = "../../../link-section" }
-libc-print = "0.5"
+[workspace]
+members = ["copied", "copied-types", "register-a", "register-b"]
+resolver = "2"
 
 [profile.dev]
 opt-level = 3
@@ -18,5 +11,3 @@ codegen-units = 1
 opt-level = 3
 lto = "fat"
 codegen-units = 1
-
-[workspace]

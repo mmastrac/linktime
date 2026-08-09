@@ -1,8 +1,13 @@
-//! Example usage of the `link-section` crate.
+//! Cross-crate link-section smoke test under fat LTO.
+//!
+//! Sections and shared types live in `copied-types`; item registrations are
+//! split across `register-a` and `register-b`.
 
-mod sections;
+use copied_types::{IMMUTABLE_LINK_SECTION, MUT_LINK_SECTION, VALUES};
 
-use sections::{IMMUTABLE_LINK_SECTION, MUT_LINK_SECTION, VALUES};
+// Pull registrar object code into the link (no direct API use).
+use register_a as _;
+use register_b as _;
 
 pub fn main() {
     // LLVM was optimizing these copies into memsets
