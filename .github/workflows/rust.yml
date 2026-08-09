@@ -27,6 +27,8 @@ jobs:
                 "this.job == 'zigbuild'": "cargo-zigbuild"
             rust-toolchain:
               $match:
+                # i686 host toolchain
+                "this.label == 'linux-x86'": stable-i686-unknown-linux-gnu
                 "this.job == 'miri'": nightly
                 "this.job == 'lint'": [stable, nightly]
                 "this.job == 'test-used-linker'": nightly
@@ -57,6 +59,10 @@ jobs:
                 os: ubuntu-latest
                 job: [build, lint, test]
                 target: x86_64-unknown-linux-musl
+              linux-x86:
+                os: ubuntu-latest
+                job: test
+                target: i686-unknown-linux-gnu
               macos:
                 os: macOS-latest
                 job: [lint, test, test-used-linker, miri, zigbuild, sanitize, build-minimal]
@@ -88,6 +94,12 @@ jobs:
       with:
         tool: ${{ matrix.needs }}
   
+    - name: Install 32-bit host libraries
+      if: ${{ contains(matrix.target, 'i686') }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-multilib
+
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }})
       uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
       with:
