@@ -170,6 +170,17 @@ macro_rules! __register_wasm_item {
             section = $section
         );
     };
+    // Reference-section const items do not expose a `Ref`, but their cells must
+    // match the layout for static items.
+    (reference, type=$ty:ty, value=$value:expr, section=$section:tt) => {
+        $crate::__register_wasm_item!(@emit
+            info_ty = ($crate::__support::wasm::LinkSectionInfo),
+            ty = ($ty),
+            meta = ($crate::__support::wasm::LinkMetaSlot),
+            new = ($value, ::core::ptr::null()),
+            section = $section
+        );
+    };
     // Typed / mutable const items: value is copied into the section, no slot.
     ($section_type:ident, type=$ty:ty, value=$value:expr, section=$section:tt) => {
         $crate::__register_wasm_item!(@emit

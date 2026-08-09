@@ -55,6 +55,12 @@ unordered {
 ! test_link_section
 ! DRIVER: driver
 ! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
+! driver
 ! dtor
 
 # wasm32-wasip1 via wasmtime
@@ -69,6 +75,12 @@ unordered {
 ! start
 ! test_link_section
 ! DRIVER: driver
+! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
 ! driver
 ! dtor
 
@@ -85,6 +97,12 @@ unordered {
 ! test_link_section
 ! DRIVER: driver
 ! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
+! driver
 ! dtor
 
 # wasm32-wasip2 via wasmtime
@@ -99,5 +117,11 @@ unordered {
 ! start
 ! test_link_section
 ! DRIVER: driver
+! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
 ! driver
 ! dtor

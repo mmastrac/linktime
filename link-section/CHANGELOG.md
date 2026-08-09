@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix cross-crate section-name error on Rust versions 1.88-1.94 (https://github.com/mmastrac/linktime/pull/509)
+- Fix undefined behavior on WASM when a `const` item is submitted to a `reference`
+  section: the item's cell lacked the fix-up slot the section-wide layout expects,
+  so materialisation read past the cell and could write through a garbage slot
+  pointer (https://github.com/mmastrac/linktime/pull/511).
 
 ## [0.19.2] - 2026-07-29
 

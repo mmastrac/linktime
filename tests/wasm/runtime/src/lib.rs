@@ -49,6 +49,15 @@ mod link_section {
 
         #[in_section(DRIVERS)]
         pub static DRIVER: Driver = Driver::new("driver", || libc_println!("driver"));
+
+        // Interleave const/static items.
+        #[in_section(DRIVERS)]
+        pub const DRIVER_CONST: Driver =
+            Driver::new("driver_const", || libc_println!("driver_const"));
+
+        #[in_section(DRIVERS)]
+        pub const DRIVER_CONST2: Driver =
+            Driver::new("driver_const2", || libc_println!("driver_const2"));
     }
 
     mod movable {
@@ -94,7 +103,18 @@ mod link_section {
         libc_println!("test_link_section");
         libc_println!("DRIVER: {}", reference::DRIVER.name);
         (reference::DRIVER.f)();
-        assert!(reference::DRIVERS.offset_of(&reference::DRIVER) == Some(0));
+        // Submission order interleaves `static` and `const` registrations, so
+        // locate DRIVER by its resolved offset rather than assuming an index.
+        let drivers = reference::DRIVERS.as_slice();
+        assert_eq!(drivers.len(), 3);
+        let idx = reference::DRIVERS
+            .offset_of(&reference::DRIVER)
+            .expect("DRIVER not in section");
+        assert_eq!(drivers[idx].name, "driver");
+        for (idx, driver) in drivers.iter().enumerate() {
+            libc_println!("DRIVERS[{idx}]: {}", driver.name);
+            (driver.f)();
+        }
         assert!(empty::EMPTY_LINK_SECTION.is_empty());
     }
 }
