@@ -2,7 +2,6 @@
 #![doc = concat!("```rust\n", include_str!("../examples/hash_sorted_map.rs"), "\n```\n")]
 
 use link_section::{TypedMutableSection, TypedSection};
-use wide::CmpEq;
 
 use crate::hash::ConstHash;
 
