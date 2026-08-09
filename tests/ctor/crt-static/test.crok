@@ -7,14 +7,35 @@ set RUSTFLAGS "-C target-feature=+crt-static";
 defer {
     $ cargo clean --quiet
 }
+
 $ rustc -vV
 %SET TARGET "$target"
 *
 ! host: %{DATA:target}
 *
+
 $ cargo build --quiet --target $TARGET
 *
+
 $ cargo run --quiet --target $TARGET
+# GNU ld (not rust-lld) warns via linker_messages: getaddrinfo/getpwuid_r
+# need runtime glibc under +crt-static
+ignore {
+    sequence {
+        ! %{DATA}: in function %{DATA}
+        ! %{DATA}Using 'getaddrinfo'%{DATA}
+        ! %{DATA}: in function %{DATA}
+        ! %{DATA}Using 'getpwuid_r'%{DATA}
+        ! %{SPACE}|
+        ! %{SPACE}= note: `#[warn(linker_messages)]` on by default
+        ! %{SPACE}
+    }
+    sequence {
+        ! %{DATA}note: the message above does not take linker garbage collection into account
+        ! %{DATA}note: the message above does not take linker garbage collection into account
+        ! %{SPACE}
+    }
+}
 if TARGET_OS == "openbsd" {
     # Appears to be a legit Rust/OpenBSD bug?
     ! -crt-static

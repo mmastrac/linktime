@@ -4,12 +4,32 @@ set CARGO_TARGET_DIR "target/link-section-crt-static";
 defer {
     $ cargo clean --quiet
 }
+
 $ rustc -vV
 %SET TARGET "$target"
 *
 ! host: %{DATA:target}
 *
+
 $ cargo run --quiet --target $TARGET
+# GNU ld (not rust-lld) warns via linker_messages: getaddrinfo/getpwuid_r
+# need runtime glibc under +crt-static
+ignore {
+    sequence {
+        ! %{DATA}: in function %{DATA}
+        ! %{DATA}Using 'getaddrinfo'%{DATA}
+        ! %{DATA}: in function %{DATA}
+        ! %{DATA}Using 'getpwuid_r'%{DATA}
+        ! %{SPACE}|
+        ! %{SPACE}= note: `#[warn(linker_messages)]` on by default
+        ! %{SPACE}
+    }
+    sequence {
+        ! %{DATA}note: the message above does not take linker garbage collection into account
+        ! %{DATA}note: the message above does not take linker garbage collection into account
+        ! %{SPACE}
+    }
+}
 ! dtor-link-section:main
 if TARGET_OS == "linux" {
     ! dtor-link-section:dtor
