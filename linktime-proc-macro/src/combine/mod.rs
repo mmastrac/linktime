@@ -203,7 +203,7 @@ fn parse_function(
                 } else {
                     let mut hash_str = String::with_capacity(32);
                     while hash > 0 {
-                        hash_str.push(alphabet.char(hash as usize % alphabet.len()));
+                        hash_str.push(alphabet.char((hash % alphabet.len() as u64) as usize));
                         hash /= alphabet.len() as u64;
                     }
                     s.extend(hash_str.chars().rev());
@@ -223,7 +223,7 @@ fn parse_function(
                 } else {
                     let mut hash_str = String::with_capacity(32);
                     while hash > 0 {
-                        hash_str.push(alphabet.char(hash as usize % alphabet.len()));
+                        hash_str.push(alphabet.char((hash % alphabet.len() as u64) as usize));
                         hash /= alphabet.len() as u64;
                     }
                     s.extend(hash_str.chars().rev());
