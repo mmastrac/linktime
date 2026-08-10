@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Define an initializer function that runs before `main`. See [ctor][ctor].
 ///
@@ -7,9 +8,17 @@
 #[doc(inline)]
 pub use linktime_proc_macro::ctor_linktime as ctor;
 
+#[cfg(all(feature = "ctor", target_os = "uefi"))]
+#[doc(inline)]
+pub use ctor::run_constructors;
+
 #[cfg(all(feature = "dtor", feature = "proc_macro"))]
 #[doc(inline)]
 pub use linktime_proc_macro::dtor_linktime as dtor;
+
+#[cfg(all(feature = "dtor", target_os = "uefi"))]
+#[doc(inline)]
+pub use dtor::run_destructors;
 
 /// Typed and untyped link section support for Rust.
 #[cfg(feature = "link-section")]

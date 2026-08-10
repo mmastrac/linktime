@@ -1,0 +1,53 @@
+#!/usr/bin/env crok --v0
+# Builds `uefi-rust` (ctor / dtor / link_section together) for
+# `x86_64-unknown-uefi` and boots it under QEMU + OVMF, matching the program's
+# serial output. Skipped where QEMU, OVMF, or the target are missing. The
+# dedicated UEFI CI leg installs all three.
+set RUSTFLAGS "";
+
+$ sh -c 'command -v qemu-system-x86_64 >/dev/null 2>&1 && echo 1 || echo 0'
+%SET has_qemu
+*
+$ sh -c 'for f in /opt/homebrew/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd; do [ -f "$f" ] && { echo 1; exit; }; done; echo 0'
+%SET has_firmware
+*
+$ sh -c 'rustup target list --installed 2>/dev/null | grep -qx x86_64-unknown-uefi && echo 1 || echo 0'
+%SET has_target
+*
+if has_qemu == "0" {
+    exit script;
+}
+if has_firmware == "0" {
+    exit script;
+}
+if has_target == "0" {
+    exit script;
+}
+
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --target x86_64-unknown-uefi --quiet 2>&1
+*
+
+$ bash ../run.sh target/x86_64-unknown-uefi/debug/uefi-rust.efi
+! start
+# Both priority-1 constructors run before the default one. Their relative order
+# is unspecified.
+unordered {
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+}
+! ctor
+! test_link_section
+! DRIVER: driver
+! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
+! driver
+! dtor

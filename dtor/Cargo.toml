@@ -20,6 +20,11 @@ proc_macro = ["dep:linktime-proc-macro"]
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["dtor"] }
 
+# UEFI never runs .fini_array, so destructors are collected into a
+# marker-section and drained explicitly via `run_destructors`.
+[target.'cfg(target_os = "uefi")'.dependencies]
+link-section = { workspace = true, default-features = false }
+
 [dev-dependencies]
 libc-print = "0.5"
 macrotest = "1"
@@ -37,5 +42,6 @@ name = "dtor"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_no_fail_on_missing_unsafe)',
-    'cfg(linktime_used_linker)'
+    'cfg(linktime_used_linker)',
+    'cfg(linktime_asan)'
 ] }

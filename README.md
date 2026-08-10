@@ -136,6 +136,32 @@ fn main() {
 }
 ```
 
+## UEFI
+
+UEFI is fully supported, with one caveat: firmware never runs `.init_array` or
+`.fini_array`, and there is no `atexit`. Constructors and destructors are
+instead collected into linker sections and run explicitly, so a UEFI binary must
+drive its own lifecycle:
+
+```rust,ignore
+#[export_name = "efi_main"]
+extern "efiapi" fn efi_main(_handle: *mut c_void, _st: *mut c_void) -> usize {
+    // Constructors don't run on their own here.
+    unsafe { linktime::run_constructors() };
+
+    // ... application ...
+
+    // Neither do destructors.
+    unsafe { linktime::run_destructors() };
+    0
+}
+```
+
+This is the only UEFI-specific step. `#[ctor]`, `#[dtor]`, and `#[link_section]`
+collection otherwise behave as on any other platform, and it works identically
+whether the binary is built with `std` (`fn main`) or `#![no_std]`. `#[ctor]`
+priorities are honored (constructors run in ascending priority order).
+
 ## Contributing
 
 Contributions are welcome!

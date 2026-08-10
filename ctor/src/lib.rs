@@ -5,12 +5,15 @@
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![doc = include_str!("../docs/REEXPORT.md")]
 #![doc = include_str!("../docs/GENERATED.md")]
-// Used as part of ctor collection
+// Used as part of ctor collection for Apple/UEFI.
 #![cfg_attr(
-    all(target_vendor = "apple", linktime_used_linker),
+    all(any(target_vendor = "apple", target_os = "uefi"), linktime_used_linker),
     feature(used_with_arg)
 )]
-#![cfg_attr(all(target_vendor = "apple", linktime_asan), feature(sanitize))]
+#![cfg_attr(
+    all(any(target_vendor = "apple", target_os = "uefi"), linktime_asan),
+    feature(sanitize)
+)]
 
 #[cfg(feature = "std")]
 extern crate std;
@@ -33,7 +36,7 @@ pub mod __support {
     pub use crate::__ctor_parse as ctor_parse;
 
     // Re-export link_section::TypedSection and declarative::{section, in_section}
-    #[cfg(all(feature = "priority", target_vendor = "apple"))]
+    #[cfg(any(all(feature = "priority", target_vendor = "apple"), target_os = "uefi"))]
     pub use link_section::declarative::in_section;
 }
 
@@ -54,8 +57,32 @@ crate::__ctor_parse_internal!(
     }
 );
 
+/// Runs every registered constructor once, in ascending priority order.
+///
+/// UEFI never runs `.init_array`, so a UEFI binary must call this at startup. A
+/// repeat call is a no-op. A concurrent or re-entrant call panics.
+///
+/// # Safety
+///
+/// Runs arbitrary user code with the usual life-before-main caveats.
+#[cfg(target_os = "uefi")]
+#[allow(unsafe_code)]
+pub unsafe fn run_constructors() {
+    use core::sync::atomic::{AtomicU8, Ordering};
+    // 0 = not started, 1 = running, 2 = finished.
+    static STATE: AtomicU8 = AtomicU8::new(0);
+    match STATE.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire) {
+        Ok(_) => {
+            unsafe { crate::collect::run_constructors() };
+            STATE.store(2, Ordering::Release);
+        }
+        Err(2) => {}
+        Err(_) => panic!("run_constructors called while already running"),
+    }
+}
+
 /// Collected constructors for platforms requiring manual invocation.
-#[cfg(all(feature = "priority", target_vendor = "apple"))]
+#[cfg(any(all(feature = "priority", target_vendor = "apple"), target_os = "uefi"))]
 #[doc(hidden)]
 pub mod collect {
     use core::sync::atomic::{AtomicU8, Ordering};
@@ -176,8 +203,10 @@ pub mod collect {
     #[doc(hidden)]
     macro_rules! __keep_alive {
         () => {
+            // UEFI runs constructors explicitly and has no anchor to keep alive.
             /// Force `ld64` to pull the archive member owning `APPLE_PRIORITY_ANCHOR`
             /// (see https://github.com/mmastrac/linktime/issues/496).
+            #[cfg(target_vendor = "apple")]
             const _: () = {
                 mod __ctor_force {
                     ::core::arch::global_asm!(
