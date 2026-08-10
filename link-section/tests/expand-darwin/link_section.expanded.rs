@@ -15,11 +15,12 @@ impl FOO {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
+                mod item {}
                 ::link_section::__support::PtrBounds::new(
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "\u{1}section$start$__DATA$FOObh0r0BSfLQP"]
+                            #[link_name = "section$start$__DATA$FOObh0r0BSfLQP"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -27,7 +28,7 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "\u{1}section$end$__DATA$FOObh0r0BSfLQP"]
+                            #[link_name = "section$end$__DATA$FOObh0r0BSfLQP"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
