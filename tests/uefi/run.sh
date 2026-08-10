@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Boots a UEFI application under QEMU + OVMF and writes its COM1 serial output to
-# stdout. The application powers the machine off (ACPI S5) when done, so QEMU
-# exits on its own. A watchdog guards against hangs.
+# Boots a UEFI .efi under QEMU + OVMF and writes its COM1 serial output to stdout.
 #
 # Usage: run.sh <path-to-efi>
 set -euo pipefail
@@ -54,9 +52,8 @@ run_qemu() {
         "$@"
 }
 
-# The app powers itself off, so QEMU normally exits on its own. The watchdog is
-# just a hang guard, with its fds detached so it can't hold this script's stdout
-# pipe open past QEMU's exit.
+# Watchdog against hangs. Its fds are detached so it can't hold the stdout pipe
+# open past QEMU's exit.
 run_qemu > "$WORK/serial.log" 2>&1 &
 QPID=$!
 { sleep 60; kill "$QPID" 2>/dev/null; } >/dev/null 2>&1 &

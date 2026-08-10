@@ -1,10 +1,6 @@
-//! Exercises ctor / dtor / link_section together and prints the results to
-//! COM1.
-//!
-//! UEFI never runs `.init_array`/`.fini_array` and has no `atexit`, so the
-//! entry point drives the lifecycle explicitly via [`linktime::run_constructors`]
-//! and [`linktime::run_destructors`]. Everything else uses the ordinary
-//! `linktime` API, unchanged from any other platform.
+//! Exercises ctor / dtor / link_section over COM1. UEFI does not run
+//! `.init_array`/`.fini_array`, so the entry point calls `run_constructors` and
+//! `run_destructors` itself.
 
 #![no_std]
 #![no_main]

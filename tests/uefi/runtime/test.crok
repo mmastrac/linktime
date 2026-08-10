@@ -1,8 +1,5 @@
 #!/usr/bin/env crok --v0
-# Builds `uefi-rust` (ctor / dtor / link_section together) for
-# `x86_64-unknown-uefi` and boots it under QEMU + OVMF, matching the program's
-# serial output. Skipped where QEMU, OVMF, or the target are missing. The
-# dedicated UEFI CI leg installs all three.
+# Boots uefi-rust under QEMU + OVMF and matches its serial output.
 set RUSTFLAGS "";
 
 # Empty capture = prerequisite missing, so skip. `%EXIT any` tolerates the miss.

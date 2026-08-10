@@ -12,7 +12,7 @@ linktime = { path = "../../../linktime", default-features = false, features = [
     "link-section",
 ] }
 
-# UEFI has no unwinder, so a panic aborts the boot.
+# No unwinder on UEFI.
 [profile.dev]
 panic = "abort"
 [profile.release]
