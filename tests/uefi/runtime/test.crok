@@ -5,22 +5,26 @@
 # dedicated UEFI CI leg installs all three.
 set RUSTFLAGS "";
 
-$ sh -c 'command -v qemu-system-x86_64 >/dev/null 2>&1 && echo 1 || echo 0'
-%SET has_qemu
+# Empty capture = prerequisite missing, so skip. `%EXIT any` tolerates the miss.
+$ command -v qemu-system-x86_64
+%EXIT any
+%SET qemu
 *
-$ sh -c 'for f in /opt/homebrew/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd; do [ -f "$f" ] && { echo 1; exit; }; done; echo 0'
-%SET has_firmware
+$ ls /opt/homebrew/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd 2>/dev/null
+%EXIT any
+%SET firmware
 *
-$ sh -c 'rustup target list --installed 2>/dev/null | grep -qx x86_64-unknown-uefi && echo 1 || echo 0'
-%SET has_target
+$ rustup target list --installed 2>/dev/null | grep x86_64-unknown-uefi
+%EXIT any
+%SET target
 *
-if has_qemu == "0" {
+if qemu == "" {
     exit script;
 }
-if has_firmware == "0" {
+if firmware == "" {
     exit script;
 }
-if has_target == "0" {
+if target == "" {
     exit script;
 }
 
