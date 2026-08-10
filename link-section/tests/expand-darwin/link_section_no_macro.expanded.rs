@@ -7,12 +7,11 @@ impl FOO {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
-                mod item {}
                 ::link_section::__support::PtrBounds::new(
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "section$start$__DATA$my_crateFOO"]
+                            #[link_name = "\u{1}section$start$__DATA$my_crateFOO"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -20,7 +19,7 @@ impl FOO {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "section$end$__DATA$my_crateFOO"]
+                            #[link_name = "\u{1}section$end$__DATA$my_crateFOO"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -87,12 +86,11 @@ impl BAR {
     pub const fn const_deref(&self) -> &'static TypedSection<fn()> {
         static SECTION: TypedSection<fn()> = {
             let section = {
-                mod item {}
                 ::link_section::__support::PtrBounds::new(
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "section$start$__DATA$my_crate275b763e"]
+                            #[link_name = "\u{1}section$start$__DATA$my_crate275b763e"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }
@@ -100,7 +98,7 @@ impl BAR {
                     {
                         #[allow(missing_unsafe_on_extern)]
                         extern "C" {
-                            #[link_name = "section$end$__DATA$my_crate275b763e"]
+                            #[link_name = "\u{1}section$end$__DATA$my_crate275b763e"]
                             static __SYMBOL: u8;
                         }
                         unsafe { &raw const __SYMBOL as *const () }

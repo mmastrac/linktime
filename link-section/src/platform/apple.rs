@@ -7,8 +7,6 @@
 macro_rules! __get_section_apple {
     (movable, name=$name:tt, type=$generic_ty:ty) => {
         {
-            $crate::__alias_section_symbols!(item data $name);
-            $crate::__alias_section_symbols!(backref data $name);
             $crate::__support::MovableBounds::new(
                 $crate::__support::PtrBounds::new(
                     $crate::__address_of_symbol!(item data start $name),
@@ -23,7 +21,6 @@ macro_rules! __get_section_apple {
     };
     ($section_type:ident, name=$name:tt, type=$generic_ty:ty) => {
         {
-            $crate::__alias_section_symbols!(item data $name);
             $crate::__support::PtrBounds::new(
                 $crate::__address_of_symbol!(item data start $name),
                 $crate::__address_of_symbol!(item data end $name),
@@ -34,35 +31,7 @@ macro_rules! __get_section_apple {
 
 pub use crate::__get_section_apple as get_section;
 
-#[doc(hidden)]
-#[macro_export]
-#[cfg(not(miri))]
-macro_rules! __alias_section_symbols {
-    // `$ref_or_item` (`item` or `backref`) names the wrapper module so the
-    // value- and backref-symbol invocations in the `movable` arm don't collide.
-    ($ref_or_item:ident $section:ident $name:tt) => {
-        mod $ref_or_item {
-            ::core::arch::global_asm!(::core::concat!(
-                ".private_extern _", $crate::__support::section_name!(string $ref_or_item $section start $name), "\n",
-                ".set _",            $crate::__support::section_name!(string $ref_or_item $section start $name), ", ",
-                                     $crate::__support::section_name!(string $ref_or_item $section start $name), "\n",
-                ".private_extern _", $crate::__support::section_name!(string $ref_or_item $section end $name), "\n",
-                ".set _",            $crate::__support::section_name!(string $ref_or_item $section end $name), ", ",
-                                     $crate::__support::section_name!(string $ref_or_item $section end $name), "\n",
-            ));
-        }
-    };
-}
-
-// Under Miri, `__address_of_symbol!` yields a null pointer and no linker symbols
-// exist, so there is nothing to alias.
-#[doc(hidden)]
-#[macro_export]
-#[cfg(miri)]
-macro_rules! __alias_section_symbols {
-    ($($args:tt)*) => {};
-}
-
+// \x01: "do not mangle" (ref https://github.com/rust-lang/rust-bindgen/issues/2935)
 crate::__def_section_name! {
     __section_name_apple,
     {
@@ -70,8 +39,8 @@ crate::__def_section_name! {
         code bare =>    ("__TEXT,") __ ();
         data section => ("__DATA,") __ (",regular,no_dead_strip");
         code section => ("__TEXT,") __ (",regular,pure_instructions");
-        data start =>   ("section$start$__DATA$") __ ();
-        data end =>     ("section$end$__DATA$") __ ();
+        data start =>   ("\x01section$start$__DATA$") __ ();
+        data end =>     ("\x01section$end$__DATA$") __ ();
     }
     AUXILIARY = "_";
     REFS = "_r_";

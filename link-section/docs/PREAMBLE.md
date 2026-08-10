@@ -195,11 +195,8 @@ Orphan sections are not sorted via numeric suffix (e.g.: `SECTION.1`,
 
 On macOS, sections are configured via `__DATA` or `__TEXT` prefix and option
 suffixes (`regular`, `no_dead_strip`, etc.). The linker emits start and stop
-symbols, but they are not C-compatible, and require a `global_asm!` alias to
-access. 
-
-Rust also has a (somewhat-stable) `\x01` prefix to avoid mangling
-the section name, but this is unsupported in Cranelift and other backends.
+symbols, but Rust requires a (somewhat-stable) `\x01` prefix to avoid mangling
+the section name. macOS does not support ordering in the linker.
 
 ### Windows
 
