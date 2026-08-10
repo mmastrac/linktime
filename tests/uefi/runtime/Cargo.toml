@@ -1,0 +1,21 @@
+[package]
+name = "uefi-rust"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+linktime = { path = "../../../linktime", default-features = false, features = [
+    "proc_macro",
+    "ctor",
+    "dtor",
+    "link-section",
+] }
+
+# No unwinder on UEFI.
+[profile.dev]
+panic = "abort"
+[profile.release]
+panic = "abort"
+
+[workspace]

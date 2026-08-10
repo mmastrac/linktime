@@ -255,6 +255,7 @@ name = "dtor"
 version = "1.0.6"
 dependencies = [
  "libc-print",
+ "link-section 0.19.3",
  "linktime-proc-macro 0.2.3",
  "macrotest",
  "tempfile",

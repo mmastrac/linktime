@@ -34,6 +34,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }
 link-section = { workspace = true, optional = true, default-features = false }
 
+# UEFI always collects constructors (it has no `.init_array` runtime), so it
+# needs link-section regardless of the `priority` feature.
+[target.'cfg(target_os = "uefi")'.dependencies]
+link-section = { workspace = true, default-features = false }
+
 [dev-dependencies]
 libc-print = "0.5"
 macrotest = "1"

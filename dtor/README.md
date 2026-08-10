@@ -46,6 +46,7 @@ fn shutdown() {
 | macOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
 | WASM 🕸️                    | No                                        | Yes            | No                   |
+| UEFI <sup><sup>🔌</sup></sup> | Collected                              | No             | No                   |
 | AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
 | Other POSIX-like platforms | `.fini_array`/`.dtors`                    | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 
@@ -59,6 +60,9 @@ Notes:
   platform calls functions with the prefix `__sinit` and `__sterm` at startup
   and shutdown respectively. `__sterm`-prefixed functions are used when the
   method is specified as `linker`.
+- <sup><sup>🔌</sup></sup> UEFI runs no `.fini_array` and has no `atexit`.
+  Destructors are collected and run when the binary calls `dtor::run_destructors`
+  at shutdown.
 - <sup><sup>🕸️</sup></sup> WASM `wasm-unknown-unknown`, `wasm-wasip1`,
   `wasm-wasip2` are supported.
   - Rust does not currently allow linking into `.fini_array` sections on WASM,

@@ -5,6 +5,9 @@
 #![doc = include_str!("../docs/PREAMBLE.md")]
 #![doc = include_str!("../docs/REEXPORT.md")]
 #![doc = include_str!("../docs/GENERATED.md")]
+// UEFI compiles the destructor-collection section into this crate.
+#![cfg_attr(all(target_os = "uefi", linktime_used_linker), feature(used_with_arg))]
+#![cfg_attr(all(target_os = "uefi", linktime_asan), feature(sanitize))]
 
 #[cfg(feature = "std")]
 extern crate std;
@@ -17,6 +20,55 @@ mod parse;
 pub mod life_before_main {}
 
 pub use native::*;
+
+/// Runs every registered destructor once, in unspecified order.
+///
+/// UEFI never runs `.fini_array` and has no `atexit`, so a UEFI binary must call
+/// this at shutdown. A repeat call is a no-op. A concurrent or re-entrant call
+/// panics.
+///
+/// # Safety
+///
+/// Runs arbitrary user code with the usual life-after-main caveats.
+#[cfg(target_os = "uefi")]
+#[allow(unsafe_code)]
+pub unsafe fn run_destructors() {
+    use core::sync::atomic::{AtomicU8, Ordering};
+    // 0 = not started, 1 = running, 2 = finished.
+    static STATE: AtomicU8 = AtomicU8::new(0);
+    match STATE.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire) {
+        Ok(_) => {
+            for f in crate::collect::DESTRUCTORS.iter() {
+                f();
+            }
+            STATE.store(2, Ordering::Release);
+        }
+        Err(2) => {}
+        Err(_) => panic!("run_destructors called while already running"),
+    }
+}
+
+/// Destructors collected for manual invocation on UEFI.
+#[cfg(target_os = "uefi")]
+#[doc(hidden)]
+pub mod collect {
+    link_section::declarative::section!(
+        #[section(unsafe, type = typed, name = _DTOR0_FN)]
+        pub static DESTRUCTORS: link_section::TypedSection<extern "C" fn()>;
+    );
+
+    /// Registers a destructor function pointer in the collection section.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __register_dtor {
+        ($fn:ident) => {
+            $crate::__support::in_section!(
+                #[in_section(unsafe, type = typed, name = _DTOR0_FN)]
+                const _: extern "C" fn() = $fn;
+            );
+        };
+    }
+}
 
 /// Marks a function as a library/executable destructor. This uses OS-specific
 /// linker sections to call a specific function at termination time.
@@ -82,6 +134,10 @@ pub mod __support {
     pub use crate::__dtor_parse as dtor_parse;
 
     pub use crate::native::*;
+
+    // Used by `__register_dtor` to place destructors in the collection section.
+    #[cfg(target_os = "uefi")]
+    pub use link_section::declarative::in_section;
 }
 
 __declare_features!(

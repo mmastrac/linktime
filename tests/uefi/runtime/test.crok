@@ -1,0 +1,54 @@
+#!/usr/bin/env crok --v0
+# Boots uefi-rust under QEMU + OVMF and matches its serial output.
+set RUSTFLAGS "";
+
+# Empty capture = prerequisite missing, so skip. `%EXIT any` tolerates the miss.
+$ command -v qemu-system-x86_64
+%EXIT any
+%SET qemu
+*
+$ ls /opt/homebrew/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd 2>/dev/null
+%EXIT any
+%SET firmware
+*
+$ rustup target list --installed 2>/dev/null | grep x86_64-unknown-uefi
+%EXIT any
+%SET target
+*
+if qemu == "" {
+    exit script;
+}
+if firmware == "" {
+    exit script;
+}
+if target == "" {
+    exit script;
+}
+
+defer {
+    $ cargo clean --quiet
+}
+$ cargo build --target x86_64-unknown-uefi --quiet 2>&1
+*
+
+$ bash ../run.sh target/x86_64-unknown-uefi/debug/uefi-rust.efi
+! start
+# Both priority-1 constructors run before the default one. Their relative order
+# is unspecified.
+unordered {
+    ! MOVABLE_LINK_SECTION: [10, 20, 30, 40]
+    ! ctor_slices:
+    ! 0: Hello, world!
+    ! 1: These slices were loaded from the custom section!
+}
+! ctor
+! test_link_section
+! DRIVER: driver
+! driver
+! DRIVERS[0]: driver_const
+! driver_const
+! DRIVERS[1]: driver_const2
+! driver_const2
+! DRIVERS[2]: driver
+! driver
+! dtor

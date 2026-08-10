@@ -150,6 +150,7 @@ pub fn callback() {
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
+| UEFI                     | ✅ Fully supported, COFF marker sections (§5)   |
 | WASM                     | ✅ Fully supported, via emulation (§2)          |
 | AIX                      | ✅ Supported (§3) (§4)                          |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
@@ -166,6 +167,9 @@ similar to LLVM/GCC's orphan section handling.
 
 (§4) Empty sections are not currently supported: ensure every section has at least
 one item, or pass the `-C link-arg=-berok` linker flag to ignore errors.
+
+(§5) UEFI is COFF/PE and lacks orphan-section start/end symbols, so it uses the
+same marker-section scheme as Windows.
 
 ## Platform Details
 

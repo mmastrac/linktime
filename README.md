@@ -136,6 +136,24 @@ fn main() {
 }
 ```
 
+## UEFI
+
+UEFI is fully supported (both with `std` and `#![no_std]`), but `ctor`s and
+`dtor`s must be manually run via `run_constructors` and `run_destructors`,
+respectively.
+
+```rust,ignore
+#[export_name = "efi_main"]
+extern "efiapi" fn efi_main(_handle: *mut c_void, _st: *mut c_void) -> usize {
+    unsafe { linktime::run_constructors() };
+
+    // ... application ...
+
+    unsafe { linktime::run_destructors() };
+    0
+}
+```
+
 ## Contributing
 
 Contributions are welcome!

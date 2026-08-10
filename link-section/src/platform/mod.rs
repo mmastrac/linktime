@@ -8,12 +8,15 @@ pub use apple::{get_section, section_name};
 #[cfg(all(
     not(target_family = "wasm"),
     not(target_os = "windows"),
+    not(target_os = "uefi"),
     not(target_vendor = "apple")
 ))]
 pub use standard::{get_section, section_name};
 #[cfg(target_family = "wasm")]
 pub use wasm::{get_section, section_name};
-#[cfg(target_os = "windows")]
+// UEFI is also COFF/PE and lacks ELF orphan-section symbols, so it shares the
+// marker-section scheme.
+#[cfg(any(target_os = "windows", target_os = "uefi"))]
 pub use windows::{get_section, section_name};
 
 // Select the appropriate bounds and reference-storage types for the platform.
@@ -30,6 +33,7 @@ pub const fn validate_section_name(name: &str) {
     if cfg!(all(
         not(target_family = "wasm"),
         not(target_os = "windows"),
+        not(target_os = "uefi"),
         not(target_vendor = "apple")
     )) {
         standard::is_valid_section_name(name);
@@ -38,19 +42,20 @@ pub const fn validate_section_name(name: &str) {
 
 /// Launder a pointer's provenance so it appears as an "exposed" pointer.
 pub fn launder_pointer_provenance<T>(ptr: *const T) -> *const T {
-    #[cfg(not(windows))]
+    #[cfg(not(any(target_os = "windows", target_os = "uefi")))]
     {
         core::ptr::with_exposed_provenance(ptr.expose_provenance())
     }
 
-    // Windows requires a stronger hint to avoid mis-optimization. On Windows, section bounds
-    // come from marker sections. LLVM may fold ptrtoint/inttoptr under LTO, which takes our
-    // exposed provenance and reverts it, which it then traces to the marker allocation which
-    // it then believes all slice loads come from.
+    // Windows and UEFI require a stronger hint to avoid mis-optimization.
+    // Section bounds come from marker sections. LLVM may fold ptrtoint/inttoptr
+    // under LTO, which takes our exposed provenance and reverts it, which it then
+    // traces to the marker allocation which it then believes all slice loads come
+    // from.
     //
     // Treating this provenance round-trip as a no-op is arguably an LLVM optimization issue
     // somewhere between Rust and LLVM.
-    #[cfg(windows)]
+    #[cfg(any(target_os = "windows", target_os = "uefi"))]
     {
         core::hint::black_box(core::ptr::with_exposed_provenance(ptr.expose_provenance()))
     }

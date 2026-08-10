@@ -589,6 +589,22 @@ macro_rules! __ctor_parse_impl {
         unsafe = $unsafe:tt,
         item = $item:tt
     ) ) => {
+        // UEFI has nothing to run a naked `.init_array` entry, so collect it at
+        // the default priority instead.
+        #[cfg(target_os = "uefi")]
+        $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
+            link_args = (
+                body_link_section = $body_link_section,
+                export_name = (),
+                priority = 500,
+                used = $used_linker_meta,
+            ),
+            meta = $meta,
+            unsafe = $unsafe,
+            item = $item
+        ));
+
+        #[cfg(not(target_os = "uefi"))]
         $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
             link_args = (
                 body_link_section = $body_link_section,
@@ -659,7 +675,9 @@ macro_rules! __ctor_parse_impl {
         unsafe = $unsafe:tt,
         item = $item:tt
     ) ) => {
-        #[cfg(target_vendor = "apple")]
+        // Apple can't order .init_array by priority, and UEFI never runs it at
+        // all. Both collect constructors into one section, then sort and run them.
+        #[cfg(any(target_vendor = "apple", target_os = "uefi"))]
         $crate::__ctor_parse_impl!(@entry next=$next[$next_args], input=(
             link_args = (
                 body_link_section = $body_link_section,
@@ -673,7 +691,7 @@ macro_rules! __ctor_parse_impl {
         ));
 
         // Get a priority literal
-        #[cfg(not(target_vendor = "apple"))]
+        #[cfg(not(any(target_vendor = "apple", target_os = "uefi")))]
         $crate::__priority_to_literal!($crate::__ctor_parse_impl,[
             @priority next=$next[$next_args],
             features = (
@@ -1084,7 +1102,14 @@ macro_rules! __map_priority {
         priority = ($priority:tt: value),
         priority_enabled = ((), $pe_spec:ident),
     ) ) => {
-        compile_error!(concat!("The crate \"priority\" feature was not enabled: `priority = ", stringify!($priority), "` is not supported."));
+        // UEFI always collects, so it honors a priority without the feature.
+        #[cfg(target_os = "uefi")]
+        $next!($next_args, $priority);
+
+        #[cfg(not(target_os = "uefi"))]
+        const _: () = {
+            compile_error!(concat!("The crate \"priority\" feature was not enabled: `priority = ", stringify!($priority), "` is not supported."));
+        };
     };
 
     // Priority unspecified, link options not, priority not enabled => naked
@@ -1142,10 +1167,10 @@ macro_rules! __map_priority {
         #[cfg(all(target_os = "aix", not(target_vendor = "apple")))]
         $next!($next_args, 89999999);
 
-        #[cfg(all(not(target_os = "aix"), not(target_vendor = "apple")))]
+        #[cfg(all(not(target_os = "aix"), not(target_vendor = "apple"), not(target_os = "uefi")))]
         $next!($next_args, 65535);
 
-        #[cfg(target_vendor = "apple")]
+        #[cfg(any(target_vendor = "apple", target_os = "uefi"))]
         $next!($next_args, ($crate::collect::LATE));
     };
 

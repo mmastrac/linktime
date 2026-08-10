@@ -391,6 +391,8 @@ macro_rules! __dtor_parse_impl {
         ),
         item = ($($item:tt)*)
     ) ) => {
+        // Everyone but UEFI relies on the runtime walking the raw section.
+        #[cfg(not(target_os = "uefi"))]
         const _: () = {
             #[link_section = $link_section]
             #$used_linker_meta
@@ -400,6 +402,15 @@ macro_rules! __dtor_parse_impl {
                 }
                 __dtor_private
             };
+        };
+
+        // UEFI never runs .fini_array, so drain a marker-section explicitly.
+        #[cfg(target_os = "uefi")]
+        const _: () = {
+            extern "C" fn __dtor_private() {
+                $($item)*
+            }
+            $crate::__register_dtor!(__dtor_private);
         };
     };
 

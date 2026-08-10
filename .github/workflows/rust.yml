@@ -37,10 +37,12 @@ jobs:
                 "this.job == 'build-minimal'": ["1.85", "1.88"]
                 "this.job == 'build-ctor-minimal'": ["1.65"]
                 "this.job == 'wasm'": [stable, "1.85"]
+                "this.job == 'uefi'": stable
                 "true": "stable"
             rust-extra-target:
               $match:
                 "this.job == 'wasm'": "wasm32-unknown-unknown,wasm32-wasip1,wasm32-wasip2"
+                "this.job == 'uefi'": "x86_64-unknown-uefi"
                 "this.label == 'linux-musl'": "x86_64-unknown-linux-musl"
             rust-components:
               $match:
@@ -51,7 +53,7 @@ jobs:
               linux:
                 os:
                   ubuntu-latest:
-                    job: [test, test-used-linker, miri, wasm, build, build-minimal, build-ctor-minimal]
+                    job: [test, test-used-linker, miri, wasm, uefi, build, build-minimal, build-ctor-minimal]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
                     job: [lint, sanitize]
@@ -107,6 +109,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y gcc-multilib lib32z1 lib32stdc++6
+
+    - name: Install QEMU and OVMF firmware
+      if: ${{ matrix.job == 'uefi' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-x86 ovmf
 
     # rustup refuses non-host toolchains without --force-non-host
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }}, non-host)
