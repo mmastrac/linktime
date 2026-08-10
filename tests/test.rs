@@ -16,6 +16,7 @@ mod harness {
     pub(crate) fn run() {
         let args: Vec<String> = std::env::args().skip(1).collect();
         let list = args.iter().any(|a| a == "--list");
+        let nocapture = args.iter().any(|a| a == "--nocapture");
         let filters: Vec<String> = args.into_iter().filter(|a| !a.starts_with('-')).collect();
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -46,7 +47,12 @@ mod harness {
                 scope.spawn(|| {
                     while let Some((name, path)) = queue.lock().unwrap().pop_front() {
                         match crok_lib::try_run_file_captured(&path) {
-                            Ok(_) => println!("test {name} ... ok"),
+                            Ok(out) => {
+                                println!("test {name} ... ok");
+                                if nocapture {
+                                    println!("{}", out.trim_end());
+                                }
+                            }
                             Err(e) => {
                                 println!("test {name} ... FAILED");
                                 failures.lock().unwrap().push((name, e));

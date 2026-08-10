@@ -3,6 +3,7 @@ set -xeuo pipefail
 
 . $(dirname "$0")/_init.sh
 
-cargo test -p tests -- uefi::
+# --nocapture surfaces the guest's serial output in the CI log.
+cargo test -p tests -- uefi:: --nocapture
 
 echo "Done."
