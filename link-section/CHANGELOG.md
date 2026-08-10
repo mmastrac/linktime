@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added UEFI support (`*-unknown-uefi`), using the Windows marker-section scheme.
 
+### Changed
+
+- Cranelift support: Switched to `global_asm!` for section start/end symbols on macOS.
+
 ## [0.19.3] - 2026-08-09
 
 ### Changed
