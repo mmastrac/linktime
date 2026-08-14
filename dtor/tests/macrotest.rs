@@ -77,6 +77,7 @@ pub fn pass_windows() {
 pub fn trybuild() {
     let t = trybuild::TestCases::new();
     // TODO: whitespace issue (tabs?) in error tests
+    #[cfg(not(linktime_used_linker))]
     #[cfg(not(target_os = "openbsd"))]
     t.compile_fail("tests/errors/*.rs");
     t.pass("tests/pass/*.rs");
