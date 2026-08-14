@@ -696,14 +696,14 @@ dependencies = [
 
 [[package]]
 name = "scattered-collect"
-version = "0.22.0"
+version = "0.22.1"
 dependencies = [
  "ctor 1.0.13",
  "divan",
  "link-section 0.19.3",
  "linktime 0.19.0",
  "linktime-proc-macro 0.2.3",
- "scattered-collect 0.22.0",
+ "scattered-collect 0.22.1",
  "trybuild",
  "wide",
  "xxhash-rust",
