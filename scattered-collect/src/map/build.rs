@@ -100,10 +100,10 @@ pub fn initialize_scattered_map<K, V>(
             while bits != 0 {
                 let lane = bits.trailing_zeros() as usize;
                 let h2 = group.hashes[group_offset * BUCKET_SIZE + lane];
-                let (hash, index) = split_hash(index_bits, h2);
+                let (stored, index) = split_hash(index_bits, h2);
                 let hash_mask = (-1_i64 as u64) << (index_bits as usize);
-                if h2 == hash & hash_mask {
-                    panic!("duplicate hash found: {hash:x} at index {index}");
+                if stored == hash & hash_mask {
+                    panic!("duplicate hash found: {stored:x} at index {index}");
                 }
                 bits &= bits - 1;
             }
