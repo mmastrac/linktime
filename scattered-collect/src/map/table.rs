@@ -68,6 +68,12 @@ pub fn lookup<const INDEX_BITS: u8, P: ProbeStrategy>(
             }
             bits &= bits - 1;
         }
+        // Open-addressing early-out: build inserts each record at the first empty
+        // lane (byte 0) along its probe sequence, so an empty lane in this group
+        // means the key was never inserted and cannot appear in a later group.
+        if match_mask(&group.buckets[group_offset], 0) != 0 {
+            return None;
+        }
     }
     None
 }
@@ -102,7 +108,9 @@ mod tests {
         assert_eq!(result, Some(15));
     }
 
-    /// Find a single record somewhere in the table.
+    /// Find a record only reachable after probing past full groups. Every group is
+    /// fully occupied (no empty lane), so the early-out cannot fire before the probe
+    /// reaches the needle's group — modelling a valid, heavily-collided table.
     #[test]
     fn test_lookup_needle() {
         const HASH: u64 = 0xdeadbeef_deadbeef_u64;
@@ -110,7 +118,14 @@ mod tests {
         static RECORDS: [MetadataStride; 128] = const {
             let mut records = [MetadataStride::ZERO; 128];
 
-            let mut bucket = [0; _];
+            // Occupied filler distinct from the needle's tag (must have the tag bit set).
+            let mut g = 0;
+            while g < records.len() {
+                records[g].buckets[0] = Bucket::new([0xFF; BUCKET_SIZE]);
+                g += 1;
+            }
+
+            let mut bucket = [0xFF; BUCKET_SIZE];
             bucket[7] = control_byte_from_hash(HASH);
             records[99].buckets[0] = Bucket::new(bucket);
             records[99].hashes[7] = pack_hash(INDEX_BITS, HASH, 99);
@@ -125,5 +140,23 @@ mod tests {
 
         let result = lookup::<INDEX_BITS, LinearProbe>(&table, HASH);
         assert_eq!(result, Some(99));
+    }
+
+    /// A miss returns `None` as soon as the probe meets a group with an empty lane.
+    #[test]
+    fn test_lookup_miss_early_out() {
+        const HASH: u64 = 0xdeadbeef_deadbeef_u64;
+        const INDEX_BITS: u8 = 16;
+        // All groups empty: the first probed group has empty lanes, so a miss must
+        // return immediately rather than scanning the whole table.
+        static RECORDS: [MetadataStride; 128] = [const { MetadataStride::ZERO }; 128];
+
+        let table = ScatteredMapTable {
+            metadata: &RECORDS,
+            lookup_fn: lookup::<16, LinearProbe>,
+            index_bits: INDEX_BITS,
+        };
+
+        assert_eq!(lookup::<INDEX_BITS, LinearProbe>(&table, HASH), None);
     }
 }
