@@ -44,24 +44,6 @@ jobs:
                 "this.job == 'wasm'": "wasm32-unknown-unknown,wasm32-wasip1,wasm32-wasip2"
                 "this.job == 'uefi'": "x86_64-unknown-uefi"
                 "this.label == 'linux-musl'": "x86_64-unknown-linux-musl"
-            sandbox:
-              $match:
-                "this.label == 'bsan'": bsan
-                "this.label == 'freebsd'": freebsd
-                "this.label == 'openbsd'": openbsd
-                "this.label == 'netbsd'": netbsd
-                "this.label == 'dragonfly'": dragonfly
-            sandbox-release:
-              $match:
-                "this.label == 'freebsd'": "14.4"
-                "this.label == 'openbsd'": "7.8"
-                "this.label == 'netbsd'": "10.1"
-                "this.label == 'dragonfly'": "6.4.2"
-            timeout:
-              $match:
-                "this.job == 'crok' && this.label == 'bsan'": "60"
-                "this.job == 'crok'": "45"
-                "true": "360"
             rust-components:
               $match:
                 "this.job == 'miri'": "miri,rust-src"
@@ -69,6 +51,7 @@ jobs:
                 "this.job == 'test-used-linker'": rust-src
             label:
               linux:
+                timeout: "360"
                 os:
                   ubuntu-latest:
                     job: [test, macrotest, test-used-linker, miri, wasm, uefi, build, build-minimal, build-ctor-minimal]
@@ -77,38 +60,56 @@ jobs:
                     job: [lint, sanitize]
                     target: x86_64-unknown-linux-gnu
               linux-musl:
+                timeout: "360"
                 os: ubuntu-latest
                 job: [build, lint, test]
                 target: x86_64-unknown-linux-musl
               linux-x86:
+                timeout: "360"
                 os: ubuntu-latest
                 job: test
                 target: i686-unknown-linux-gnu
               macos:
+                timeout: "360"
                 os: macOS-latest
                 job: [lint, test, macrotest, test-used-linker, miri, zigbuild, sanitize, build-minimal]
                 target: aarch64-apple-darwin
               windows:
+                timeout: "360"
                 os: windows-latest
                 job: [lint, test, macrotest, miri, build-minimal]
                 target: x86_64-pc-windows-msvc
               bsan:
+                sandbox: bsan
+                timeout: "60"
                 os: ubuntu-latest
                 job: [crok]
                 target: x86_64-unknown-linux-gnu
               freebsd:
+                sandbox: freebsd
+                sandbox-release: "14.4"
+                timeout: "45"
                 os: ubuntu-latest
                 job: [crok]
                 target: x86_64-unknown-freebsd
               openbsd:
+                sandbox: openbsd
+                sandbox-release: "7.8"
+                timeout: "45"
                 os: ubuntu-latest
                 job: [crok]
                 target: x86_64-unknown-openbsd
               netbsd:
+                sandbox: netbsd
+                sandbox-release: "10.1"
+                timeout: "45"
                 os: ubuntu-latest
                 job: [crok]
                 target: x86_64-unknown-netbsd
               dragonfly:
+                sandbox: dragonfly
+                sandbox-release: "6.4.2"
+                timeout: "45"
                 os: ubuntu-latest
                 job: [crok]
                 target: x86_64-unknown-dragonfly
@@ -155,7 +156,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y qemu-system-x86 ovmf
 
-    # rustup refuses non-host toolchains without --force-non-host
+    # rustup requires --force-non-host for non-host toolchains
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }}, non-host)
       if: ${{ contains(matrix.rust-toolchain, 'i686') }}
       shell: bash
@@ -183,7 +184,7 @@ jobs:
       if: ${{ matrix.sandbox }}
       run: .github/jobs/sandbox.sh start ${{ matrix.sandbox }}
 
-    # The sandbox keeps its whole cargo home under the workspace.
+    # The sandbox dumps its whole cargo home under the workspace.
     - name: Cache sandbox
       if: ${{ matrix.sandbox }}
       continue-on-error: true # https://github.com/actions/cache/issues/1754
