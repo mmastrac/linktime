@@ -81,8 +81,7 @@ mod harness {
         }
     }
 
-    /// Recursively collect `(test-name, path)` for every `.crok` file, skipping
-    /// `target/` and hidden directories.
+    /// Recursively collect `(test-name, path)` for every (valid) `.crok` file.
     fn discover(dir: &Path, root: &Path, out: &mut Vec<(String, PathBuf)>) {
         let Ok(entries) = std::fs::read_dir(dir) else {
             return;
@@ -95,7 +94,9 @@ mod harness {
                 if name != "target" && !name.starts_with('.') {
                     discover(&path, root, out);
                 }
-            } else if path.extension().and_then(|e| e.to_str()) == Some("crok") {
+            } else if path.extension().and_then(|e| e.to_str()) == Some("crok")
+                && !name.starts_with('_')
+            {
                 out.push((test_name(&path, root), path));
             }
         }

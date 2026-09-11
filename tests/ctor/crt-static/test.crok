@@ -3,7 +3,14 @@
 if TARGET_OS == "macos" {
     exit script;
 }
-set RUSTFLAGS "-C target-feature=+crt-static";
+
+# bsan not available in static CRT.
+set SKIP_IF_BSAN "1";
+set NEEDS_RUSTFLAGS "-C target-feature=+crt-static";
+include ../../_setup.crok;
+if skip != "" {
+    exit script;
+}
 defer {
     $ cargo clean --quiet
 }

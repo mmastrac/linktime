@@ -1,0 +1,20 @@
+#!/bin/sh
+# `cargo vm <sandbox> <args>` — runs cargo inside a BSD VM over ssh.
+set -eu
+
+sandbox=$(cd "$(dirname "$0")/../.github/jobs" && pwd)/sandbox.sh
+
+# cargo passes the subcommand name back to us as the first argument.
+if [ "${1:-}" = vm ]; then
+  shift
+fi
+target="${1:?usage: cargo vm <freebsd|openbsd|netbsd|dragonfly> <args>}"
+shift
+
+# TODO: quoting is rough
+cmd=cargo
+for arg in "$@"; do
+  cmd="$cmd '$arg'"
+done
+
+exec "$sandbox" exec "$target" "$cmd"

@@ -10,37 +10,12 @@
 # it probes separately from `runtime`. A build or run failure fails the test —
 # do not add an `%EXIT any` / `choice` arm that swallows it, or the regression
 # stops being checked.
-set RUSTFLAGS "";
 
-$ sh -c '[ -n "${CI:-}" ] && echo 1 || echo 0'
-%SET is_ci
-*
-$ sh -c '[ -n "${WASM_PLATFORM:-}" ] && echo 1 || echo 0'
-%SET require
-*
-if is_ci == "1" {
-    if require == "0" {
-        exit script;
-    }
-}
-$ command -v node >/dev/null 2>&1 && echo 1 || echo 0
-%SET has_node
-*
-$ rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$' && echo 1 || echo 0
-%SET has_target
-*
-if has_node == "0" {
-    if require == "1" {
-        $ echo "node is required on this runner but missing"; false
-        *
-    }
-    exit script;
-}
-if has_target == "0" {
-    if require == "1" {
-        $ echo "the wasm32-unknown-unknown target is required on this runner but missing"; false
-        *
-    }
+set NEED_TOOLS "node";
+set NEED_TARGETS "wasm32-unknown-unknown";
+set REQUIRE_IF "WASM_PLATFORM";
+include ../../_setup.crok;
+if skip != "" {
     exit script;
 }
 

@@ -1,27 +1,11 @@
 #!/usr/bin/env crok --v0
 # Boots uefi-rust under QEMU + OVMF and matches its serial output.
-set RUSTFLAGS "";
 
-# Empty capture = prerequisite missing, so skip. `%EXIT any` tolerates the miss.
-$ command -v qemu-system-x86_64
-%EXIT any
-%SET qemu
-*
-$ ls /opt/homebrew/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd 2>/dev/null
-%EXIT any
-%SET firmware
-*
-$ rustup target list --installed 2>/dev/null | grep x86_64-unknown-uefi
-%EXIT any
-%SET target
-*
-if qemu == "" {
-    exit script;
-}
-if firmware == "" {
-    exit script;
-}
-if target == "" {
+set NEED_TOOLS "qemu-system-x86_64";
+set NEED_TARGETS "x86_64-unknown-uefi";
+set NEED_FILES "/usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/qemu/edk2-x86_64-code.fd /usr/local/share/qemu/edk2-x86_64-code.fd /opt/homebrew/share/qemu/edk2-x86_64-code.fd";
+include ../../_setup.crok;
+if skip != "" {
     exit script;
 }
 

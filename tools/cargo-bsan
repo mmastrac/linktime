@@ -1,0 +1,19 @@
+#!/bin/sh
+# `cargo bsan <args>` — runs cargo inside the BorrowSanitizer container.
+set -eu
+
+sandbox=$(cd "$(dirname "$0")/../.github/jobs" && pwd)/sandbox.sh
+
+# cargo passes the subcommand name back to us as the first argument.
+if [ "${1:-}" = bsan ]; then
+  shift
+fi
+
+# TODO: quoting is rough
+cmd=cargo
+for arg in "$@"; do
+  cmd="$cmd '$arg'"
+done
+
+"$sandbox" up bsan
+exec "$sandbox" exec bsan "$cmd"
