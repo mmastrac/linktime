@@ -59,9 +59,9 @@ jobs:
                 "this.label == 'dragonfly'": "6.4.2"
             timeout:
               $match:
-                "this.job == 'crok' && this.label == 'bsan'": 60
-                "this.job == 'crok'": 45
-                "true": 360
+                "this.job == 'crok' && this.label == 'bsan'": "60"
+                "this.job == 'crok'": "45"
+                "true": "360"
             rust-components:
               $match:
                 "this.job == 'miri'": "miri,rust-src"
