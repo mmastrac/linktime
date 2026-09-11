@@ -27,6 +27,7 @@ tempfile = "3"
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_used_linker)',
     'cfg(linktime_asan)',
+    'cfg(bsan)',
 ] }
 
 [[example]]

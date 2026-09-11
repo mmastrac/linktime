@@ -1,4 +1,4 @@
-#![cfg(not(miri))]
+#![cfg(not(any(miri, bsan)))]
 
 //! To overwrite the Linux expansion tests on macOS, run:
 //!

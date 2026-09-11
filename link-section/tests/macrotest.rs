@@ -1,4 +1,4 @@
-#![cfg(not(miri))]
+#![cfg(not(any(miri, bsan)))]
 
 /*
 

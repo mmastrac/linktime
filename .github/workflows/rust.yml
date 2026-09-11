@@ -175,21 +175,70 @@ jobs:
           -D missing-docs
       run: ".github/jobs/${{ matrix.job }}.sh"
 
+  # BorrowSanitizer (https://borrowsanitizer.com/)
+  #
+  # bsan ships only as a container image, rebuilt nightly against the current
+  # rust nightly.
+  bsan:
+    name: linux / bsan (nightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/borrowsanitizer/bsan:latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Steps run with HOME=/github/home, but the image installs the `bsan`
+      # toolchain (and sets it as the rustup default) under root's home.
+      - name: Use the image's toolchain
+        run: |
+          ln -s /root/.rustup "$HOME/.rustup"
+          echo "/root/.cargo/bin" >> "$GITHUB_PATH"
+
+      # The sysroot is an instrumented libstd.
+      - name: Compute toolchain cache key
+        id: toolchain
+        run: |
+          key=$( { rustc -vV; cargo bsan --version; } | sha256sum | cut -c1-16 )
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
+      - name: Cache sysroot and Rust files
+        continue-on-error: true # https://github.com/actions/cache/issues/1754
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/bsan
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: bsan-${{ steps.toolchain.outputs.key }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            bsan-${{ steps.toolchain.outputs.key }}-
+
+      - name: Run bsan
+        run: .github/jobs/bsan.sh
+
   success:
     runs-on: ubuntu-slim
-    needs: build
+    needs: [build, bsan]
     if: always()
     steps:
       - name: Report success or fail the workflow
         run: |
           echo "build matrix result: ${BUILD_RESULT}"
+          echo "bsan result: ${BSAN_RESULT}"
           if [ "${BUILD_RESULT}" != success ]; then
             echo "::error::Matrix job failed or did not succeed (result=${BUILD_RESULT})."
+            exit 1
+          fi
+          if [ "${BSAN_RESULT}" != success ]; then
+            echo "::error::BorrowSanitizer job failed or did not succeed (result=${BSAN_RESULT})."
             exit 1
           fi
           echo "Success"
         env:
           BUILD_RESULT: ${{ needs.build.result }}
+          BSAN_RESULT: ${{ needs.bsan.result }}
 
   # Tier-*BSD tests (QEMU)
   #

@@ -79,4 +79,5 @@ path = "benches/collections.rs"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_used_linker)',
+    'cfg(bsan)',
 ] }

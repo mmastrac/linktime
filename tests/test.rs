@@ -1,13 +1,13 @@
 //! Custom (`harness = false`) test runner for the `.crok` files under this
 //! crate. Every `.crok` file is a test.
 
-// Miri is unsupported.
+// Miri and bsan are unsupported: these tests shell out to cargo.
 fn main() {
-    #[cfg(not(miri))]
+    #[cfg(not(any(miri, bsan)))]
     harness::run();
 }
 
-#[cfg(not(miri))]
+#[cfg(not(any(miri, bsan)))]
 mod harness {
     use std::collections::VecDeque;
     use std::path::{Path, PathBuf};
