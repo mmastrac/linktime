@@ -119,7 +119,7 @@ jobs:
   build:
     name: ${{ matrix.label }} / ${{ matrix.job }} (${{ matrix.rust-toolchain }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.timeout }}
+    timeout-minutes: ${{ fromJson(matrix.timeout) }}
     needs: generate-matrix
     strategy:
       fail-fast: false
