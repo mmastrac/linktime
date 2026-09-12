@@ -135,7 +135,9 @@ mod tests {
         assert_eq!(result.unwrap(), 15);
     }
 
-    /// Find a single record somewhere in the table.
+    /// Find a record only reachable after probing past full groups. Every group is
+    /// fully occupied (no empty lane), so the early-out cannot fire before the probe
+    /// reaches the needle's group — modelling a valid, heavily-collided table.
     #[test]
     fn test_lookup_needle() {
         const HASH: u64 = 0xdeadbeef_deadbeef_u64;
@@ -165,5 +167,22 @@ mod tests {
 
         let result = lookup::<INDEX_BITS, LinearProbe>(&table, HASH);
         assert_eq!(result.unwrap(), 99);
+    }
+
+    /// Early out test.
+    #[test]
+    fn test_lookup_miss_early_out() {
+        const HASH: u64 = 0xdeadbeef_deadbeef_u64;
+        const INDEX_BITS: u8 = 16;
+        // All groups empty: the first probed group has empty lanes, so a miss must
+        // return immediately.
+        static RECORDS: [MetadataStride; 128] = [const { MetadataStride::ZERO }; 128];
+
+        let table = ScatteredMapTable {
+            metadata: &RECORDS,
+            index_bits: INDEX_BITS,
+        };
+
+        assert!(!lookup::<INDEX_BITS, LinearProbe>(&table, HASH).is_found());
     }
 }
