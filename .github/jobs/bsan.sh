@@ -49,7 +49,6 @@ SHIM
 
 extra() {
   root=$(cd "$(dirname "$0")/../.." && pwd)
-  # These skip the .crok tests, so they name the sandbox's flags themselves.
   "$root/.github/jobs/sandbox.sh" exec bsan 'RUSTFLAGS="$SANDBOX_RUSTFLAGS" cargo test'
 
   examples=$(cargo metadata --no-deps --format-version 1 |

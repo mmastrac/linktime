@@ -32,7 +32,7 @@ case "$os" in
     rustup default stable
     ;;
   OpenBSD)
-    # rustup has no OpenBSD dist, use pkg_add
+    # No rustup in OpenBSD dist, use pkg_add
     if ! command -v cargo >/dev/null 2>&1; then
       pkg_add rust
     fi

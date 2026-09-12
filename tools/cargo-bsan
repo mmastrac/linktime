@@ -4,7 +4,7 @@ set -eu
 
 sandbox=$(cd "$(dirname "$0")/../.github/jobs" && pwd)/sandbox.sh
 
-# cargo passes the subcommand name back to us as the first argument.
+# cargo subcommand is first arg.
 if [ "${1:-}" = bsan ]; then
   shift
 fi
