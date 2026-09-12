@@ -54,7 +54,9 @@ sandbox_exec() {
       { bsan_preamble; printf '%s\n' "$1"; } | docker exec -i "$BSAN_CONTAINER" sh
       ;;
     *)
+      # LogLevel=ERROR to hide ssh's `Permanently added ... `
       { vm_preamble; printf '%s\n' "$1"; } | ssh -T \
+        -o LogLevel=ERROR \
         -o ControlMaster=auto -o ControlPath=/tmp/crok-vm-%h -o ControlPersist=60 \
         "$(ssh_host)" sh
       ;;

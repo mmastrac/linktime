@@ -17,9 +17,14 @@ provision() {
   # __bsan_init has to run before every constructor under test, so it goes in
   # .preinit_array.
   cc -c -fPIC -x c -o "$TOOLS/preinit.o" - <<'PREINIT'
-extern void __bsan_init(void);
+extern void __bsan_init(void) __attribute__((weak));
+static void bsan_preinit(void) {
+  if (__bsan_init) {
+    __bsan_init();
+  }
+}
 __attribute__((section(".preinit_array"),
-               used)) static void (*bsan_preinit)(void) = __bsan_init;
+               used)) static void (*bsan_preinit_entry)(void) = bsan_preinit;
 PREINIT
 
   cat > "$TOOLS/env.sh" <<ENV

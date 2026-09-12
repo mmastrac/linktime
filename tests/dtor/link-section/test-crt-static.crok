@@ -1,6 +1,11 @@
 #!/usr/bin/env crok --v0
+# bsan's runtime is not available w/ static CRT.
+set SKIP_IF_BSAN "1";
 set NEEDS_RUSTFLAGS "-C target-feature=+crt-static";
 include "../../_setup.crok";
+if skip != "" {
+    exit script;
+}
 set CARGO_TARGET_DIR "target/link-section-crt-static";
 defer {
     $ cargo clean --quiet
