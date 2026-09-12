@@ -10,7 +10,8 @@
 
 # NOTE: We can run this on Linux as well
 set NEED_OS "macos linux";
-set SKIP_IF_BSAN "1"; # unsupported on bsan
+# unsupported on bsan
+set SKIP_IF_BSAN "1";
 include "../../_setup.crok";
 if skip != "" {
     exit script;
