@@ -1,9 +1,5 @@
 #!/usr/bin/env crok --v0
-# DragonFly aborts pre-main in std TLS (KEY_SENTVAL assertion)
-if TARGET_OS == "dragonfly" {
-    exit script;
-}
-set RUSTFLAGS "";
+include "../../_setup.crok";
 defer {
     $ cargo clean --quiet
 }

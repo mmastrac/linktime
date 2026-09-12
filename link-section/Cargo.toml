@@ -1,12 +1,11 @@
 [package]
 name = "link-section"
-version = "0.19.2"
+version = "0.19.3"
 authors.workspace = true
 edition = "2021"
 description = "Link-time initialized slices for Rust, with full support for Linux, macOS, Windows, WASM and many more platforms."
 license.workspace = true
 repository.workspace = true
-readme = "README.md"
 categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.85"
 
@@ -28,6 +27,7 @@ tempfile = "3"
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_used_linker)',
     'cfg(linktime_asan)',
+    'cfg(bsan)',
 ] }
 
 [[example]]

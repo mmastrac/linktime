@@ -3,13 +3,13 @@ The crate is part of the [`linktime`](https://crates.io/crates/linktime) project
 [![GitHub](https://img.shields.io/badge/repo-github-blue)](https://github.com/mmastrac/linktime) [![Crates.io License](https://img.shields.io/crates/l/link-section)](https://crates.io/crates/link-section) [![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)](https://github.com/mmastrac/linktime/actions/workflows/rust.yml) 
 
 
-| crate               |                                                         | docs                                                                                         | version                                                                                                           |
-| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `linktime`          | Convenience crate for `ctor`, `dtor` and `link-section` | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)                   | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)                   |
-| `ctor`              | Module initialization functions before main             | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                           | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                           |
-| `dtor`              | Module shutdown functions before main                   | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                           | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                           |
-| `link-section`      | Linker-managed typed (slices) and untyped sections      | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section)           | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section)           |
-| `scattered-collect` | Linker-managed collections: slices, sorted slices, maps | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
+| crate | |
+| --- | --- |
+| `linktime`<br>[![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime) [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime) | Convenience crate for `ctor`, `dtor` and `link-section` |
+| `ctor`<br>[![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor) [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor) | Module initialization functions before main |
+| `dtor`<br>[![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor) [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor) | Module shutdown functions before main |
+| `link-section`<br>[![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) | Linker-managed typed (slices) and untyped sections |
+| `scattered-collect`<br>[![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) | Linker-managed collections: slices, sorted slices, maps |
 # link-section
 A crate for defining linker-backed sections in Rust.
 
@@ -150,6 +150,7 @@ pub fn callback() {
 | \*BSD                    | ✅ Supported, uses orphan section handling (§1) |
 | macOS                    | ✅ Fully supported                              |
 | Windows                  | ✅ Fully supported                              |
+| UEFI                     | ✅ Fully supported, COFF marker sections (§5)   |
 | WASM                     | ✅ Fully supported, via emulation (§2)          |
 | AIX                      | ✅ Supported (§3) (§4)                          |
 | Other LLVM/GCC platforms | ✅ Supported, uses orphan section handling (§1) |
@@ -166,6 +167,9 @@ similar to LLVM/GCC's orphan section handling.
 
 (§4) Empty sections are not currently supported: ensure every section has at least
 one item, or pass the `-C link-arg=-berok` linker flag to ignore errors.
+
+(§5) UEFI is COFF/PE and lacks orphan-section start/end symbols, so it uses the
+same marker-section scheme as Windows.
 
 ## Platform Details
 
@@ -380,3 +384,76 @@ mod my_registry {
 ## Inspiration
 
 `link-section` would have been far more challenging to implement without dtolnay's great `linkme` project paving the way.
+# Re-exporting from another crate
+
+The macros assume this crate is available as a direct dependency, resolving their
+support paths through the crate's own name. If you re-export this crate's items as
+part of your own crate (so that downstream users don't need to depend on it
+directly), you have two options:
+
+- (preferred) use the declarative macro form. It resolves its support paths
+  relative to your re-export, so no extra configuration is required.
+- Alternatively, pass the `crate_path` attribute to redirect the macro's
+  generated output to the path where this crate has been re-exported.
+
+See the `crate_path` entry in the *Macro Attributes* section below for the exact
+syntax for this crate.
+# Crate Features
+
+| Cargo feature | Description |
+| --- | --- |
+| `proc_macro` |  Crate feature `proc_macro` (enables the `#[section]` attribute shim). |
+
+# Macro Attributes
+
+<table><tr><th>Attribute</th><th>Description</th></tr>
+<tr><td><code>aux(main = path::to::MAIN_SECTION)</code></td><td>
+
+ Auxiliary sections are stored in a section near the main section. The
+ aux path must be a valid reference to the main section.
+
+
+</td></tr>
+<tr><td><code>crate_path = ::path::to::link_section</code></td><td>
+
+ The path to the `link-section` crate containing the support macros. If
+ you re-export `link-section` items as part of your crate, you can use
+ this to redirect the macro's output to the correct crate.
+
+ Using the declarative [`section!`][s] form is
+ preferred over this parameter.
+
+ [s]: crate::declarative::section!
+
+
+</td></tr>
+<tr><td><code>name = my_crate::SECTION_NAME</code></td><td>
+
+ Specify a custom section name to allow the section to be used without a
+ direct reference. If not specified, the section name will be generated
+ using the item name and a path to the section.
+
+ It is valid to specify multiple sections with the same name, and the linker
+ will ensure that both sections contain the same items. The multiple sections
+ must contain the same type, otherwise the section will `panic!` at runtime.
+
+ While `name` accepts a path, this path does not refer to a specific Rust
+ item path.
+
+
+</td></tr>
+<tr><td><code>untyped | typed | mutable | movable | reference</code></td><td>
+
+ The type of the section.
+
+
+</td></tr>
+<tr><td><code>unsafe</code></td><td>
+
+ Allow the section to be used without a direct reference.
+
+
+</td></tr>
+</table>
+
+# Defaults

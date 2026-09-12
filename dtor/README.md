@@ -3,13 +3,13 @@ The crate is part of the [`linktime`](https://crates.io/crates/linktime) project
 [![GitHub](https://img.shields.io/badge/repo-github-blue)](https://github.com/mmastrac/linktime) [![Crates.io License](https://img.shields.io/crates/l/link-section)](https://crates.io/crates/link-section) [![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)](https://github.com/mmastrac/linktime/actions/workflows/rust.yml) 
 
 
-| crate               |                                                         | docs                                                                                         | version                                                                                                           |
-| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `linktime`          | Convenience crate for `ctor`, `dtor` and `link-section` | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)                   | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)                   |
-| `ctor`              | Module initialization functions before main             | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                           | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                           |
-| `dtor`              | Module shutdown functions before main                   | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                           | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                           |
-| `link-section`      | Linker-managed typed (slices) and untyped sections      | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section)           | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section)           |
-| `scattered-collect` | Linker-managed collections: slices, sorted slices, maps | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
+| crate | |
+| --- | --- |
+| `linktime`<br>[![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime) [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime) | Convenience crate for `ctor`, `dtor` and `link-section` |
+| `ctor`<br>[![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor) [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor) | Module initialization functions before main |
+| `dtor`<br>[![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor) [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor) | Module shutdown functions before main |
+| `link-section`<br>[![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) | Linker-managed typed (slices) and untyped sections |
+| `scattered-collect`<br>[![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) | Linker-managed collections: slices, sorted slices, maps |
 # dtor
 Shutdown functions for Rust (like `__attribute__((destructor))` in C/C++) for
 Linux, macOS, Windows, mobile (iOS/Android), WASM, BSD/BSD-likes and many other
@@ -46,6 +46,7 @@ fn shutdown() {
 | macOS                      | `.mod_term_func` <sup><sup>🍎</sup></sup> | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 | Windows                    | `.CRT$XPU` <sup><sup>🪟</sup></sup>       | No             | Yes (`atexit`)       |
 | WASM 🕸️                    | No                                        | Yes            | No                   |
+| UEFI <sup><sup>🔌</sup></sup> | Collected                              | No             | No                   |
 | AIX                        | "Kind of" <sup><sup>🔵</sup></sup>        | Yes            | Yes                  |
 | Other POSIX-like platforms | `.fini_array`/`.dtors`                    | Yes (`atexit`) | Yes (`__cxa_atexit`) |
 
@@ -59,6 +60,9 @@ Notes:
   platform calls functions with the prefix `__sinit` and `__sterm` at startup
   and shutdown respectively. `__sterm`-prefixed functions are used when the
   method is specified as `linker`.
+- <sup><sup>🔌</sup></sup> UEFI runs no `.fini_array` and has no `atexit`.
+  Destructors are collected and run when the binary calls `dtor::run_destructors`
+  at shutdown.
 - <sup><sup>🕸️</sup></sup> WASM `wasm-unknown-unknown`, `wasm-wasip1`,
   `wasm-wasip2` are supported.
   - Rust does not currently allow linking into `.fini_array` sections on WASM,
@@ -134,6 +138,20 @@ fn dtor_atexit() {
     libc::atexit(dtor);
 }
 ```
+# Re-exporting from another crate
+
+The macros assume this crate is available as a direct dependency, resolving their
+support paths through the crate's own name. If you re-export this crate's items as
+part of your own crate (so that downstream users don't need to depend on it
+directly), you have two options:
+
+- (preferred) use the declarative macro form. It resolves its support paths
+  relative to your re-export, so no extra configuration is required.
+- Alternatively, pass the `crate_path` attribute to redirect the macro's
+  generated output to the path where this crate has been re-exported.
+
+See the `crate_path` entry in the *Macro Attributes* section below for the exact
+syntax for this crate.
 # Crate Features
 
 | Cargo feature | Description |
@@ -154,7 +172,14 @@ fn dtor_atexit() {
 </td></tr>
 <tr><td><code>crate_path = ::path::to::dtor::crate</code></td><td>
 
- Specify a custom crate path for the `dtor` crate. Used when re-exporting the dtor macro.
+ The path to the `dtor` crate containing the support macros. If you
+ re-export `dtor` items as part of your crate, you can use this to
+ redirect the macro's output to the correct crate.
+
+ Using the declarative [`dtor!`][d] form is
+ preferred over this parameter.
+
+ [d]: crate::declarative::dtor!
 
 
 </td></tr>

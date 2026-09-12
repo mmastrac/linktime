@@ -12,3 +12,4 @@ tests/**/Cargo.lock
 # Local IBM AIX Rust SDK installer (large; copy into .github/docker/aix-rust for docker build only)
 .github/docker/aix-rust/*.tar.Z
 
+.cache

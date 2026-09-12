@@ -1,4 +1,4 @@
-#![cfg(not(miri))]
+#![cfg(not(any(miri, bsan)))]
 #![doc = "Macro expansion, trybuild, and cross-target tests for ctor."]
 
 /*
@@ -46,6 +46,7 @@ fn ensure_no_empty_files_recurse(path: impl AsRef<Path>) -> bool {
 
 #[test]
 #[cfg(not(linktime_used_linker))]
+#[ignore = "needs cargo-expand"]
 /// Runs `macrotest::expand` on `tests/expand`.
 pub fn pass() {
     macrotest::expand("tests/expand/*.rs");
@@ -55,6 +56,7 @@ pub fn pass() {
 #[cfg(target_vendor = "apple")]
 #[cfg(not(linktime_used_linker))]
 #[test]
+#[ignore = "needs cargo-expand"]
 /// Runs `macrotest::expand` on `tests/expand-darwin`.
 pub fn pass_darwin() {
     macrotest::expand("tests/expand-darwin/*.rs");
@@ -64,6 +66,7 @@ pub fn pass_darwin() {
 #[cfg(target_os = "linux")]
 #[cfg(not(linktime_used_linker))]
 #[test]
+#[ignore = "needs cargo-expand"]
 /// Runs `macrotest::expand` on `tests/expand-linux`.
 pub fn pass_linux() {
     macrotest::expand("tests/expand-linux/*.rs");
@@ -75,6 +78,7 @@ pub fn pass_linux() {
 pub fn trybuild() {
     let t = trybuild::TestCases::new();
     // TODO: whitespace issue (tabs?) in error tests
+    #[cfg(not(linktime_used_linker))]
     #[cfg(not(target_os = "openbsd"))]
     t.compile_fail("tests/errors/*.rs");
     t.pass("tests/pass/*.rs");

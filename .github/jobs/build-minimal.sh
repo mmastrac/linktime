@@ -11,5 +11,5 @@ case "${OS:-}" in
 esac
 
 # Standalone crok, the in-tree harness needs a newer rustc
-find tests -name '*.crok' -not -path '*/target/*' -not -path '*/.*' -print0 | sort -z |
+find tests -name '*.crok' -not -name '_*' -not -path '*/target/*' -not -path '*/.*' -print0 | sort -z |
   xargs -0 crok --timeout 300

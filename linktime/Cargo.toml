@@ -1,12 +1,11 @@
 [package]
 name = "linktime"
-version = "0.18.0"
+version = "0.19.0"
 authors.workspace = true
 edition = "2021"
 description = "Link-time registration patterns for Rust (ctors, dtors, link-time slices and sections)"
 license.workspace = true
 repository.workspace = true
-readme = "README.md"
 categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.60"
 
@@ -27,6 +26,11 @@ linktime-proc-macro = { workspace = true, optional = true }
 ctor = { workspace = true, optional = true }
 dtor = { workspace = true, optional = true }
 link-section = { workspace = true, optional = true }
+
+# UEFI needs the constructor-collection machinery behind `ctor/priority`. Other
+# targets keep the default naked `.init_array` placement.
+[target.'cfg(target_os = "uefi")'.dependencies]
+ctor = { workspace = true, optional = true, features = ["priority"] }
 
 [dev-dependencies]
 libc-print = "0.5"

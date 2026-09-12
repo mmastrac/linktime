@@ -17,7 +17,7 @@ For most platforms, this library currently has a MSRV of **Rust >= 1.60**.
 
 The priority feature requires a MSRV of **Rust >= 1.85** on macOS targets.
 
-MSRV for WASM targets is **Rust >= 1.85**.
+MSRV for WASM and UEFI targets is **Rust >= 1.85**.
 
 ## Lightweight
 
@@ -28,7 +28,8 @@ declarative macro and should have minimal effect on compilation time.
 ## Support
 
 This library works and is regularly tested on Linux, macOS, Windows, and
-FreeBSD, with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
+FreeBSD, with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs,
+and on UEFI (booted under QEMU + OVMF).
 
 Contributions to support other platforms or improve testing are welcome.
 
@@ -50,12 +51,15 @@ Contributions to support other platforms or improve testing are welcome.
 | VxWorks      | ✅        | -         |
 | Xtensa       | ✅        | -         |
 | NTO          | ✅        | -         |
-| UEFI         | ⚠️        | -         |
+| UEFI 🔌      | ✅        | 💨        |
 
 - 🏅 Full CI (miri, address sanitizer, etc.)
 - 💨 Smoke tests (varying levels)
 - ⚠️ Needs more feedback
 - 🕸️ WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
+- 🔌 UEFI is booted under QEMU + OVMF in CI. Firmware runs no `.init_array`/
+  `.fini_array`, so call `ctor::run_constructors` at startup and
+  `dtor::run_destructors` at shutdown.
 
 - `wasm-unknown-unknown` requires host environment support for `atexit` if used
   with `dtor`.

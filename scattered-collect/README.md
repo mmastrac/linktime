@@ -5,13 +5,13 @@
 The crate is part of the [`linktime`](https://crates.io/crates/linktime)
 project.
 
-| crate               |                                                         | docs                                                                                         | version                                                                                                           |
-| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `linktime`          | Convenience crate for `ctor`, `dtor` and `link-section` | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)                   | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)                   |
-| `ctor`              | Module initialization functions before main             | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                           | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                           |
-| `dtor`              | Module shutdown functions before main                   | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                           | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                           |
-| `link-section`      | Linker-managed typed (slices) and untyped sections      | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section)           | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section)           |
-| `scattered-collect` | Linker-managed collections: slices, sorted slices, maps | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
+| crate | |
+| --- | --- |
+| `linktime`<br>[![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime) [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime) | Convenience crate for `ctor`, `dtor` and `link-section` |
+| `ctor`<br>[![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor) [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor) | Module initialization functions before main |
+| `dtor`<br>[![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor) [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor) | Module shutdown functions before main |
+| `link-section`<br>[![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) | Linker-managed typed (slices) and untyped sections |
+| `scattered-collect`<br>[![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) | Linker-managed collections: slices, sorted slices, maps |
 
 A crate for defining linker-managed scattered collections in Rust.
 
@@ -71,8 +71,36 @@ stable per executable build.
 
 ## Re-exporting the scatter/gather macros
 
-The scatter/gather macros can be easily re-exported from other crates using the
-[`declarative`] module.
+If you wrap these collections in your own library so that downstream users don't
+need to depend on `scattered-collect` directly, you have two options.
+
+The (preferred) option is to re-export the [`declarative`] forms of the macros.
+They resolve their support paths back to `scattered-collect` through the
+re-exporting crate, so no extra configuration is needed:
+
+```rust,ignore
+// In your library crate:
+pub use scattered_collect::declarative::{gather, scatter};
+pub use scattered_collect::slice::ScatteredSlice;
+```
+
+Downstream users then invoke them as `gather! { #[gather] ... }` and
+`scatter! { #[scatter(COLLECTION)] ... }`.
+
+Alternatively, the proc-macro `#[scatter]` / `#[gather]` attribute forms emit a
+fixed `::scattered_collect` path and so require a direct dependency by default.
+Pass `crate_path = <path>` to redirect them to wherever `scattered-collect` has
+been re-exported:
+
+```rust
+# use scattered_collect::{gather, scatter, slice::ScatteredSlice};
+# fn main() {}
+#[gather(crate_path = ::scattered_collect)]
+static ITEMS: ScatteredSlice<u32>;
+
+#[scatter(crate_path = ::scattered_collect, ITEMS)]
+const _: u32 = 1;
+```
 
 ## Scatter/Gather syntax
 

@@ -1,4 +1,4 @@
-#![cfg(not(miri))]
+#![cfg(not(any(miri, bsan)))]
 
 //! To overwrite the Linux expansion tests on macOS, run:
 //!
@@ -44,6 +44,7 @@ fn ensure_no_empty_files_recurse(path: impl AsRef<Path>) -> bool {
 
 #[test]
 #[cfg(not(linktime_used_linker))]
+#[ignore = "needs cargo-expand"]
 pub fn pass() {
     macrotest::expand("tests/expand/*.rs");
     ensure_no_empty_files("tests/expand");
@@ -52,6 +53,7 @@ pub fn pass() {
 #[cfg(not(linktime_used_linker))]
 #[cfg(target_vendor = "apple")]
 #[test]
+#[ignore = "needs cargo-expand"]
 pub fn pass_darwin() {
     macrotest::expand("tests/expand-darwin/*.rs");
     ensure_no_empty_files("tests/expand-darwin");
@@ -60,6 +62,7 @@ pub fn pass_darwin() {
 #[cfg(not(linktime_used_linker))]
 #[cfg(target_os = "linux")]
 #[test]
+#[ignore = "needs cargo-expand"]
 pub fn pass_linux() {
     macrotest::expand("tests/expand-linux/*.rs");
     ensure_no_empty_files("tests/expand-linux");
@@ -68,6 +71,7 @@ pub fn pass_linux() {
 #[cfg(not(linktime_used_linker))]
 #[cfg(windows)]
 #[test]
+#[ignore = "needs cargo-expand"]
 pub fn pass_windows() {
     macrotest::expand("tests/expand-windows/*.rs");
     ensure_no_empty_files("tests/expand-windows");
@@ -77,6 +81,7 @@ pub fn pass_windows() {
 pub fn trybuild() {
     let t = trybuild::TestCases::new();
     // TODO: whitespace issue (tabs?) in error tests
+    #[cfg(not(linktime_used_linker))]
     #[cfg(not(target_os = "openbsd"))]
     t.compile_fail("tests/errors/*.rs");
     t.pass("tests/pass/*.rs");

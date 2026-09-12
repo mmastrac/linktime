@@ -19,7 +19,14 @@
 </td></tr>
 <tr><td><code>crate_path = ::path::to::dtor::crate</code></td><td>
 
- Specify a custom crate path for the `dtor` crate. Used when re-exporting the dtor macro.
+ The path to the `dtor` crate containing the support macros. If you
+ re-export `dtor` items as part of your crate, you can use this to
+ redirect the macro's output to the correct crate.
+
+ Using the declarative [`dtor!`][d] form is
+ preferred over this parameter.
+
+ [d]: crate::declarative::dtor!
 
 
 </td></tr>

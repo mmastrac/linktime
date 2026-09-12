@@ -36,6 +36,13 @@ pub trait ScatteredElementTuple {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __scatter_parse {
+    // Handle a `crate_path = ...` override at the call site: the proc-macro
+    // form already applied it to the support path reaching this macro, so strip
+    // it and continue with the collection.
+    (#[scatter (crate_path = $cp:path , $($meta:tt)*)] $($rest:tt)*) => {
+        $crate::__support::scatter_parse!(#[scatter($($meta)*)] $($rest)*);
+    };
+
     // Send the #[scatter]'d item into the collection's private macro.
     (#[scatter ($($meta:tt)*)] $(#[$imeta:meta])* $vis:vis static $($item:tt)*) => {
         $($meta)* ! (
@@ -158,6 +165,13 @@ macro_rules! __gather_parse {
     };
     (@path ($($path_part:tt)*) ($(#$meta:tt)* $vis:vis static $name:ident) (:: $($rest:tt)*)) => {
         compile_error!("Expected: #[gather] name: path::to::collection<generics>;");
+    };
+
+    // Handle a `crate_path = ...` override on the gather attribute: the
+    // proc-macro form already applied it to the support path reaching this
+    // macro, so strip it and continue.
+    (#[gather (crate_path = $($cp:tt)*)] $($rest:tt)*) => {
+        $crate::__support::gather_parse!(#[gather] $($rest)*);
     };
 
     ($(#$meta:tt)* $vis:vis static $name:ident: $collection:ident < $($rest:tt)* ) => {

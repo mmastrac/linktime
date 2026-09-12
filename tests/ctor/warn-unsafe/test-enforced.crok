@@ -1,6 +1,11 @@
 #!/usr/bin/env crok --v0
 # Missing `unsafe` on `#[ctor]` must fail the build by default.
-set RUSTFLAGS "";
+
+set SKIP_IF_BSAN "1";
+include "../../_setup.crok";
+if skip != "" {
+    exit script;
+}
 set CARGO_TARGET_DIR "target/warn_yes";
 defer {
     $ cargo clean --quiet

@@ -21,16 +21,18 @@ macro_rules! const_hash_str {
             impl ConstHash for $ty {
                 type Hasher = StrHasher;
                 const HASHER: Self::Hasher = StrHasher;
+                #[inline(always)]
                 fn hash(&self) -> u64 {
-                    (Self::HASHER).const_hash(self)
+                    xxhash_rust::xxh3::xxh3_64(self.as_bytes())
                 }
             }
 
             impl <'a> ConstHash for &'a $ty {
                 type Hasher = StrHasher;
                 const HASHER: Self::Hasher = StrHasher;
+                #[inline(always)]
                 fn hash(&self) -> u64 {
-                    (Self::HASHER).const_hash(self)
+                    xxhash_rust::xxh3::xxh3_64(self.as_bytes())
                 }
             }
         )*
@@ -104,9 +106,12 @@ macro_rules! const_hash {
 
 #[cfg(test)]
 mod tests {
+    use crate::hash::ConstHash;
+
     #[test]
     fn test_const_hash_str() {
         assert_eq!(const_hash!("hello"), 10760762337991515389);
+        assert_eq!(ConstHash::hash("hello"), 10760762337991515389);
     }
 
     #[test]

@@ -3,13 +3,13 @@ The crate is part of the [`linktime`](https://crates.io/crates/linktime) project
 [![GitHub](https://img.shields.io/badge/repo-github-blue)](https://github.com/mmastrac/linktime) [![Crates.io License](https://img.shields.io/crates/l/link-section)](https://crates.io/crates/link-section) [![Build Status](https://github.com/mmastrac/linktime/actions/workflows/rust.yml/badge.svg)](https://github.com/mmastrac/linktime/actions/workflows/rust.yml) 
 
 
-| crate               |                                                         | docs                                                                                         | version                                                                                                           |
-| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `linktime`          | Convenience crate for `ctor`, `dtor` and `link-section` | [![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime)                   | [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime)                   |
-| `ctor`              | Module initialization functions before main             | [![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor)                           | [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor)                           |
-| `dtor`              | Module shutdown functions before main                   | [![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor)                           | [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor)                           |
-| `link-section`      | Linker-managed typed (slices) and untyped sections      | [![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section)           | [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section)           |
-| `scattered-collect` | Linker-managed collections: slices, sorted slices, maps | [![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) | [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) |
+| crate | |
+| --- | --- |
+| `linktime`<br>[![docs.rs](https://docs.rs/linktime/badge.svg)](https://docs.rs/linktime) [![crates.io](https://img.shields.io/crates/v/linktime.svg)](https://crates.io/crates/linktime) | Convenience crate for `ctor`, `dtor` and `link-section` |
+| `ctor`<br>[![docs.rs](https://docs.rs/ctor/badge.svg)](https://docs.rs/ctor) [![crates.io](https://img.shields.io/crates/v/ctor.svg)](https://crates.io/crates/ctor) | Module initialization functions before main |
+| `dtor`<br>[![docs.rs](https://docs.rs/dtor/badge.svg)](https://docs.rs/dtor) [![crates.io](https://img.shields.io/crates/v/dtor.svg)](https://crates.io/crates/dtor) | Module shutdown functions before main |
+| `link-section`<br>[![docs.rs](https://docs.rs/link-section/badge.svg)](https://docs.rs/link-section) [![crates.io](https://img.shields.io/crates/v/link-section.svg)](https://crates.io/crates/link-section) | Linker-managed typed (slices) and untyped sections |
+| `scattered-collect`<br>[![docs.rs](https://docs.rs/scattered-collect/badge.svg)](https://docs.rs/scattered-collect) [![crates.io](https://img.shields.io/crates/v/scattered-collect.svg)](https://crates.io/crates/scattered-collect) | Linker-managed collections: slices, sorted slices, maps |
 # ctor
 Module initialization functions for Rust (like `__attribute__((constructor))` in
 C/C++) for Linux, macOS, Windows, WASM, BSD-likes, and many others.
@@ -30,7 +30,7 @@ For most platforms, this library currently has a MSRV of **Rust >= 1.60**.
 
 The priority feature requires a MSRV of **Rust >= 1.85** on macOS targets.
 
-MSRV for WASM targets is **Rust >= 1.85**.
+MSRV for WASM and UEFI targets is **Rust >= 1.85**.
 
 ## Lightweight
 
@@ -41,7 +41,8 @@ declarative macro and should have minimal effect on compilation time.
 ## Support
 
 This library works and is regularly tested on Linux, macOS, Windows, and
-FreeBSD, with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs.
+FreeBSD, with both `+crt-static` and `-crt-static` and `bin`/`cdylib` outputs,
+and on UEFI (booted under QEMU + OVMF).
 
 Contributions to support other platforms or improve testing are welcome.
 
@@ -63,12 +64,15 @@ Contributions to support other platforms or improve testing are welcome.
 | VxWorks      | ✅        | -         |
 | Xtensa       | ✅        | -         |
 | NTO          | ✅        | -         |
-| UEFI         | ⚠️        | -         |
+| UEFI 🔌      | ✅        | 💨        |
 
 - 🏅 Full CI (miri, address sanitizer, etc.)
 - 💨 Smoke tests (varying levels)
 - ⚠️ Needs more feedback
 - 🕸️ WASM `wasm-unknown-unknown`, `wasm-wasip1`, `wasm-wasip2` are supported.
+- 🔌 UEFI is booted under QEMU + OVMF in CI. Firmware runs no `.init_array`/
+  `.fini_array`, so call `ctor::run_constructors` at startup and
+  `dtor::run_destructors` at shutdown.
 
 - `wasm-unknown-unknown` requires host environment support for `atexit` if used
   with `dtor`.
@@ -219,6 +223,20 @@ static FOO: extern fn() = {
 ## Inspiration
 
 The idea for `ctor` was originally inspired by the Neon project.
+# Re-exporting from another crate
+
+The macros assume this crate is available as a direct dependency, resolving their
+support paths through the crate's own name. If you re-export this crate's items as
+part of your own crate (so that downstream users don't need to depend on it
+directly), you have two options:
+
+- (preferred) use the declarative macro form. It resolves its support paths
+  relative to your re-export, so no extra configuration is required.
+- Alternatively, pass the `crate_path` attribute to redirect the macro's
+  generated output to the path where this crate has been re-exported.
+
+See the `crate_path` entry in the *Macro Attributes* section below for the exact
+syntax for this crate.
 # Crate Features
 
 | Cargo feature | Description |

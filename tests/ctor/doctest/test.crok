@@ -1,5 +1,11 @@
 #!/usr/bin/env crok --v0
-set RUSTFLAGS "";
+
+# bsan does not instrument doctests.
+set SKIP_IF_BSAN "1";
+include "../../_setup.crok";
+if skip != "" {
+    exit script;
+}
 defer {
     $ cargo clean --quiet
 }

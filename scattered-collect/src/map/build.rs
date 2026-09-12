@@ -1,14 +1,19 @@
 #![allow(clippy::modulo_one, unreachable_pub)]
-
 use crate::map::MapRecord;
 use crate::map::probe::{
-    BUCKET_SIZE, Bucket, LinearProbe, ProbeStrategy, control_byte_from_hash, match_mask, split_hash,
+    BUCKET_SIZE, LinearProbe, ProbeStrategy, control_byte_from_hash, first_empty_lane, match_mask,
+    split_hash,
 };
-use crate::map::table::{BUCKET_STRIDE, MetadataStride, ScatteredMapTable, lookup};
+use crate::map::table::{BUCKET_STRIDE, MetadataStride, ScatteredMapTable};
 
 pub const SAFE_CAPACITY: f32 = 0.70;
 pub const BASE_CAPACITY: usize = 512;
 pub const PER_ITEM_CAPACITY: usize = 14;
+
+const _: () = assert!(
+    BASE_CAPACITY >= 3 * size_of::<MetadataStride>() + align_of::<MetadataStride>(),
+    "BASE_CAPACITY too small for METADATA_STRIDE"
+);
 
 #[allow(unused)]
 pub const fn safe_record_count_for_capacity(capacity: usize) -> usize {
@@ -25,18 +30,8 @@ pub const fn safe_byte_count_for_capacity(capacity: usize) -> usize {
 pub const fn pack_hash(index_bits: u8, hash: u64, index: usize) -> u64 {
     let hash_mask: u64 = (-1_i64 as u64) << (index_bits as usize);
     let index_mask = !hash_mask;
+    debug_assert!(index as u64 <= index_mask);
     hash & hash_mask | (index as u64) & index_mask
-}
-
-/// First lane index in `buckets` whose byte is `0` (empty), using SIMD.
-#[inline]
-pub fn first_empty_lane(buckets: &Bucket) -> Option<usize> {
-    let mask = buckets.simd_eq(Bucket::splat(0)).to_bitmask();
-    if mask == 0 {
-        None
-    } else {
-        Some(mask.trailing_zeros() as usize)
-    }
 }
 
 /// Initialize a scattered map table from a slice of records.
@@ -50,22 +45,17 @@ pub fn initialize_scattered_map<K, V>(
     if n == 0 {
         return ScatteredMapTable {
             metadata: &[],
-            lookup_fn: |_table, _h| None,
             index_bits: 0,
         };
     }
 
-    let (lookup_fn, index_bits): (fn(&ScatteredMapTable, h: u64) -> Option<u64>, _);
-    if records.len() < 256 {
-        lookup_fn = lookup::<8, LinearProbe>;
-        index_bits = 8;
+    let index_bits = if records.len() < 256 {
+        8
     } else if records.len() < 65536 {
-        lookup_fn = lookup::<16, LinearProbe>;
-        index_bits = 16;
+        16
     } else {
-        lookup_fn = lookup::<24, LinearProbe>;
-        index_bits = 24;
-    }
+        24
+    };
 
     let align = align_of::<MetadataStride>();
     let base = refs.as_mut_ptr() as usize;
@@ -84,7 +74,7 @@ pub fn initialize_scattered_map<K, V>(
         let hash = record.hash;
         let ctrl_byte = control_byte_from_hash(hash);
 
-        let mut probe = LinearProbe::new(num_groups, hash);
+        let mut probe = LinearProbe::new(num_groups * BUCKET_STRIDE, hash);
 
         loop {
             let Some(g) = probe.next() else {
@@ -100,10 +90,10 @@ pub fn initialize_scattered_map<K, V>(
             while bits != 0 {
                 let lane = bits.trailing_zeros() as usize;
                 let h2 = group.hashes[group_offset * BUCKET_SIZE + lane];
-                let (hash, index) = split_hash(index_bits, h2);
+                let (stored, index) = split_hash(index_bits, h2);
                 let hash_mask = (-1_i64 as u64) << (index_bits as usize);
-                if h2 == hash & hash_mask {
-                    panic!("duplicate hash found: {hash:x} at index {index}");
+                if stored == hash & hash_mask {
+                    panic!("duplicate hash found: {stored:x} at index {index}");
                 }
                 bits &= bits - 1;
             }
@@ -118,7 +108,6 @@ pub fn initialize_scattered_map<K, V>(
 
     ScatteredMapTable {
         metadata,
-        lookup_fn,
         index_bits,
     }
 }
@@ -126,10 +115,7 @@ pub fn initialize_scattered_map<K, V>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        const_hash,
-        map::{probe::split_hash, table::HASH_STRIDE},
-    };
+    use crate::{const_hash, map::probe::split_hash};
 
     #[test]
     fn initialize_table() {
@@ -151,14 +137,14 @@ mod tests {
         for group in table.metadata {
             for (group_offset, bucket) in group.buckets.iter().enumerate() {
                 let ctrl = bucket.as_array();
-                for lane in 0..16 {
+                for lane in 0..BUCKET_SIZE {
                     if ctrl[lane] == 0 {
                         continue;
                     }
                     assert_ne!(ctrl[lane] & 0x80, 0, "occupied slot must have tag bit set");
                     let (hash, offset) = split_hash(
                         table.index_bits,
-                        group.hashes[group_offset * HASH_STRIDE + lane],
+                        group.hashes[group_offset * BUCKET_SIZE + lane],
                     );
                     assert!(offset < 2, "bad row index: {offset}");
                     eprintln!("hash: {hash:x}, offset: {offset}");
@@ -168,6 +154,67 @@ mod tests {
             }
         }
         assert!(seen[0] && seen[1]);
+    }
+
+    #[allow(unsafe_code)]
+    fn round_trip(n: usize, strides: usize) {
+        let mut buffer: Vec<MetadataStride> = (0..strides).map(|_| MetadataStride::ZERO).collect();
+        let refs: &'static mut [u8] = unsafe {
+            core::slice::from_raw_parts_mut(
+                buffer.as_mut_ptr().cast::<u8>(),
+                strides * std::mem::size_of::<MetadataStride>(),
+            )
+        };
+
+        let keys: Vec<String> = (0..n).map(|i| format!("key{i:08}")).collect();
+        let records: Vec<MapRecord<&str, usize>> = keys
+            .iter()
+            .enumerate()
+            .map(|(i, k)| MapRecord::new(k.as_str(), i, crate::hash::ConstHash::hash(&k.as_str())))
+            .collect();
+
+        let table = initialize_scattered_map(&records, refs);
+
+        for (i, key) in keys.iter().enumerate() {
+            let found = table.lookup(crate::hash::ConstHash::hash(&key.as_str()));
+            assert!(found.is_found(), "n={n} strides={strides}: missed {key}");
+            assert_eq!(found.unwrap() as usize, i, "n={n} strides={strides}: {key}");
+        }
+
+        for i in 0..if cfg!(miri) { 50 } else { 1000 } {
+            let key = format!("absent{i:08}");
+            let found = table.lookup(crate::hash::ConstHash::hash(&key.as_str()));
+            if found.is_found() {
+                assert!(
+                    (found.unwrap() as usize) < n,
+                    "n={n} strides={strides}: out-of-range index for {key}"
+                );
+            }
+        }
+    }
+
+    const ROUND_TRIP_SIZES: &[usize] = if cfg!(miri) {
+        &[1, 2, 16, 17, 255, 256, 257]
+    } else if cfg!(bsan) {
+        &[1, 2, 15, 16, 17, 255, 256, 257, 1000]
+    } else {
+        &[
+            1, 2, 15, 16, 17, 255, 256, 257, 1000, 5000, 65535, 65536, 70000,
+        ]
+    };
+
+    #[test]
+    fn lookup_round_trip_safe_capacity() {
+        for &n in ROUND_TRIP_SIZES {
+            round_trip(n, safe_record_count_for_capacity(n));
+        }
+    }
+
+    #[test]
+    fn lookup_round_trip_full_table() {
+        for &n in ROUND_TRIP_SIZES {
+            round_trip(n, n.div_ceil(MetadataStride::CAPACITY));
+        }
     }
 
     // Make sure we always have enough slack space for the metadata.

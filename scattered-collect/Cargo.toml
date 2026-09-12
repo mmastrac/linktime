@@ -1,13 +1,13 @@
 [package]
 name = "scattered-collect"
-version = "0.21.3"
+version = "0.22.2"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Link-time collections for Rust (distributed slices, registries)"
 categories = ["data-structures", "development-tools::build-utils", "no-std"]
-rust-version = "1.85"
+rust-version = "1.89"
 
 [features]
 __internal = []
@@ -21,9 +21,14 @@ xxhash-rust = { version = "0.8.15", features = ["xxh3", "const_xxh3"] }
 wide = "1.3"
 
 [dev-dependencies]
-divan = "0.1.21"
+divan = { version = "5.0.1", package = "codspeed-divan-compat" }
 scattered-collect = { path = ".", features = ["__internal"] }
 trybuild = "1"
+
+[lib]
+# Benchmarks live in `benches/` and use their own harness; the default `libtest`
+# bench harness for the lib target is unused.
+bench = false
 
 [[example]]
 name = "scattered-collect-command-registration"
@@ -66,7 +71,13 @@ name = "map"
 harness = false
 path = "benches/map.rs"
 
+[[bench]]
+name = "collections"
+harness = false
+path = "benches/collections.rs"
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_used_linker)',
+    'cfg(bsan)',
 ] }

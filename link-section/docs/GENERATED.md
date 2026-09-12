@@ -17,8 +17,14 @@
 </td></tr>
 <tr><td><code>crate_path = ::path::to::link_section</code></td><td>
 
- Specify a custom crate path for the `link-section` crate. Used when
- re-exporting the section macro.
+ The path to the `link-section` crate containing the support macros. If
+ you re-export `link-section` items as part of your crate, you can use
+ this to redirect the macro's output to the correct crate.
+
+ Using the declarative [`section!`][s] form is
+ preferred over this parameter.
+
+ [s]: crate::declarative::section!
 
 
 </td></tr>

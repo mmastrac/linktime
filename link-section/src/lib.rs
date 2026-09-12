@@ -1,6 +1,8 @@
 #![doc = include_str!("../docs/BUILD.md")]
 //! # link-section
 #![doc = include_str!("../docs/PREAMBLE.md")]
+#![doc = include_str!("../docs/REEXPORT.md")]
+#![doc = include_str!("../docs/GENERATED.md")]
 #![allow(unsafe_code)]
 #![no_std]
 #![recursion_limit = "256"]
@@ -39,8 +41,14 @@ __declare_features!(
         example: "aux(main = path::to::MAIN_SECTION)";
         validate: [(($aux_name:path))];
     };
-    /// Specify a custom crate path for the `link-section` crate. Used when
-    /// re-exporting the section macro.
+    /// The path to the `link-section` crate containing the support macros. If
+    /// you re-export `link-section` items as part of your crate, you can use
+    /// this to redirect the macro's output to the correct crate.
+    ///
+    /// Using the declarative [`section!`][s] form is
+    /// preferred over this parameter.
+    ///
+    /// [s]: crate::declarative::section!
     crate_path {
         attr: [(crate_path = $path:pat) => (($path))];
         example: "crate_path = ::path::to::link_section";

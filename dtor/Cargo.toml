@@ -1,12 +1,11 @@
 [package]
 name = "dtor"
-version = "1.0.5"
+version = "1.0.6"
 authors.workspace = true
 edition = "2021"
 description = "Global, no_std-compatible destructors for all platforms that run after main (like C/C++ __attribute__((destructor)))"
 license.workspace = true
 repository.workspace = true
-readme = "README.md"
 categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.60"
 
@@ -19,6 +18,11 @@ proc_macro = ["dep:linktime-proc-macro"]
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["dtor"] }
+
+# UEFI never runs .fini_array, so destructors are collected into a
+# marker-section and drained explicitly via `run_destructors`.
+[target.'cfg(target_os = "uefi")'.dependencies]
+link-section = { workspace = true, default-features = false }
 
 [dev-dependencies]
 libc-print = "0.5"
@@ -37,5 +41,7 @@ name = "dtor"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_no_fail_on_missing_unsafe)',
-    'cfg(linktime_used_linker)'
+    'cfg(linktime_used_linker)',
+    'cfg(linktime_asan)',
+    'cfg(bsan)'
 ] }

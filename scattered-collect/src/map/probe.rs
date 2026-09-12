@@ -1,8 +1,34 @@
 #![allow(unreachable_pub)]
-
 pub type Bucket = wide::u8x16;
 
 pub const BUCKET_SIZE: usize = std::mem::size_of::<Bucket>();
+
+#[repr(transparent)]
+pub struct LookupResult(u32);
+
+impl LookupResult {
+    #[inline(always)]
+    pub const fn found(at: i32) -> Self {
+        debug_assert!(at >= 0);
+        LookupResult(at as u32)
+    }
+
+    #[inline(always)]
+    pub const fn not_found() -> Self {
+        LookupResult(u32::MAX)
+    }
+
+    #[inline(always)]
+    pub const fn is_found(&self) -> bool {
+        (self.0 as i32) >= 0
+    }
+
+    #[inline(always)]
+    pub const fn unwrap(self) -> u32 {
+        debug_assert!(self.is_found());
+        self.0
+    }
+}
 
 /// Pluggable probe strategy for the scattered map.
 ///
@@ -19,6 +45,7 @@ pub struct LinearProbe {
     len: usize,
     remaining: usize,
     pos: usize,
+    stride: usize,
 }
 
 impl ProbeStrategy for LinearProbe {
@@ -29,6 +56,7 @@ impl ProbeStrategy for LinearProbe {
             len,
             remaining: len,
             pos,
+            stride: 1,
         }
     }
 
@@ -38,7 +66,7 @@ impl ProbeStrategy for LinearProbe {
             return None;
         }
         let p = self.pos;
-        self.pos = (self.pos + 1) % self.len;
+        self.pos = (self.pos.wrapping_add(self.stride)) % self.len;
         self.remaining -= 1;
         Some(p)
     }
@@ -59,8 +87,24 @@ pub fn match_mask(group: &Bucket, tag: u8) -> u32 {
 }
 
 #[inline]
+pub fn has_empty(group: &Bucket) -> bool {
+    group.simd_eq(Bucket::splat(0)).to_bitmask() != 0
+}
+
+#[inline]
 pub fn split_hash(index_bits: u8, hash: u64) -> (u64, usize) {
     let hash_mask: u64 = (-1_i64 as u64) << (index_bits as usize);
     let index_mask = !hash_mask;
     (hash & hash_mask, (hash & index_mask) as usize)
+}
+
+/// First lane index in `buckets` whose byte is `0` (empty), using SIMD.
+#[inline]
+pub fn first_empty_lane(buckets: &Bucket) -> Option<usize> {
+    let mask = buckets.simd_eq(Bucket::splat(0)).to_bitmask();
+    if mask == 0 {
+        None
+    } else {
+        Some(mask.trailing_zeros() as usize)
+    }
 }

@@ -1,12 +1,11 @@
 [package]
 name = "ctor"
-version = "1.0.12"
+version = "1.0.13"
 authors.workspace = true
 edition = "2021"
 description = "Global, no_std-compatible constructors for all platforms that run before main (like C/C++ __attribute__((constructor)))"
 license.workspace = true
 repository.workspace = true
-readme = "README.md"
 categories = ["development-tools::build-utils", "no-std", "no-std::no-alloc", "embedded", "development-tools::procedural-macro-helpers"]
 rust-version = "1.60"
 
@@ -27,12 +26,18 @@ proc_macro = ["dep:linktime-proc-macro"]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(linktime_no_fail_on_missing_unsafe)',
     'cfg(linktime_used_linker)',
-    'cfg(linktime_asan)'
+    'cfg(linktime_asan)',
+    'cfg(bsan)'
 ] }
 
 [dependencies]
 linktime-proc-macro = { workspace = true, optional = true, features = ["ctor"] }
 link-section = { workspace = true, optional = true, default-features = false }
+
+# UEFI always collects constructors (it has no `.init_array` runtime), so it
+# needs link-section regardless of the `priority` feature.
+[target.'cfg(target_os = "uefi")'.dependencies]
+link-section = { workspace = true, default-features = false }
 
 [dev-dependencies]
 libc-print = "0.5"

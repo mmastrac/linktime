@@ -1,0 +1,35 @@
+/* @theme RUSTCONF */
+/* @auto-scaling fittingHeader */
+
+@import 'default';
+
+ul {
+   padding-left: 1em;
+}
+li {
+   line-height: 1.3em;
+}
+li::marker {
+   content: "";
+}
+li::before {
+   content: "🦀 ";
+   font-size: 42%;
+   vertical-align: middle;
+   padding-right: 0.7em;
+}
+pre {
+   font-size: 75%;
+   white-space: pre;
+   background: transparent; 
+   border: 0; 
+}
+
+table:has(pre) {
+   border: 0;
+}
+table:has(pre) :is(tr, th, td) {
+   border: 0;
+   background: transparent;
+   vertical-align: top;
+}
