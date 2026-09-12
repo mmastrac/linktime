@@ -5,7 +5,7 @@
 set NEED_TOOLS "node wasmtime";
 set NEED_TARGETS "wasm32-unknown-unknown wasm32-wasip1 wasm32-wasip2";
 set REQUIRE_IF "WASM_PLATFORM";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }

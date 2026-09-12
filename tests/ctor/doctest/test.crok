@@ -2,7 +2,7 @@
 
 # bsan does not instrument doctests.
 set SKIP_IF_BSAN "1";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }

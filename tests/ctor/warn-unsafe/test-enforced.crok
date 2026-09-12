@@ -2,7 +2,7 @@
 # Missing `unsafe` on `#[ctor]` must fail the build by default.
 
 set SKIP_IF_BSAN "1";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }

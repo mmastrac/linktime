@@ -6,7 +6,7 @@ if TARGET_OS != "windows" {
     exit script;
 }
 set NEEDS_RUSTFLAGS "-C target-feature=+crt-static";
-include ../../_setup.crok;
+include "../../_setup.crok";
 set CARGO_TARGET_DIR "target/system_crt_static";
 defer {
     $ cargo clean --quiet

@@ -1,5 +1,5 @@
 #!/usr/bin/env crok --v0
-include ../../_setup.crok;
+include "../../_setup.crok";
 defer {
     $ cargo clean --quiet
 }

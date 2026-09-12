@@ -1,7 +1,7 @@
 #!/usr/bin/env crok --v0
 # Run link-section with and without static CRT.
 set NEEDS_RUSTFLAGS "-C target-feature=-crt-static";
-include ../../_setup.crok;
+include "../../_setup.crok";
 set CARGO_TARGET_DIR "target/link-section-no-crt-static";
 defer {
     $ cargo clean --quiet

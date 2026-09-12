@@ -2,7 +2,7 @@
 # `--cfg linktime_no_fail_on_missing_unsafe` suppresses the enforcement error.
 
 set SKIP_IF_BSAN "1";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }

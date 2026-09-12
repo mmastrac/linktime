@@ -14,7 +14,7 @@
 set NEED_TOOLS "node";
 set NEED_TARGETS "wasm32-unknown-unknown";
 set REQUIRE_IF "WASM_PLATFORM";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }

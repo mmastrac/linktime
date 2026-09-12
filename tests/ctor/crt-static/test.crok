@@ -7,7 +7,7 @@ if TARGET_OS == "macos" {
 # bsan not available in static CRT.
 set SKIP_IF_BSAN "1";
 set NEEDS_RUSTFLAGS "-C target-feature=+crt-static";
-include ../../_setup.crok;
+include "../../_setup.crok";
 if skip != "" {
     exit script;
 }
