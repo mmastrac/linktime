@@ -1,76 +1,71 @@
-#!/usr/bin/env bash
-set -xeuo pipefail
-
-# BorrowSanitizer (https://borrowsanitizer.com/). Unlike miri, which interprets
-# MIR, bsan instruments real machine code, so the link-section/ctor tests that
-# miri has to skip do run here.
+#!/bin/sh
+# BorrowSanitizer (https://borrowsanitizer.com/).
 #
-# `cargo bsan` picks the host target itself and forwards a second `--target` if
-# we pass one, so none of the commands below specify a target.
+# Usage: bsan.sh provision   inside the container, via sandbox.sh
+#        bsan.sh extra       on the host, driving commands back in
+set -xe
 
-# Build the instrumented sysroot up front. It would otherwise happen lazily
-# inside the first command, mixing a libstd build into that command's output.
-cargo bsan setup
+TOOLS=/opt/bsan
+CARGO=/root/.cargo/bin/cargo
 
-preinit_dir=$(mktemp -d)
-cc -c -fPIC -x c -o "$preinit_dir/preinit.o" - <<'EOF'
-extern void __bsan_init(void);
+# NOTE: Once upstream issue is fixed we don't need preinit.o
+
+provision() {
+  export PATH="/root/.cargo/bin:$PATH"
+  mkdir -p "$TOOLS/bin"
+
+  # __bsan_init has to run before every constructor under test, so it goes in
+  # .preinit_array.
+  cc -c -fPIC -x c -o "$TOOLS/preinit.o" - <<'PREINIT'
+extern void __bsan_init(void) __attribute__((weak));
+static void bsan_preinit(void) {
+  if (__bsan_init) {
+    __bsan_init();
+  }
+}
 __attribute__((section(".preinit_array"),
-               used)) static void (*bsan_preinit)(void) = __bsan_init;
-EOF
+               used)) static void (*bsan_preinit_entry)(void) = bsan_preinit;
+PREINIT
 
-host_triple=$(rustc -vV | sed -n 's/^host: //p')
-export "CARGO_TARGET_$(echo "$host_triple" | tr 'a-z-' 'A-Z_')_RUSTFLAGS=-C link-arg=$preinit_dir/preinit.o"
-export RUSTDOCFLAGS="-C link-arg=$preinit_dir/preinit.o"
+  cat > "$TOOLS/env.sh" <<ENV
+export BSAN=1
+export CARGO_HOME="\$HOME/.cargo"
+export RUSTUP_HOME=/root/.rustup
+export PATH="$TOOLS/bin:/root/.cargo/bin:\$PATH"
+export SANDBOX_RUSTFLAGS="-C link-arg=$TOOLS/preinit.o"
+export RUSTDOCFLAGS="-C link-arg=$TOOLS/preinit.o"
+ENV
 
-cargo bsan test
+  cat > "$TOOLS/bin/cargo" <<SHIM
+#!/bin/sh
+set -eu
+case "\${1:-}" in
+  run|test) exec $CARGO bsan "\$@" ;;
+esac
+exec $CARGO "\$@"
+SHIM
+  chmod +x "$TOOLS/bin/cargo"
 
-bsan_examples=(
-  ctor-advanced
-  ctor-basic
-  ctor-dynamic
-  ctor-example
-  ctor-priority
-  ctor-statics
-  dtor-example
-  link-section-const
-  link-section-dyn
-  link-section-empty
-  link-section-example
-  link-section-movable
-  link-section-movable-no-macro
-  link-section-mut
-  link-section-mut-no-macro
-  link-section-ref
-  scattered-collect-command-registration
-  scattered-collect-intern-strings
-  scattered-collect-iterable
-  scattered-collect-map
-  scattered-collect-referenced-slice
-  scattered-collect-set
-  scattered-collect-slice
-  scattered-collect-sorted-referenced-slice
-  scattered-collect-sorted-slice
-)
-for example in "${bsan_examples[@]}"; do
-  cargo bsan run --example "$example"
-done
+  . "$TOOLS/env.sh"
 
-# Crates outside the workspace.
-bsan_crates=(
-  tests/ctor/edition-2018
-  tests/ctor/edition-2021
-  tests/ctor/edition-2024
-  tests/ctor/no-default-features
-  tests/ctor/priority
-  tests/dtor/link-section
-  tests/dtor/no-default-features
-  tests/link_section/basic
-  tests/link_section/copied
-  tests/link_section/interior_mut
-  tests/link_section/mutable
-  tests/link_section/no-default-features
-)
-for dir in "${bsan_crates[@]}"; do
-  (cd "$dir" && cargo bsan run)
-done
+  # Build the instrumented libstd
+  cargo bsan setup
+}
+
+extra() {
+  root=$(cd "$(dirname "$0")/../.." && pwd)
+  "$root/.github/jobs/sandbox.sh" exec bsan 'RUSTFLAGS="$SANDBOX_RUSTFLAGS" cargo test'
+
+  examples=$(cargo metadata --no-deps --format-version 1 |
+    jq -r '.packages[].targets[] | select(.kind[] == "example") | .name')
+  for example in $examples; do
+    "$root/.github/jobs/sandbox.sh" exec bsan \
+      "RUSTFLAGS=\"\$SANDBOX_RUSTFLAGS\" cargo run --example $example"
+  done
+}
+
+case "${1:-}" in
+  provision) provision ;;
+  extra) extra ;;
+  *) echo "usage: $0 provision|extra" >&2; exit 1 ;;
+esac

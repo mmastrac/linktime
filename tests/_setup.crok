@@ -1,0 +1,62 @@
+#!/usr/bin/env crok --v0
+# Shared setup
+#
+#   NEEDS_RUSTFLAGS  build flags, default none
+#   SKIP_IF_BSAN     skip under BorrowSanitizer
+#   NEED_OS          skip unless TARGET_OS is in this list
+#   NEED_TOOLS       commands that must be on PATH
+#   NEED_TARGETS     rustup targets that must be installed
+#   NEED_FILES       skip unless at least one of these paths exists
+#   REQUIRE_IF       require if CI var set (eg: "WASM_PLATFORM")
+
+# RUSTFLAGS is is built from NEEDS_RUSTFLAGS + SANDBOX_RUSTFLAGS.
+$ sh -c 'printf "%s %s" "${NEEDS_RUSTFLAGS:-}" "${SANDBOX_RUSTFLAGS:-}"'
+%SET rustflags
+*
+set RUSTFLAGS "$rustflags";
+
+$ sh -c '
+  skip() { echo "$1"; exit 0; }
+
+  [ -n "${SKIP_IF_BSAN:-}" ] && [ -n "${BSAN:-}" ] && skip "bsan"
+
+  if [ -n "${NEED_OS:-}" ]; then
+    hit=0
+    for os in $NEED_OS; do [ "$os" = "$TARGET_OS" ] && hit=1; done
+    [ "$hit" = 1 ] || skip "$TARGET_OS"
+  fi
+
+  required=0
+  if [ -n "${REQUIRE_IF:-}" ]; then
+    eval "leg=\${$REQUIRE_IF:-}"
+    if [ -n "$leg" ]; then
+      required=1
+    elif [ -n "${CI:-}" ]; then
+      skip "not the $REQUIRE_IF leg"
+    fi
+  fi
+
+  missing=""
+  for tool in ${NEED_TOOLS:-}; do
+    command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+  done
+  if [ -n "${NEED_TARGETS:-}" ]; then
+    installed=$(rustup target list --installed 2>/dev/null)
+    for target in $NEED_TARGETS; do
+      echo "$installed" | grep -qx "$target" || missing="$missing $target"
+    done
+  fi
+  if [ -n "${NEED_FILES:-}" ]; then
+    hit=0
+    for file in $NEED_FILES; do [ -e "$file" ] && hit=1; done
+    [ "$hit" = 1 ] || missing="$missing ${NEED_FILES%% *}"
+  fi
+
+  if [ -n "$missing" ]; then
+    [ "$required" = 1 ] && { echo "required here but missing:$missing" >&2; exit 1; }
+    skip "missing$missing"
+  fi
+  :
+'
+%SET skip
+*

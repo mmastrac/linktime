@@ -48,6 +48,7 @@ fn ensure_no_empty_files_recurse(path: impl AsRef<Path>) -> bool {
 
 #[test]
 #[cfg(not(linktime_used_linker))]
+#[ignore = "needs cargo-expand"]
 pub fn pass() {
     macrotest::expand("tests/expand/*.rs");
     ensure_no_empty_files("tests/expand");
@@ -56,6 +57,7 @@ pub fn pass() {
 #[cfg(target_vendor = "apple")]
 #[cfg(not(linktime_used_linker))]
 #[test]
+#[ignore = "needs cargo-expand"]
 pub fn pass_darwin() {
     macrotest::expand("tests/expand-darwin/*.rs");
     ensure_no_empty_files("tests/expand-darwin");
@@ -64,6 +66,7 @@ pub fn pass_darwin() {
 #[cfg(target_os = "linux")]
 #[cfg(not(linktime_used_linker))]
 #[test]
+#[ignore = "needs cargo-expand"]
 pub fn pass_linux() {
     macrotest::expand("tests/expand-linux/*.rs");
     ensure_no_empty_files("tests/expand-linux");

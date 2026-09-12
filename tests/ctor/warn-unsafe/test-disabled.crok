@@ -1,6 +1,11 @@
 #!/usr/bin/env crok --v0
 # `--cfg linktime_no_fail_on_missing_unsafe` suppresses the enforcement error.
-set RUSTFLAGS "";
+
+set SKIP_IF_BSAN "1";
+include "../../_setup.crok";
+if skip != "" {
+    exit script;
+}
 set CARGO_TARGET_DIR "target/warn_no";
 defer {
     $ cargo clean --quiet

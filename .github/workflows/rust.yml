@@ -23,7 +23,7 @@ jobs:
             needs:
               $match:
                 "this.job == 'wasm'": "wasmtime-cli"
-                "this.job == 'test'": "cargo-expand"
+                "this.job == 'macrotest'": "cargo-expand"
                 "this.job == 'zigbuild'": "cargo-zigbuild"
             rust-toolchain:
               $match:
@@ -51,35 +51,75 @@ jobs:
                 "this.job == 'test-used-linker'": rust-src
             label:
               linux:
+                timeout: "360"
                 os:
                   ubuntu-latest:
-                    job: [test, test-used-linker, miri, wasm, uefi, build, build-minimal, build-ctor-minimal]
+                    job: [test, macrotest, test-used-linker, miri, wasm, uefi, build, build-minimal, build-ctor-minimal]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
                     job: [lint, sanitize]
                     target: x86_64-unknown-linux-gnu
               linux-musl:
+                timeout: "360"
                 os: ubuntu-latest
                 job: [build, lint, test]
                 target: x86_64-unknown-linux-musl
               linux-x86:
+                timeout: "360"
                 os: ubuntu-latest
                 job: test
                 target: i686-unknown-linux-gnu
               macos:
+                timeout: "360"
                 os: macOS-latest
-                job: [lint, test, test-used-linker, miri, zigbuild, sanitize, build-minimal]
+                job: [lint, test, macrotest, test-used-linker, miri, zigbuild, sanitize, build-minimal]
                 target: aarch64-apple-darwin
               windows:
+                timeout: "360"
                 os: windows-latest
-                job: [lint, test, miri, build-minimal]
+                job: [lint, test, macrotest, miri, build-minimal]
                 target: x86_64-pc-windows-msvc
+              bsan:
+                sandbox: bsan
+                timeout: "60"
+                os: ubuntu-latest
+                job: [crok]
+                target: x86_64-unknown-linux-gnu
+              freebsd:
+                sandbox: freebsd
+                sandbox-release: "14.4"
+                timeout: "45"
+                os: ubuntu-latest
+                job: [crok]
+                target: x86_64-unknown-freebsd
+              openbsd:
+                sandbox: openbsd
+                sandbox-release: "7.8"
+                timeout: "45"
+                os: ubuntu-latest
+                job: [crok]
+                target: x86_64-unknown-openbsd
+              netbsd:
+                sandbox: netbsd
+                sandbox-release: "10.1"
+                timeout: "45"
+                os: ubuntu-latest
+                job: [crok]
+                target: x86_64-unknown-netbsd
+              dragonfly:
+                sandbox: dragonfly
+                sandbox-release: "6.4.2"
+                timeout: "45"
+                os: ubuntu-latest
+                job: [crok]
+                target: x86_64-unknown-dragonfly
           config: |
             github: ${{ toJSON(github) }}
 
   build:
     name: ${{ matrix.label }} / ${{ matrix.job }} (${{ matrix.rust-toolchain }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ fromJson(matrix.timeout) }}
     needs: generate-matrix
     strategy:
       fail-fast: false
@@ -99,7 +139,7 @@ jobs:
   
     # Build crok with preinstalled stable, before the toolchain override
     - name: Install crok
-      if: ${{ contains(matrix.job, 'minimal') }}
+      if: ${{ contains(matrix.job, 'minimal') || matrix.job == 'crok' }}
       uses: taiki-e/cache-cargo-install-action@v2
       with:
         tool: crok@0.9.0
@@ -116,7 +156,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y qemu-system-x86 ovmf
 
-    # rustup refuses non-host toolchains without --force-non-host
+    # rustup requires --force-non-host for non-host toolchains
     - name: Install Rust toolchain (${{ matrix.rust-toolchain }}, non-host)
       if: ${{ contains(matrix.rust-toolchain, 'i686') }}
       shell: bash
@@ -139,7 +179,60 @@ jobs:
       with:
         version: 0.15.2
 
+    - name: Start sandbox
+      id: sandbox
+      if: ${{ matrix.sandbox }}
+      run: .github/jobs/sandbox.sh start ${{ matrix.sandbox }}
+
+    # The sandbox dumps its whole cargo home under the workspace.
+    - name: Cache sandbox
+      if: ${{ matrix.sandbox }}
+      continue-on-error: true # https://github.com/actions/cache/issues/1754
+      uses: actions/cache@v5
+      with:
+        path: .cache/ci/sandbox/${{ matrix.sandbox }}
+        key: sandbox-${{ matrix.sandbox }}-${{ matrix.sandbox-release }}${{ steps.sandbox.outputs.toolchain }}-${{ hashFiles('Cargo.lock') }}
+        restore-keys: |
+          sandbox-${{ matrix.sandbox }}-${{ matrix.sandbox-release }}${{ steps.sandbox.outputs.toolchain }}-
+
+    - name: Provision FreeBSD VM
+      if: ${{ matrix.sandbox == 'freebsd' }}
+      uses: vmactions/freebsd-vm@v1
+      with:
+        release: ${{ matrix.sandbox-release }}
+        usesh: true
+        run: sh .github/jobs/vmactions.sh
+
+    - name: Provision OpenBSD VM
+      if: ${{ matrix.sandbox == 'openbsd' }}
+      uses: vmactions/openbsd-vm@v1
+      with:
+        release: ${{ matrix.sandbox-release }}
+        usesh: true
+        run: sh .github/jobs/vmactions.sh
+
+    - name: Provision NetBSD VM
+      if: ${{ matrix.sandbox == 'netbsd' }}
+      uses: vmactions/netbsd-vm@v1
+      with:
+        release: ${{ matrix.sandbox-release }}
+        usesh: true
+        run: sh .github/jobs/vmactions.sh
+
+    - name: Provision DragonFly BSD VM
+      if: ${{ matrix.sandbox == 'dragonfly' }}
+      uses: vmactions/dragonflybsd-vm@v1
+      with:
+        release: ${{ matrix.sandbox-release }}
+        usesh: true
+        run: sh .github/jobs/vmactions.sh
+
+    - name: Provision sandbox
+      if: ${{ matrix.sandbox }}
+      run: .github/jobs/sandbox.sh provision ${{ matrix.sandbox }}
+
     - name: Cache Rust files
+      if: ${{ !matrix.sandbox }}
       continue-on-error: true # https://github.com/actions/cache/issues/1754
       uses: actions/cache@v5
       with:
@@ -157,6 +250,7 @@ jobs:
       env:
         TOOLCHAIN: ${{ matrix.rust-toolchain }}
         TARGET: ${{ matrix.target }}
+        SANDBOX: ${{ matrix.sandbox }}
         CLIPPY_LINTS: >-
           -D clippy::all
           -D deprecated-safe
@@ -175,179 +269,18 @@ jobs:
           -D missing-docs
       run: ".github/jobs/${{ matrix.job }}.sh"
 
-  # BorrowSanitizer (https://borrowsanitizer.com/)
-  #
-  # bsan ships only as a container image, rebuilt nightly against the current
-  # rust nightly.
-  bsan:
-    name: linux / bsan (nightly)
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    container:
-      image: ghcr.io/borrowsanitizer/bsan:latest
-    steps:
-      - uses: actions/checkout@v6
-
-      # Steps run with HOME=/github/home, but the image installs the `bsan`
-      # toolchain (and sets it as the rustup default) under root's home.
-      - name: Use the image's toolchain
-        run: |
-          ln -s /root/.rustup "$HOME/.rustup"
-          echo "/root/.cargo/bin" >> "$GITHUB_PATH"
-
-      # The sysroot is an instrumented libstd.
-      - name: Compute toolchain cache key
-        id: toolchain
-        run: |
-          key=$( { rustc -vV; cargo bsan --version; } | sha256sum | cut -c1-16 )
-          echo "key=$key" >> "$GITHUB_OUTPUT"
-
-      - name: Cache sysroot and Rust files
-        continue-on-error: true # https://github.com/actions/cache/issues/1754
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/bsan
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: bsan-${{ steps.toolchain.outputs.key }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            bsan-${{ steps.toolchain.outputs.key }}-
-
-      - name: Run bsan
-        run: .github/jobs/bsan.sh
-
   success:
     runs-on: ubuntu-slim
-    needs: [build, bsan]
+    needs: [build]
     if: always()
     steps:
       - name: Report success or fail the workflow
         run: |
           echo "build matrix result: ${BUILD_RESULT}"
-          echo "bsan result: ${BSAN_RESULT}"
           if [ "${BUILD_RESULT}" != success ]; then
             echo "::error::Matrix job failed or did not succeed (result=${BUILD_RESULT})."
-            exit 1
-          fi
-          if [ "${BSAN_RESULT}" != success ]; then
-            echo "::error::BorrowSanitizer job failed or did not succeed (result=${BSAN_RESULT})."
             exit 1
           fi
           echo "Success"
         env:
           BUILD_RESULT: ${{ needs.build.result }}
-          BSAN_RESULT: ${{ needs.bsan.result }}
-
-  # Tier-*BSD tests (QEMU)
-  #
-  # vmactions.sh provisions the VM (copyback feeds the cache). The crok suite
-  # runs host-side, driving commands into the VM via vm-run.sh. FreeBSD/OpenBSD
-  # also run in-VM doctests. macrotest/compile-fail need cargo-expand, tier-1 only.
-
-  vmactions-freebsd:
-    runs-on: ubuntu-latest
-    name: FreeBSD / test (stable)
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/cache@v5
-        with:
-          path: .cache/ci/vmactions/freebsd
-          key: vmactions-freebsd-14.4-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            vmactions-freebsd-14.4-
-      - name: Install crok
-        uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: crok@0.9.0
-      - name: Provision VM
-        uses: vmactions/freebsd-vm@v1
-        with:
-          release: "14.4"
-          usesh: true
-          run: sh .github/jobs/vmactions.sh provision
-      - name: Run crok suite
-        run: bash .github/jobs/vm-crok.sh freebsd freebsd
-      - name: Doc tests
-        shell: freebsd {0}
-        run: sh .github/jobs/vmactions.sh doctest
-
-  vmactions-openbsd:
-    runs-on: ubuntu-latest
-    name: OpenBSD / test (stable)
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/cache@v5
-        with:
-          path: .cache/ci/vmactions/openbsd
-          key: vmactions-openbsd-7.8-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            vmactions-openbsd-7.8-
-      - name: Install crok
-        uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: crok@0.9.0
-      - name: Provision VM
-        uses: vmactions/openbsd-vm@v1
-        with:
-          release: "7.8"
-          usesh: true
-          run: sh .github/jobs/vmactions.sh provision
-      - name: Run crok suite
-        run: bash .github/jobs/vm-crok.sh openbsd openbsd
-      - name: Doc tests
-        shell: openbsd {0}
-        run: sh .github/jobs/vmactions.sh doctest
-
-  vmactions-netbsd:
-    runs-on: ubuntu-latest
-    name: NetBSD / test (stable)
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/cache@v5
-        with:
-          path: .cache/ci/vmactions/netbsd
-          key: vmactions-netbsd-10.1-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            vmactions-netbsd-10.1-
-      - name: Install crok
-        uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: crok@0.9.0
-      - name: Provision VM
-        uses: vmactions/netbsd-vm@v1
-        with:
-          release: "10.1"
-          usesh: true
-          run: sh .github/jobs/vmactions.sh provision
-      - name: Run crok suite
-        run: bash .github/jobs/vm-crok.sh netbsd netbsd
-
-  vmactions-dragonflybsd:
-    runs-on: ubuntu-latest
-    name: DragonFly BSD / test (stable)
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/cache@v5
-        with:
-          path: .cache/ci/vmactions/dragonfly
-          key: vmactions-dragonfly-6.4.2-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            vmactions-dragonfly-6.4.2-
-      - name: Install crok
-        uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: crok@0.9.0
-      - name: Provision VM
-        uses: vmactions/dragonflybsd-vm@v1
-        with:
-          release: "6.4.2"
-          usesh: true
-          run: sh .github/jobs/vmactions.sh provision
-      - name: Run crok suite
-        run: bash .github/jobs/vm-crok.sh dragonflybsd dragonfly

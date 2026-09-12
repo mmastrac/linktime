@@ -1,5 +1,12 @@
 #!/usr/bin/env crok --v0
-set RUSTFLAGS "-C target-feature=-crt-static";
+
+# bsan does not follow dlopen.
+set SKIP_IF_BSAN "1";
+set NEEDS_RUSTFLAGS "-C target-feature=-crt-static";
+include "../../_setup.crok";
+if skip != "" {
+    exit script;
+}
 set CARGO_TARGET_DIR "target/system_no_crt_static";
 defer {
     $ cargo clean --quiet
