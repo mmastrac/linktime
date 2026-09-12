@@ -150,3 +150,41 @@ crate::__def_section_name! {
     HASH_LENGTH = 10;
     VALID_SECTION_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 }
+
+/// Linker-visible provenance donor for Windows.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __ls_provenance_symbol {
+    () => {
+        concat!(
+            "__ls_prov_",
+            env!("CARGO_CRATE_NAME"),
+            "_",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            "_",
+            env!("CARGO_PKG_VERSION_MINOR"),
+            "_",
+            env!("CARGO_PKG_VERSION_PATCH"),
+        )
+    };
+}
+
+// Linker-visible provenance donor for Windows.
+#[cfg(all(target_os = "windows", not(miri)))]
+core::arch::global_asm!(core::concat!(
+    // read-only
+    ".pushsection .rdata$",
+    __ls_provenance_symbol!(),
+    // ..."d" = initialized, "r" = read-only
+    // "discard" = "duplicates OK"
+    ",\"dr\",discard,",
+    __ls_provenance_symbol!(),
+    "\n",
+    ".globl ",
+    __ls_provenance_symbol!(),
+    "\n",
+    __ls_provenance_symbol!(),
+    ":\n",
+    ".byte 0\n",
+    ".popsection\n",
+));
