@@ -888,7 +888,7 @@ macro_rules! __ctor_parse_impl {
             };
             &__STATIC_CTOR
         };
-        $crate::__ctor_parse_impl!(@ctor $link_args body={ _ = &*$ident } );
+        $crate::__ctor_parse_impl!(@ctor $link_args body={ _ = &**$ident } );
     };
 
     ( @entry next=$next:path[$next_args:tt], input=(

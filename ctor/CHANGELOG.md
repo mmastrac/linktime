@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added UEFI support (`*-unknown-uefi`), run via `ctor::run_constructors`.
 
+### Fixed
+
+- Dereference reference statics (`static IDENT: &'static T = &...`) twice (`_ = &**$ident`) in generated startup constructors so `Static::deref` runs before `main`.
+
 ## [1.0.13] - 2026-08-09
 
 ### Changed

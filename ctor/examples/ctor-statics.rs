@@ -1,5 +1,6 @@
 //! Demonstrate various forms of `#[ctor]` statics.
 use std::mem::MaybeUninit;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use ctor::ctor;
 
@@ -13,11 +14,16 @@ impl MyStatic {
     }
 }
 
+static STATIC_CTOR_REF_INITIALIZED: AtomicBool = AtomicBool::new(false);
+
 #[ctor(unsafe)]
 static STATIC_CTOR: MyStatic = MyStatic::new("foo");
 
 #[ctor(unsafe)]
-static STATIC_CTOR_REF: &'static MyStatic = &MyStatic::new("foo");
+static STATIC_CTOR_REF: &'static MyStatic = &{
+    STATIC_CTOR_REF_INITIALIZED.store(true, Ordering::SeqCst);
+    MyStatic::new("foo")
+};
 
 /// This is not a recommended pattern - just demonstrating how to return static
 /// refs.
@@ -36,6 +42,10 @@ static STATIC_CTOR_REF_GLOBAL: &'static MyStatic = {
 pub static FOO: &'static (dyn ::core::fmt::Debug + Sync) = &"foo";
 
 fn main() {
+    assert!(
+        STATIC_CTOR_REF_INITIALIZED.load(Ordering::SeqCst),
+        "reference static should be initialized before main()"
+    );
     println!("STATIC_CTOR: {:?}", STATIC_CTOR);
     println!("STATIC_CTOR_REF: {:?}", STATIC_CTOR_REF);
     println!("STATIC_CTOR_REF_GLOBAL: {:?}", STATIC_CTOR_REF_GLOBAL);
