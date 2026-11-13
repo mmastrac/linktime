@@ -4,6 +4,7 @@
 #   NEEDS_RUSTFLAGS  build flags, default none
 #   SKIP_IF_BSAN     skip under BorrowSanitizer
 #   NEED_OS          skip unless TARGET_OS is in this list
+#   SKIP_OS          skip if TARGET_OS is in this list
 #   NEED_TOOLS       commands that must be on PATH
 #   NEED_TARGETS     rustup targets that must be installed
 #   NEED_FILES       skip unless at least one of these paths exists
@@ -25,6 +26,8 @@ $ sh -c '
     for os in $NEED_OS; do [ "$os" = "$TARGET_OS" ] && hit=1; done
     [ "$hit" = 1 ] || skip "$TARGET_OS"
   fi
+
+  for os in ${SKIP_OS:-}; do [ "$os" = "$TARGET_OS" ] && skip "$TARGET_OS"; done
 
   required=0
   if [ -n "${REQUIRE_IF:-}" ]; then

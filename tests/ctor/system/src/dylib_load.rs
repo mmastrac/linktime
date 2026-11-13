@@ -90,16 +90,6 @@ unsafe fn sleep(seconds: u32) {
 
 /// Entry point for the executable.
 pub fn main() {
-    // Never called. Links libthread_xu at startup so dlopen doesn't load it
-    // into a process running on libc's pthread stubs (see link_section/copied).
-    #[cfg(target_os = "dragonfly")]
-    std::hint::black_box({
-        extern "C" {
-            fn pthread_create();
-        }
-        pthread_create as *const ()
-    });
-
     let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
     libc_ewriteln!("++ main start");
     let lib_path = format!(
