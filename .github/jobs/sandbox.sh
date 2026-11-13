@@ -9,7 +9,8 @@
 # Commands are piped into sh on stdin.
 set -eu
 
-BSAN_IMAGE=ghcr.io/borrowsanitizer/bsan:latest
+# sha-5931bd5. Later images (rustc 5b7b37aef) fail to read their own bitcode.
+BSAN_IMAGE=ghcr.io/borrowsanitizer/bsan@sha256:0636447261c2df9745363e525816d0450178cc65e98f3ea0f2b1d47b9627e8a1
 BSAN_CONTAINER=rust-ctor-bsan
 BSAN_BIN=/root/.cargo/bin
 
