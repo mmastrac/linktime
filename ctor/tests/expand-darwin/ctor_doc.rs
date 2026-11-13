@@ -1,9 +1,9 @@
 use ctor::ctor;
 
-#[allow(something_else)]
+#[allow(dead_code)]
 /// Doc 1
 #[ctor]
-#[allow(something)]
+#[allow(unused_variables)]
 /// Doc 2
 #[cfg(true)]
 unsafe fn foo() {

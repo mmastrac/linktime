@@ -12,8 +12,8 @@ fn foo() {
 static BAR: TypedSection<fn()>;
 
 #[in_section(unsafe, type = typed, name = package::BAR, aux(main = my_crate::FOO))]
-fn foo() {
-    println!("foo");
+fn bar() {
+    println!("bar");
 }
 
 fn main() {

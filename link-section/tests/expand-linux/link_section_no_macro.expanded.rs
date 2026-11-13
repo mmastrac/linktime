@@ -144,19 +144,19 @@ impl ::core::iter::IntoIterator for BAR {
         self.const_deref().as_slice().iter()
     }
 }
-fn foo() {
+fn bar() {
     const _: fn() = const {
         type __InSecStoredTy = <::link_section::TypedSection<
             fn(),
         > as ::link_section::__support::SectionItemType>::Item;
-        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = foo;
+        const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = bar;
         #[used]
         #[link_section = "_data_link_section_my_crateFOO_packageBAR"]
         static __LINK_SECTION_CONST_ITEM: __InSecStoredTy = __LINK_SECTION_CONST_ITEM_VALUE;
         __LINK_SECTION_CONST_ITEM_VALUE
     };
     {
-        ::std::io::_print(format_args!("foo\n"));
+        ::std::io::_print(format_args!("bar\n"));
     };
 }
 fn main() {}

@@ -20,7 +20,7 @@ pub fn main() {
         extern "C" {
             fn pthread_create();
         }
-        pthread_create as usize
+        pthread_create as *const ()
     });
 
     // LLVM was optimizing these copies into memsets

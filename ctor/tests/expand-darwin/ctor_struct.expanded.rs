@@ -1,5 +1,40 @@
+use ctor::ctor;
 struct Foo {}
 impl Foo {
-    #[ctor(unsafe)]
-    fn ctor() {}
+    #[allow(dead_code)]
+    fn ctor() {
+        #[allow(unsafe_code)]
+        #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
+        fn __ctor_private_inner() {}
+        const _: () = {
+            #[allow(unsafe_code, unused_unsafe)]
+            #[link_section = "__TEXT,__text_startup,regular,pure_instructions"]
+            extern "C" fn __ctor_private() {
+                { { __ctor_private_inner() } }
+            }
+            /// Force `ld64` to pull the archive member owning `APPLE_PRIORITY_ANCHOR`
+            /// (see https://github.com/mmastrac/linktime/issues/496).
+            const _: () = {
+                mod __ctor_force {}
+            };
+            const _: ::ctor::collect::Constructor = const {
+                type __InSecStoredTy = <::link_section::TypedSection<
+                    ::ctor::collect::Constructor,
+                > as ::link_section::__support::SectionItemType>::Item;
+                const __LINK_SECTION_CONST_ITEM_VALUE: __InSecStoredTy = ::ctor::collect::Constructor {
+                    priority: 500,
+                    ctor: __ctor_private,
+                };
+                #[used]
+                #[link_section = "__DATA,_CTOR0_ISIZE_FN,regular,no_dead_strip"]
+                static __LINK_SECTION_CONST_ITEM: ::link_section::__support::SyncUnsafeCell<
+                    __InSecStoredTy,
+                > = ::link_section::__support::SyncUnsafeCell::new(
+                    __LINK_SECTION_CONST_ITEM_VALUE,
+                );
+                __LINK_SECTION_CONST_ITEM_VALUE
+            };
+        };
+        { __ctor_private_inner() }
+    }
 }

@@ -1,4 +1,4 @@
-error[E0433]: cannot find `whatever` in the crate root
+error[E0433]: cannot find `whatever` in the list of imported crates
  --> tests/errors/dtor_bad_crate_path.rs:3:23
   |
 3 | #[dtor(crate_path = ::whatever)]

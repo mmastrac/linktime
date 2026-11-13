@@ -1,7 +1,7 @@
 use ctor::ctor;
-#[allow(something_else)]
+#[allow(dead_code)]
 /// Doc 1
-#[allow(something)]
+#[allow(unused_variables)]
 /// Doc 2
 #[allow(dead_code)]
 unsafe fn foo() {
