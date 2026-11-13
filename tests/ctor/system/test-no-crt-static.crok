@@ -2,11 +2,13 @@
 
 # bsan does not follow dlopen.
 set SKIP_IF_BSAN "1";
-# dylib_load segfaults in dlopen with DragonFly pkg rust 1.98.1.
-set SKIP_OS "dragonfly";
 set NEEDS_RUSTFLAGS "-C target-feature=-crt-static";
 include "../../_setup.crok";
 if skip != "" {
+    exit script;
+}
+# dylib_load segfaults in dlopen with DragonFly pkg rust 1.98.1.
+if TARGET_OS == "dragonfly" {
     exit script;
 }
 set CARGO_TARGET_DIR "target/system_no_crt_static";
