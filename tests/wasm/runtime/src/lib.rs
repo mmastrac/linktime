@@ -2,8 +2,13 @@ use linktime::{ctor, dtor};
 
 use libc_print::*;
 
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
+static CTOR_RAN: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+
 #[ctor(unsafe)]
 pub fn ctor() {
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
+    CTOR_RAN.store(true, core::sync::atomic::Ordering::Relaxed);
     libc_println!("ctor");
 }
 
@@ -132,8 +137,9 @@ pub extern "C" fn _call_atexit(f: extern "C" fn()) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {
+    // Reactor modules run ctors from `_initialize`. Older wasip2 builds do not.
     #[cfg(all(target_os = "wasi", target_env = "p2"))]
-    {
+    if !CTOR_RAN.load(core::sync::atomic::Ordering::Relaxed) {
         unsafe extern "C" {
             fn __wasm_call_ctors();
         }
@@ -144,7 +150,9 @@ pub extern "C" fn _start() {
 
     link_section::test_link_section();
 
-    #[cfg(all(target_os = "wasi", target_env = "p2"))]
+    // Reactor modules do not run dtors when an export returns. Command modules
+    // also call this after `_start`, which is a no-op once handlers have run.
+    #[cfg(target_os = "wasi")]
     {
         unsafe extern "C" {
             fn __wasm_call_dtors();

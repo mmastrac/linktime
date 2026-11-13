@@ -1,3 +1,5 @@
+use ctor::ctor;
+
 struct Foo {
 }
 

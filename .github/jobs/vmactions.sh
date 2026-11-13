@@ -47,6 +47,8 @@ case "$os" in
     fi
     ;;
   DragonFly)
+    # The repo has two `openssl` packages. Upgrade so rust's libssl.so.17 is present.
+    pkg upgrade -y
     pkg install -y rust
     ;;
 esac

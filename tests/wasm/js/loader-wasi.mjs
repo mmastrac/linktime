@@ -17,4 +17,13 @@ const module = await WebAssembly.compile(await readFile(argv[2]));
 const instance = await WebAssembly.instantiate(module, {
   wasi_snapshot_preview1: wasi.wasiImport,
 });
-exit(wasi.start(instance));
+// `wasi.start` rejects reactor modules (those exporting `_initialize`), so
+// initialize those through a view without `_start` and call `_start` directly.
+const { _initialize, _start, memory } = instance.exports;
+if (_initialize) {
+  wasi.initialize({ exports: { _initialize, memory } });
+  _start();
+  exit(0);
+} else {
+  exit(wasi.start(instance));
+}

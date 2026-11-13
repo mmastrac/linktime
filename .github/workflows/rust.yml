@@ -54,7 +54,11 @@ jobs:
                 timeout: "360"
                 os:
                   ubuntu-latest:
-                    job: [test, macrotest, test-used-linker, miri, wasm, uefi, build, build-minimal, build-ctor-minimal]
+                    job: [test, macrotest, test-used-linker, miri, wasm, uefi, build, build-minimal]
+                    target: x86_64-unknown-linux-gnu
+                  # rustc 1.65 +crt-static binaries segfault on ubuntu-26.04
+                  ubuntu-24.04:
+                    job: [build-ctor-minimal]
                     target: x86_64-unknown-linux-gnu
                   ubuntu-slim:
                     job: [lint, sanitize]
