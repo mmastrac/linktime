@@ -237,10 +237,10 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "1.0.13"
+version = "1.0.14"
 dependencies = [
  "libc-print",
- "link-section 0.19.3",
+ "link-section 0.19.4",
  "linktime-proc-macro 0.2.3",
  "macrotest",
  "tempfile",
@@ -338,10 +338,10 @@ dependencies = [
 
 [[package]]
 name = "dtor"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "libc-print",
- "link-section 0.19.3",
+ "link-section 0.19.4",
  "linktime-proc-macro 0.2.3",
  "macrotest",
  "tempfile",
@@ -534,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "link-section"
-version = "0.19.3"
+version = "0.19.4"
 dependencies = [
  "linktime-proc-macro 0.2.3",
  "macrotest",
@@ -557,12 +557,12 @@ dependencies = [
 
 [[package]]
 name = "linktime"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
- "ctor 1.0.13",
- "dtor 1.0.6",
+ "ctor 1.0.14",
+ "dtor 1.0.7",
  "libc-print",
- "link-section 0.19.3",
+ "link-section 0.19.4",
  "linktime-proc-macro 0.2.3",
 ]
 
@@ -848,9 +848,9 @@ name = "scattered-collect"
 version = "0.22.2"
 dependencies = [
  "codspeed-divan-compat",
- "ctor 1.0.13",
- "link-section 0.19.3",
- "linktime 0.19.0",
+ "ctor 1.0.14",
+ "link-section 0.19.4",
+ "linktime 0.19.1",
  "linktime-proc-macro 0.2.3",
  "scattered-collect 0.22.2",
  "trybuild",
@@ -1458,9 +1458,9 @@ dependencies = [
 
 [[package]]
 name = "xxhash-rust"
-version = "0.8.17"
+version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "985eec839aaf2a1270af8f4ebcf63cf9401cfd90f0902f97c28d9f104ffbde72"
+checksum = "550a2b930b62486a393c52d5c3b84bff264b28aa437ed64694d31e93b1757af7"
 
 [[package]]
 name = "zmij"

@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.7] - 2026-11-13
 
 ### Added
 
 - Added UEFI support (`*-unknown-uefi`), run via `dtor::run_destructors`.
+
+### Changed
+
+- Bump `link-section` dependency to 0.19.4.
 
 ## [1.0.6] - 2026-08-09
 
